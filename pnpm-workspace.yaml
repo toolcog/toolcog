@@ -1,0 +1,16 @@
+packages:
+  - config
+  - packages/util/*
+  - packages/util
+  - packages/core
+  - packages/runtime
+  - packages/compiler
+  - packages/transformer
+  - packages/loader
+  - packages/repl
+  - packages/models/openai
+  - packages/engines/node/*
+  - packages/engines/node
+  - packages/toolcog/*
+  - packages/toolcog
+  - sandbox

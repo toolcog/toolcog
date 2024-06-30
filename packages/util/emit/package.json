@@ -1,0 +1,36 @@
+{
+  "name": "@toolcog/util/emit",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "dev": "rollup --config --watch --no-watch.clearScreen",
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist"
+  },
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    }
+  },
+  "dependencies": {
+    "@toolcog/util/queue": "workspace:*"
+  },
+  "devDependencies": {
+    "@toolcog/config": "workspace:*",
+    "eslint": "^9.6",
+    "prettier": "^3.3",
+    "rimraf": "^5.0",
+    "rollup": "^4.18",
+    "tslib": "^2.6",
+    "typescript": "^5.4"
+  }
+}

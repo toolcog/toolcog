@@ -1,0 +1,46 @@
+{
+  "name": "@toolcog/transformer",
+  "version": "0.0.1",
+  "description": "Toolcog typescript transformer",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "dev": "rollup --config --watch --no-watch.clearScreen",
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "prepack": "toolcog-config prepack",
+    "postpack": "toolcog-config postpack"
+  },
+  "files": [
+    "dist/"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    }
+  },
+  "peerDependencies": {
+    "typescript": "^5.4"
+  },
+  "dependencies": {
+    "@toolcog/compiler": "workspace:*"
+  },
+  "devDependencies": {
+    "@toolcog/config": "workspace:*",
+    "eslint": "^9.6",
+    "prettier": "^3.3",
+    "rimraf": "^5.0",
+    "rollup": "^4.18",
+    "tslib": "^2.6",
+    "typescript": "^5.4"
+  }
+}

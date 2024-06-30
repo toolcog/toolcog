@@ -1,0 +1,53 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "ui": "tui",
+  "tasks": {
+    "topo": {
+      "dependsOn": ["^topo"]
+    },
+    "dev": {
+      "dependsOn": ["^build"],
+      "cache": false,
+      "persistent": true,
+      "interactive": false
+    },
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "package.json",
+        "rollup.config.js",
+        "tsconfig.json",
+        "src/**"
+      ],
+      "outputs": [
+        "dist/**"
+      ],
+      "outputLogs": "new-only"
+    },
+    "check": {
+      "dependsOn": ["topo"],
+      "inputs": [
+        "tsconfig.json",
+        "src/**"
+      ]
+    },
+    "lint": {
+      "dependsOn": ["topo"],
+      "inputs": [
+        "src/**"
+      ]
+    },
+    "test": {
+      "dependsOn": ["build"],
+      "inputs": [
+        "src/**/*.test.ts"
+      ]
+    },
+    "clean": {
+      "cache": false
+    },
+    "//#clean": {
+      "cache": false
+    }
+  }
+}

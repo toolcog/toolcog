@@ -1,0 +1,15 @@
+# System and IDE files
+.DS_Store
+.vscode/
+
+# Package management
+Cargo.lock
+node_modules/
+
+# Build outputs
+dist/
+target/
+
+# Build caches
+.astro/
+.turbo/

@@ -1,0 +1,55 @@
+{
+  "name": "toolcog/cli",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "bin": {
+    "toolcog": "./dist/bin.js"
+  },
+  "scripts": {
+    "dev": "rollup --config --watch --no-watch.clearScreen",
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist"
+  },
+  "sideEffects": true,
+  "imports": {
+    "#cli": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    },
+    "./bin": {
+      "types": "./dist/bin.d.ts",
+      "import": "./dist/bin.js",
+      "require": "./dist/bin.cjs"
+    }
+  },
+  "dependencies": {
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
+    "@toolcog/transformer": "workspace:*",
+    "commander": "^12.1"
+  },
+  "devDependencies": {
+    "@rollup/plugin-replace": "^5.0",
+    "@toolcog/config": "workspace:*",
+    "eslint": "^9.6",
+    "prettier": "^3.3",
+    "rimraf": "^5.0",
+    "rollup": "^4.18",
+    "tslib": "^2.6",
+    "typescript": "^5.4"
+  }
+}

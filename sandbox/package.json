@@ -1,0 +1,18 @@
+{
+  "private": true,
+  "name": "@toolcog/sandbox",
+  "type": "module",
+  "scripts": {
+    "dev": "tspc --watch",
+    "build": "tspc",
+    "clean": "rimraf .turbo dist"
+  },
+  "dependencies": {
+    "toolcog": "workspace:*"
+  },
+  "devDependencies": {
+    "rimraf": "^5.0",
+    "ts-patch": "^3.2",
+    "typescript": "5.4"
+  }
+}

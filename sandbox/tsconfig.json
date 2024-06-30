@@ -1,0 +1,22 @@
+{
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"],
+  "compilerOptions": {
+    "allowImportingTsExtensions": false,
+    "declaration": true,
+    "module": "nodenext",
+    "newLine": "lf",
+    "noEmit": false,
+    "outDir": "dist",
+    "plugins": [
+      { "transform": "@toolcog/transformer" }
+    ],
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "target": "esnext"
+  },
+  "ts-node": {
+    "compiler": "ts-patch"
+  }
+}

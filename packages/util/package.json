@@ -1,0 +1,97 @@
+{
+  "name": "@toolcog/util",
+  "version": "0.0.1",
+  "description": "Toolcog utilities",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "dev": "rollup --config --watch --no-watch.clearScreen",
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "prepack": "toolcog-config prepack",
+    "postpack": "toolcog-config postpack"
+  },
+  "files": [
+    "dist/",
+    "queue/dist/",
+    "emit/dist/",
+    "task/dist/",
+    "async/dist/",
+    "schema/dist/"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    },
+    "./queue": {
+      "types": "./queue/dist/lib.d.ts",
+      "import": "./queue/dist/lib.js",
+      "require": "./queue/dist/lib.cjs"
+    },
+    "./emit": {
+      "types": "./emit/dist/lib.d.ts",
+      "import": "./emit/dist/lib.js",
+      "require": "./emit/dist/lib.cjs"
+    },
+    "./task": {
+      "types": "./task/dist/lib.d.ts",
+      "import": "./task/dist/lib.js",
+      "require": "./task/dist/lib.cjs"
+    },
+    "./async": {
+      "bun": {
+        "types": "./async/dist/lib.node.d.ts",
+        "import": "./async/dist/lib.node.js",
+        "require": "./async/dist/lib.node.cjs"
+      },
+      "deno": {
+        "types": "./async/dist/lib.node.d.ts",
+        "import": "./async/dist/lib.node.js",
+        "require": "./async/dist/lib.node.cjs"
+      },
+      "node": {
+        "types": "./async/dist/lib.node.d.ts",
+        "import": "./async/dist/lib.node.js",
+        "require": "./async/dist/lib.node.cjs"
+      },
+      "workerd": {
+        "types": "./async/dist/lib.node.d.ts",
+        "import": "./async/dist/lib.node.js",
+        "require": "./async/dist/lib.node.cjs"
+      },
+      "default": {
+        "types": "./async/dist/lib.polyfill.d.ts",
+        "import": "./async/dist/lib.polyfill.js",
+        "require": "./async/dist/lib.polyfill.cjs"
+      }
+    },
+    "./schema": {
+      "types": "./schema/dist/lib.d.ts",
+      "import": "./schema/dist/lib.js",
+      "require": "./schema/dist/lib.cjs"
+    }
+  },
+  "devDependencies": {
+    "@toolcog/config": "workspace:*",
+    "@toolcog/util/queue": "workspace:*",
+    "@toolcog/util/emit": "workspace:*",
+    "@toolcog/util/task": "workspace:*",
+    "@toolcog/util/async": "workspace:*",
+    "@toolcog/util/schema": "workspace:*",
+    "eslint": "^9.6",
+    "prettier": "^3.3",
+    "rimraf": "^5.0",
+    "rollup": "^4.18",
+    "tslib": "^2.6",
+    "typescript": "^5.4"
+  }
+}

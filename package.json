@@ -1,0 +1,26 @@
+{
+  "private": true,
+  "name": "root",
+  "type": "module",
+  "scripts": {
+    "dev": "turbo watch build",
+    "build": "turbo run build",
+    "test": "vitest run",
+    "coverage": "vitest run --coverage",
+    "toolcog-node": "turbo --filter=@toolcog/node/cli build && node packages/engines/node/cli/dist/bin.js",
+    "toolcog": "turbo --filter=toolcog/cli build && node packages/toolcog/cli/dist/bin.js",
+    "clean": "rimraf .turbo node_modules/.cache"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "prettier": "^3.3",
+    "rimraf": "^5.0",
+    "turbo": "^2.0",
+    "typescript": "^5.4",
+    "vitest": "^1.6"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.4.0"
+}
