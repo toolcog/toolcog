@@ -1,27 +1,27 @@
 import type ts from "typescript";
-import type { ToolcogHost } from "../host.ts";
 
 const isImportDeclarationFromModule = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
   node: ts.Node,
   moduleName: string,
 ): node is ts.ImportDeclaration => {
   return (
-    host.ts.isImportDeclaration(node) &&
-    host.ts.isStringLiteral(node.moduleSpecifier) &&
+    ts.isImportDeclaration(node) &&
+    ts.isStringLiteral(node.moduleSpecifier) &&
     node.moduleSpecifier.text === moduleName
   );
 };
 
 const filterNamedImportDeclaration = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  factory: ts.NodeFactory,
   node: ts.ImportDeclaration,
   predicate: (element: ts.ImportSpecifier) => boolean,
 ): ts.ImportDeclaration | undefined => {
   if (
-    !host.ts.isImportDeclaration(node) ||
+    !ts.isImportDeclaration(node) ||
     node.importClause?.namedBindings === undefined ||
-    !host.ts.isNamedImports(node.importClause.namedBindings)
+    !ts.isNamedImports(node.importClause.namedBindings)
   ) {
     return node;
   }
@@ -42,14 +42,14 @@ const filterNamedImportDeclaration = (
     return undefined;
   }
 
-  return host.factory.updateImportDeclaration(
+  return factory.updateImportDeclaration(
     node,
     node.modifiers,
-    host.factory.updateImportClause(
+    factory.updateImportClause(
       node.importClause,
       node.importClause.isTypeOnly,
       node.importClause.name,
-      host.factory.updateNamedImports(
+      factory.updateNamedImports(
         node.importClause.namedBindings,
         newImportSpecifiers,
       ),

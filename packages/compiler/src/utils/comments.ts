@@ -1,5 +1,4 @@
 import type ts from "typescript";
-import type { ToolcogHost } from "../host.ts";
 
 const trimMultiLineComment = (comment: string): string => {
   return comment
@@ -16,7 +15,7 @@ const trimMultiLineComment = (comment: string): string => {
 };
 
 const getCommentText = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
   sourceText: string,
   commentRanges: readonly ts.CommentRange[] | undefined,
 ): string | undefined => {
@@ -29,7 +28,7 @@ const getCommentText = (
   for (const commentRange of commentRanges) {
     if (commentRange.kind !== commentKind) {
       commentText = undefined;
-      if (commentRange.kind === host.ts.SyntaxKind.SingleLineCommentTrivia) {
+      if (commentRange.kind === ts.SyntaxKind.SingleLineCommentTrivia) {
         commentKind = commentRange.kind;
       } else {
         commentKind = undefined;
@@ -60,7 +59,7 @@ const getCommentText = (
  * that begins on the same line is also considered.
  */
 const getLeadingComment = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
   node: ts.Node,
   options?: { expansive?: boolean | undefined },
 ): string | undefined => {
@@ -71,9 +70,9 @@ const getLeadingComment = (
   let comment: string | undefined;
   while (true) {
     comment = getCommentText(
-      host,
+      ts,
       sourceText,
-      host.ts.getLeadingCommentRanges(sourceText, node.getFullStart()),
+      ts.getLeadingCommentRanges(sourceText, node.getFullStart()),
     );
 
     // Expand the search to the pare node if no leading comment was found and

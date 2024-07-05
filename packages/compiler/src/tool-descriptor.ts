@@ -1,7 +1,6 @@
 import type ts from "typescript";
 import type { Schema, SchemaDefinition } from "@toolcog/util/schema";
 import type { FunctionDescriptor } from "@toolcog/core";
-import type { ToolcogHost } from "./host.ts";
 import { Diagnostics } from "./diagnostics.ts";
 import { typeToSchema } from "./schema.ts";
 import { getDocComment } from "./doc-comment.ts";
@@ -9,53 +8,67 @@ import { error, abort } from "./utils/errors.ts";
 import { valueToExpression } from "./utils/literals.ts";
 
 const getToolDescriptor = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  checker: ts.TypeChecker,
+  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   node: ts.Node,
 ): FunctionDescriptor => {
-  const docComment = getDocComment(host, node);
+  const docComment = getDocComment(ts, checker, node);
   if (docComment === undefined) {
-    error(host, node, Diagnostics.MissingToolComment);
+    error(ts, addDiagnostic, node, Diagnostics.MissingToolComment);
   }
 
   let toolName: string;
   let toolDeclaration: ts.Declaration | undefined;
-  if (host.ts.isIdentifier(node)) {
-    const symbol = host.checker.getSymbolAtLocation(node);
-    host.ts.Debug.assert(symbol !== undefined);
+  if (ts.isIdentifier(node)) {
+    const symbol = checker.getSymbolAtLocation(node);
+    ts.Debug.assert(symbol !== undefined);
     const declaration = symbol.declarations?.[0];
-    host.ts.Debug.assert(declaration !== undefined);
+    ts.Debug.assert(declaration !== undefined);
     toolName = node.text;
     toolDeclaration = declaration;
-  } else if (host.ts.isDeclarationStatement(node)) {
-    const declarationName = host.ts.getNameOfDeclaration(node);
+  } else if (ts.isDeclarationStatement(node)) {
+    const declarationName = ts.getNameOfDeclaration(node);
     if (
       declarationName === undefined ||
-      (!host.ts.isIdentifier(declarationName) &&
-        !host.ts.isPrivateIdentifier(declarationName))
+      (!ts.isIdentifier(declarationName) &&
+        !ts.isPrivateIdentifier(declarationName))
     ) {
-      return abort(host, node, Diagnostics.UnableToDetermineToolName);
+      return abort(
+        ts,
+        addDiagnostic,
+        node,
+        Diagnostics.UnableToDetermineToolName,
+      );
     }
-    toolName = host.ts.idText(declarationName);
+    toolName = ts.idText(declarationName);
     toolDeclaration = node;
   } else {
-    return abort(host, node, Diagnostics.UnsupportedToolExpression);
+    return abort(
+      ts,
+      addDiagnostic,
+      node,
+      Diagnostics.UnsupportedToolExpression,
+    );
   }
 
-  const functionType = host.checker.getTypeAtLocation(toolDeclaration);
+  const functionType = checker.getTypeAtLocation(toolDeclaration);
   const [functionSignature] = functionType.getCallSignatures();
-  host.ts.Debug.assert(functionSignature !== undefined);
+  ts.Debug.assert(functionSignature !== undefined);
 
   const parameterSchemas: { [key: string]: SchemaDefinition } = {};
   const requiredParameters: string[] = [];
 
   for (const parameter of functionSignature.parameters) {
     const parameterDeclaration = parameter.valueDeclaration!;
-    const parameterType = host.checker.getTypeOfSymbolAtLocation(
+    const parameterType = checker.getTypeOfSymbolAtLocation(
       parameter,
       parameterDeclaration,
     );
     let parameterSchema = typeToSchema(
-      host,
+      ts,
+      checker,
+      addDiagnostic,
       parameterType,
       parameterDeclaration,
     );
@@ -68,7 +81,7 @@ const getToolDescriptor = (
 
     parameterSchemas[parameter.name] = parameterSchema;
     if (
-      !host.ts.isParameter(parameterDeclaration) ||
+      !ts.isParameter(parameterDeclaration) ||
       (parameterDeclaration.questionToken === undefined &&
         parameterDeclaration.initializer === undefined)
     ) {
@@ -87,12 +100,16 @@ const getToolDescriptor = (
     };
   }
 
-  const returnType = host.checker.getAwaitedType(
-    functionSignature.getReturnType(),
-  );
-  host.ts.Debug.assert(returnType !== undefined);
+  const returnType = checker.getAwaitedType(functionSignature.getReturnType());
+  ts.Debug.assert(returnType !== undefined);
 
-  let returnSchema = typeToSchema(host, returnType, toolDeclaration);
+  let returnSchema = typeToSchema(
+    ts,
+    checker,
+    addDiagnostic,
+    returnType,
+    toolDeclaration,
+  );
   if (returnSchema.description === undefined) {
     const description = docComment?.returns;
     if (description !== undefined) {
@@ -113,32 +130,35 @@ const getToolDescriptor = (
 };
 
 const getToolDescriptorExpression = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  factory: ts.NodeFactory,
+  checker: ts.TypeChecker,
+  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   node: ts.Node,
 ): ts.Expression => {
-  const descriptor = getToolDescriptor(host, node);
+  const descriptor = getToolDescriptor(ts, checker, addDiagnostic, node);
 
   const propertyLiterals: ts.ObjectLiteralElementLike[] = [];
   propertyLiterals.push(
-    host.factory.createPropertyAssignment(
+    factory.createPropertyAssignment(
       "type",
-      host.factory.createStringLiteral("function"),
+      factory.createStringLiteral("function"),
     ),
   );
   propertyLiterals.push(
-    host.factory.createPropertyAssignment(
+    factory.createPropertyAssignment(
       "function",
-      valueToExpression(host, node, descriptor),
+      valueToExpression(ts, factory, node, descriptor),
     ),
   );
   propertyLiterals.push(
-    host.factory.createPropertyAssignment(
+    factory.createPropertyAssignment(
       "callable",
-      host.factory.createIdentifier(descriptor.name),
+      factory.createIdentifier(descriptor.name),
     ),
   );
 
-  return host.factory.createObjectLiteralExpression(propertyLiterals, true);
+  return factory.createObjectLiteralExpression(propertyLiterals, true);
 };
 
 export { getToolDescriptor, getToolDescriptorExpression };

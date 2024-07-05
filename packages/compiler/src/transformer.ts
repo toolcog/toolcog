@@ -1,5 +1,5 @@
-import ts from "typescript";
-import type { ToolcogHost } from "./host.ts";
+import type ts from "typescript";
+import typescript from "typescript";
 import { Diagnostics } from "./diagnostics.ts";
 import {
   transformGenerateExpression,
@@ -19,15 +19,39 @@ import { getModuleExportType } from "./utils/modules.ts";
 interface ToolcogTransformerConfig {}
 
 const toolcogTransformer = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  context: ts.TransformationContext,
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
 ): ts.Transformer<ts.SourceFile> => {
-  let useToolType = getModuleExportType(host, "UseTool", "@toolcog/core", "");
+  const factory = context.factory;
+  const checker = program.getTypeChecker();
+  const addDiagnostic = context.addDiagnostic;
+
+  let useToolType = getModuleExportType(
+    ts,
+    host,
+    program,
+    checker,
+    "UseTool",
+    "@toolcog/core",
+    "",
+  );
   if (useToolType === undefined) {
-    useToolType = getModuleExportType(host, "UseTool", "toolcog", "");
+    useToolType = getModuleExportType(
+      ts,
+      host,
+      program,
+      checker,
+      "UseTool",
+      "toolcog",
+      "",
+    );
   }
   if (useToolType === undefined) {
     return transformerError(
-      host,
+      ts,
+      addDiagnostic,
       undefined,
       Diagnostics.UnableToResolveType,
       "UseTool",
@@ -36,16 +60,27 @@ const toolcogTransformer = (
   }
 
   let useToolFunctionType = getModuleExportType(
+    ts,
     host,
+    program,
+    checker,
     "useTool",
     "@toolcog/core",
   );
   if (useToolFunctionType === undefined) {
-    useToolFunctionType = getModuleExportType(host, "useTool", "toolcog");
+    useToolFunctionType = getModuleExportType(
+      ts,
+      host,
+      program,
+      checker,
+      "useTool",
+      "toolcog",
+    );
   }
   if (useToolFunctionType === undefined) {
     return transformerError(
-      host,
+      ts,
+      addDiagnostic,
       undefined,
       Diagnostics.UnableToResolve,
       "useTool",
@@ -54,16 +89,27 @@ const toolcogTransformer = (
   }
 
   let generateFunctionType = getModuleExportType(
+    ts,
     host,
+    program,
+    checker,
     "generate",
     "@toolcog/core",
   );
   if (generateFunctionType === undefined) {
-    generateFunctionType = getModuleExportType(host, "generate", "toolcog");
+    generateFunctionType = getModuleExportType(
+      ts,
+      host,
+      program,
+      checker,
+      "generate",
+      "toolcog",
+    );
   }
   if (generateFunctionType === undefined) {
     return transformerError(
-      host,
+      ts,
+      addDiagnostic,
       undefined,
       Diagnostics.UnableToResolve,
       "generate",
@@ -71,13 +117,28 @@ const toolcogTransformer = (
     );
   }
 
-  let promptFunctionType = getModuleExportType(host, "prompt", "@toolcog/core");
+  let promptFunctionType = getModuleExportType(
+    ts,
+    host,
+    program,
+    checker,
+    "prompt",
+    "@toolcog/core",
+  );
   if (promptFunctionType === undefined) {
-    promptFunctionType = getModuleExportType(host, "prompt", "toolcog");
+    promptFunctionType = getModuleExportType(
+      ts,
+      host,
+      program,
+      checker,
+      "prompt",
+      "toolcog",
+    );
   }
   if (promptFunctionType === undefined) {
     return transformerError(
-      host,
+      ts,
+      addDiagnostic,
       undefined,
       Diagnostics.UnableToResolve,
       "prompt",
@@ -89,51 +150,74 @@ const toolcogTransformer = (
   let toolScope = Object.create(null) as ToolScope;
 
   const visit = (node: ts.Node): ts.Node | undefined => {
-    if (host.ts.isBlockScope(node, node.parent)) {
+    if (ts.isBlockScope(node, node.parent)) {
       toolScope = Object.create(toolScope) as ToolScope;
       try {
-        return host.ts.visitEachChild(node, visit, host.context);
+        return ts.visitEachChild(node, visit, context);
       } finally {
         toolScope = Object.getPrototypeOf(toolScope) as ToolScope;
       }
     }
 
-    if (isFunctionCallStatement(host, node, useToolFunctionType)) {
-      const toolStatement = transformUseToolStatement(host, node);
+    if (isFunctionCallStatement(ts, checker, node, useToolFunctionType)) {
+      const toolStatement = transformUseToolStatement(
+        ts,
+        factory,
+        checker,
+        addDiagnostic,
+        node,
+      );
       const toolDeclaration = toolStatement.declarationList.declarations[0]!;
-      const toolName = host.ts.getNameOfDeclaration(toolDeclaration);
-      if (toolName !== undefined && host.ts.isIdentifier(toolName)) {
+      const toolName = ts.getNameOfDeclaration(toolDeclaration);
+      if (toolName !== undefined && ts.isIdentifier(toolName)) {
         toolScope[toolName.escapedText as string] = toolName;
       }
       return toolStatement;
-    } else if (
-      host.ts.isVariableDeclaration(node) &&
-      host.ts.isIdentifier(node.name)
-    ) {
-      const variableType = host.checker.getTypeAtLocation(node.name);
-      if (host.checker.isTypeAssignableTo(variableType, useToolType)) {
+    } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      const variableType = checker.getTypeAtLocation(node.name);
+      if (checker.isTypeAssignableTo(variableType, useToolType)) {
         toolScope[node.name.escapedText as string] = node.name;
       }
     }
 
-    if (isFunctionCallExpression(host, node, useToolFunctionType)) {
-      const toolExpression = transformUseToolExpression(host, node);
-      return host.ts.visitEachChild(toolExpression, visit, host.context);
+    if (isFunctionCallExpression(ts, checker, node, useToolFunctionType)) {
+      const toolExpression = transformUseToolExpression(
+        ts,
+        factory,
+        checker,
+        addDiagnostic,
+        node,
+      );
+      return ts.visitEachChild(toolExpression, visit, context);
     }
 
-    if (isFunctionCallExpression(host, node, generateFunctionType)) {
-      return transformGenerateExpression(host, node, toolScope);
+    if (isFunctionCallExpression(ts, checker, node, generateFunctionType)) {
+      return transformGenerateExpression(
+        ts,
+        factory,
+        checker,
+        addDiagnostic,
+        node,
+        toolScope,
+      );
     }
 
-    if (isFunctionCallExpression(host, node, promptFunctionType)) {
-      return transformPromptExpression(host, node, toolScope);
+    if (isFunctionCallExpression(ts, checker, node, promptFunctionType)) {
+      return transformPromptExpression(
+        ts,
+        factory,
+        checker,
+        addDiagnostic,
+        node,
+        toolScope,
+      );
     }
 
-    return host.ts.visitEachChild(node, visit, host.context);
+    return ts.visitEachChild(node, visit, context);
   };
 
   return (sourceFile: ts.SourceFile): ts.SourceFile => {
-    return host.ts.visitNode(sourceFile, visit) as ts.SourceFile;
+    return ts.visitNode(sourceFile, visit) as ts.SourceFile;
   };
 };
 
@@ -142,39 +226,36 @@ const toolcogTransformerFactory = (
   config?: ToolcogTransformerConfig,
   // import("ts-patch").TransformerExtras
   extras?: {
-    readonly ts: typeof ts;
-
-    readonly diagnostics: readonly ts.Diagnostic[];
+    readonly ts: typeof import("typescript");
     readonly addDiagnostic: (diagnostic: ts.Diagnostic) => number;
   },
-  moduleResolutionHost?: ts.ModuleResolutionHost,
+  host?: ts.ModuleResolutionHost,
 ): ts.TransformerFactory<ts.SourceFile> => {
   return (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
-    const tsInstance = extras?.ts ?? ts;
-
-    const host = {
-      ts: tsInstance,
-      factory: context.factory,
-      program,
-      checker: program.getTypeChecker(),
-      context,
-      moduleResolutionHost: moduleResolutionHost ?? tsInstance.sys,
-
-      addDiagnostic: extras?.addDiagnostic ?? context.addDiagnostic,
-    } as const satisfies ToolcogHost;
-
-    return toolcogTransformer(host);
+    const ts = extras?.ts ?? typescript;
+    if (host === undefined) {
+      host = ts.sys;
+    }
+    if (
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      context.addDiagnostic === undefined &&
+      extras?.addDiagnostic !== undefined
+    ) {
+      context.addDiagnostic = extras.addDiagnostic;
+    }
+    return toolcogTransformer(ts, context, host, program);
   };
 };
 
 const transformerError = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   location: ts.Node | undefined,
   message: ts.DiagnosticMessage,
   ...args: ts.DiagnosticArguments
 ): ts.Transformer<ts.SourceFile> => {
   // Record the diagnostic.
-  error(host, location, message, ...args);
+  error(ts, addDiagnostic, location, message, ...args);
   // Return an identity transformer.
   return (sourceFile: ts.SourceFile): ts.SourceFile => {
     return sourceFile;

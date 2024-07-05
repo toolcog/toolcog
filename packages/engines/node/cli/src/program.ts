@@ -69,7 +69,9 @@ const programAction = async (
       const repl = new Repl();
 
       // Print the REPL banner.
-      console.log(`Welcome to Toolcog v${__version__} (Node.js ${process.version}, TypeScript v${ts.version}).`);
+      console.log(
+        `Welcome to Toolcog v${__version__} (Node.js ${process.version}, TypeScript v${ts.version}).`,
+      );
       console.log('Type ".help" for more information.');
       console.log();
 

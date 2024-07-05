@@ -1,5 +1,4 @@
 import type ts from "typescript";
-import type { ToolcogHost } from "./host.ts";
 import { getLeadingComment } from "./utils/comments.ts";
 
 interface DocComment {
@@ -64,27 +63,28 @@ const parseDocComment = (comment: string): DocComment => {
 };
 
 const parseDocCommentNode = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
   node: ts.Node,
   options?: { expansive?: boolean | undefined },
 ): DocComment | undefined => {
-  const comment = getLeadingComment(host, node, options);
+  const comment = getLeadingComment(ts, node, options);
   return comment !== undefined ? parseDocComment(comment) : undefined;
 };
 
 const getDocComment = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  checker: ts.TypeChecker,
   node: ts.Node,
   options?: { expansive?: boolean | undefined },
 ): DocComment | undefined => {
-  let comment = parseDocCommentNode(host, node, options);
+  let comment = parseDocCommentNode(ts, node, options);
 
-  const type = host.checker.getTypeAtLocation(node);
+  const type = checker.getTypeAtLocation(node);
   const typeSymbol = type.getSymbol();
   if (typeSymbol !== undefined) {
     const typeDeclaration = typeSymbol.declarations?.[0];
     if (typeDeclaration !== undefined) {
-      const typeComment = parseDocCommentNode(host, typeDeclaration, options);
+      const typeComment = parseDocCommentNode(ts, typeDeclaration, options);
       comment = mergeDocComments(typeComment, comment);
     }
   }

@@ -9,10 +9,12 @@ interface TextMessageContent {
 
 interface ImageUrlMessageContent {
   readonly type: "image_url";
-  readonly image_url: string | {
-    readonly url: string;
-    readonly detail?: "auto" | "low" | "high" | undefined;
-  };
+  readonly image_url:
+    | string
+    | {
+        readonly url: string;
+        readonly detail?: "auto" | "low" | "high" | undefined;
+      };
 }
 
 type Message = SystemMessage | UserMessage | AssistantMessage | ToolMessage;

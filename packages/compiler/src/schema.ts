@@ -1,18 +1,17 @@
 import type ts from "typescript";
 import type { Schema, SchemaDefinition } from "@toolcog/util/schema";
-import type { ToolcogHost } from "./host.ts";
 import { parseDocCommentNode } from "./doc-comment.ts";
 import { Diagnostics } from "./diagnostics.ts";
 import { abort } from "./utils/errors.ts";
 
 const getSymbolDescription = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
   symbol: ts.Symbol | undefined,
 ): { description: string } | undefined => {
   const declaration = symbol?.declarations?.[0];
   const comment =
     declaration !== undefined ?
-      parseDocCommentNode(host, declaration, { expansive: false })
+      parseDocCommentNode(ts, declaration, { expansive: false })
     : undefined;
   return comment?.description !== undefined ?
       { description: comment.description }
@@ -20,96 +19,98 @@ const getSymbolDescription = (
 };
 
 const getTypeDescription = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
   type: ts.Type | undefined,
 ): { description: string } | undefined => {
-  let typeDescription = getSymbolDescription(host, type?.getSymbol());
+  let typeDescription = getSymbolDescription(ts, type?.getSymbol());
 
   if (type !== undefined && typeDescription === undefined) {
-    const constraintType = host.checker.getBaseConstraintOfType(type);
-    typeDescription = getSymbolDescription(host, constraintType?.getSymbol());
+    const constraintType = type.getConstraint();
+    typeDescription = getSymbolDescription(ts, constraintType?.getSymbol());
   }
 
   return typeDescription;
 };
 
 const typeToSchema = (
-  host: ToolcogHost,
+  ts: typeof import("typescript"),
+  checker: ts.TypeChecker,
+  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   type: ts.Type,
   errorNode?: ts.Node,
   propertyComments?: Map<string, string>,
 ): Schema => {
-  const typeDescription = getTypeDescription(host, type);
+  const typeDescription = getTypeDescription(ts, type);
 
-  type = host.checker.getBaseConstraintOfType(type) ?? type;
+  type = checker.getBaseConstraintOfType(type) ?? type;
 
-  if ((type.flags & host.ts.TypeFlags.Undefined) !== 0) {
+  if ((type.flags & ts.TypeFlags.Undefined) !== 0) {
     return {
       type: "undefined",
       ...typeDescription,
     } as unknown as Schema;
   }
 
-  if ((type.flags & host.ts.TypeFlags.Null) !== 0) {
+  if ((type.flags & ts.TypeFlags.Null) !== 0) {
     return {
       type: "null",
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.Boolean) !== 0) {
+  if ((type.flags & ts.TypeFlags.Boolean) !== 0) {
     return {
       type: "boolean",
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.Number) !== 0) {
+  if ((type.flags & ts.TypeFlags.Number) !== 0) {
     return {
       type: "number",
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.String) !== 0) {
+  if ((type.flags & ts.TypeFlags.String) !== 0) {
     return {
       type: "string",
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.BooleanLiteral) !== 0) {
+  if ((type.flags & ts.TypeFlags.BooleanLiteral) !== 0) {
     return {
       const: (type as ts.LiteralType & { intrinsicName: string }).intrinsicName,
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.NumberLiteral) !== 0) {
+  if ((type.flags & ts.TypeFlags.NumberLiteral) !== 0) {
     return {
       const: (type as ts.NumberLiteralType).value,
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.StringLiteral) !== 0) {
+  if ((type.flags & ts.TypeFlags.StringLiteral) !== 0) {
     return {
       const: (type as ts.StringLiteralType).value,
       ...typeDescription,
     };
   }
 
-  if ((type.flags & host.ts.TypeFlags.EnumLiteral) !== 0) {
+  if ((type.flags & ts.TypeFlags.EnumLiteral) !== 0) {
     // TODO
   }
 
-  if ((type.flags & host.ts.TypeFlags.Object) !== 0) {
+  if ((type.flags & ts.TypeFlags.Object) !== 0) {
     const objectType = type as ts.ObjectType;
-    if ((objectType.objectFlags & host.ts.ObjectFlags.Reference) !== 0) {
+    if ((objectType.objectFlags & ts.ObjectFlags.Reference) !== 0) {
       const objectTypeSymbol = objectType.getSymbol();
       const typeName =
         objectTypeSymbol !== undefined ?
-          host.checker.getFullyQualifiedName(objectTypeSymbol)
+          checker.getFullyQualifiedName(objectTypeSymbol)
         : undefined;
 
       if (typeName === "Array") {
@@ -117,7 +118,9 @@ const typeToSchema = (
           type: "array",
           ...typeDescription,
           items: typeToSchema(
-            host,
+            ts,
+            checker,
+            addDiagnostic,
             (objectType as ts.TypeReference).typeArguments![0]!,
             errorNode,
           ),
@@ -127,7 +130,9 @@ const typeToSchema = (
           type: "array",
           ...typeDescription,
           items: typeToSchema(
-            host,
+            ts,
+            checker,
+            addDiagnostic,
             (objectType as ts.TypeReference).typeArguments![0]!,
             errorNode,
           ),
@@ -137,7 +142,9 @@ const typeToSchema = (
           type: "object",
           ...typeDescription,
           additionalProperties: typeToSchema(
-            host,
+            ts,
+            checker,
+            addDiagnostic,
             (objectType as ts.TypeReference).typeArguments![1]!,
             errorNode,
           ),
@@ -148,10 +155,10 @@ const typeToSchema = (
     const properties: { [key: string]: SchemaDefinition } = {};
     const required: string[] = [];
 
-    const propertySymbols = host.checker.getPropertiesOfType(objectType);
+    const propertySymbols = checker.getPropertiesOfType(objectType);
     for (const propertySymbol of propertySymbols) {
       const propertyName = propertySymbol.getName();
-      const propertyType = host.checker.getTypeOfSymbolAtLocation(
+      const propertyType = checker.getTypeOfSymbolAtLocation(
         propertySymbol,
         propertySymbol.valueDeclaration!,
       );
@@ -159,20 +166,22 @@ const typeToSchema = (
       const propertyDeclaration = propertySymbol.declarations?.[0];
       const propertyComment =
         propertyDeclaration !== undefined ?
-          parseDocCommentNode(host, propertyDeclaration, { expansive: false })
+          parseDocCommentNode(ts, propertyDeclaration, {
+            expansive: false,
+          })
         : undefined;
       const propertyDescription =
         propertyComment?.description ?? propertyComments?.get(propertyName);
 
       const propertySchema = {
-        ...typeToSchema(host, propertyType, errorNode),
+        ...typeToSchema(ts, checker, addDiagnostic, propertyType, errorNode),
         ...(propertyDescription !== undefined ?
           { description: propertyDescription }
         : undefined),
       };
 
       properties[propertyName] = propertySchema;
-      if ((propertySymbol.flags & host.ts.SymbolFlags.Optional) === 0) {
+      if ((propertySymbol.flags & ts.SymbolFlags.Optional) === 0) {
         required.push(propertyName);
       }
     }
@@ -186,8 +195,8 @@ const typeToSchema = (
   }
 
   if (
-    (type.flags & host.ts.TypeFlags.Any) !== 0 ||
-    (type.flags & host.ts.TypeFlags.Unknown) !== 0
+    (type.flags & ts.TypeFlags.Any) !== 0 ||
+    (type.flags & ts.TypeFlags.Unknown) !== 0
   ) {
     return {
       type: [
@@ -204,7 +213,13 @@ const typeToSchema = (
   if (type.isUnion()) {
     const memberSchemas: Schema[] = [];
     for (const memberType of type.types) {
-      const memberSchema = typeToSchema(host, memberType, errorNode);
+      const memberSchema = typeToSchema(
+        ts,
+        checker,
+        addDiagnostic,
+        memberType,
+        errorNode,
+      );
       if (memberSchema.type !== "undefined") {
         memberSchemas.push(memberSchema);
       }
@@ -220,7 +235,13 @@ const typeToSchema = (
   if (type.isIntersection()) {
     const memberSchemas: Schema[] = [];
     for (const memberType of type.types) {
-      const memberSchema = typeToSchema(host, memberType, errorNode);
+      const memberSchema = typeToSchema(
+        ts,
+        checker,
+        addDiagnostic,
+        memberType,
+        errorNode,
+      );
       memberSchemas.push(memberSchema);
     }
     return {
@@ -229,10 +250,11 @@ const typeToSchema = (
   }
 
   return abort(
-    host,
+    ts,
+    addDiagnostic,
     errorNode,
     Diagnostics.UnableToConstructSchemaForType,
-    host.checker.typeToString(type),
+    checker.typeToString(type),
   );
 };
 

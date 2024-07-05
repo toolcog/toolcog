@@ -1,5 +1,3 @@
-export type { ToolcogHost } from "./host.ts";
-
 export { typeToSchema } from "./schema.ts";
 
 export {
@@ -8,14 +6,14 @@ export {
 } from "./tool-descriptor.ts";
 
 export {
-  transformGenerateExpression,
-  transformPromptExpression,
-} from "./generative.ts";
-
-export {
   transformUseToolExpression,
   transformUseToolStatement,
 } from "./use-tool.ts";
+
+export {
+  transformGenerateExpression,
+  transformPromptExpression,
+} from "./generative.ts";
 
 export type { ToolcogTransformerConfig } from "./transformer.ts";
 export {

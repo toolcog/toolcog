@@ -37,6 +37,12 @@
         "src/**"
       ]
     },
+    "format": {
+      "dependsOn": ["topo"],
+      "inputs": [
+        "src/**"
+      ]
+    },
     "test": {
       "dependsOn": ["build"],
       "inputs": [

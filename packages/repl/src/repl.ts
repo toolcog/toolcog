@@ -177,7 +177,6 @@ class Repl {
       historySize: this.#historySize,
     });
 
-
     readline.on("history", async (history: string[]): Promise<void> => {
       // Save history to file.
       if (this.#historySize > 0) {

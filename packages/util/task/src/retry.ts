@@ -40,7 +40,7 @@ const retry = async <T>(
         throw error;
       }
 
-      let timeout = minTimeout * (factor ** attempt);
+      let timeout = minTimeout * factor ** attempt;
       if (jitter) {
         timeout *= 1 + Math.random();
       }
