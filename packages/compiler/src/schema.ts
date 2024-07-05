@@ -5,49 +5,43 @@ import { parseDocCommentNode } from "./doc-comment.ts";
 import { Diagnostics } from "./diagnostics.ts";
 import { abort } from "./utils/errors.ts";
 
+const getSymbolDescription = (
+  host: ToolcogHost,
+  symbol: ts.Symbol | undefined,
+): { description: string } | undefined => {
+  const declaration = symbol?.declarations?.[0];
+  const comment =
+    declaration !== undefined ?
+      parseDocCommentNode(host, declaration, { expansive: false })
+    : undefined;
+  return comment?.description !== undefined ?
+      { description: comment.description }
+    : undefined;
+};
+
+const getTypeDescription = (
+  host: ToolcogHost,
+  type: ts.Type | undefined,
+): { description: string } | undefined => {
+  let typeDescription = getSymbolDescription(host, type?.getSymbol());
+
+  if (type !== undefined && typeDescription === undefined) {
+    const constraintType = host.checker.getBaseConstraintOfType(type);
+    typeDescription = getSymbolDescription(host, constraintType?.getSymbol());
+  }
+
+  return typeDescription;
+};
+
 const typeToSchema = (
   host: ToolcogHost,
   type: ts.Type,
   errorNode?: ts.Node,
   propertyComments?: Map<string, string>,
 ): Schema => {
-  const typeSymbol = type.getSymbol();
-  const typeDeclaration = typeSymbol?.declarations?.[0];
-  const typeComment =
-    typeDeclaration !== undefined ?
-      parseDocCommentNode(host, typeDeclaration, { expansive: false })
-    : undefined;
-  const typeDescription =
-    typeComment?.description !== undefined ?
-      { description: typeComment.description }
-    : undefined;
+  const typeDescription = getTypeDescription(host, type);
 
-  if (type.isUnion()) {
-    const variantSchemas: Schema[] = [];
-    for (const variantType of type.types) {
-      const variantSchema = typeToSchema(host, variantType, errorNode);
-      if (variantSchema.type !== "undefined") {
-        variantSchemas.push(variantSchema);
-      }
-    }
-    if (variantSchemas.length === 1) {
-      return variantSchemas[0]!;
-    }
-    return {
-      anyOf: variantSchemas,
-    };
-  }
-
-  if (type.isIntersection()) {
-    const variantSchemas: Schema[] = [];
-    for (const variantType of type.types) {
-      const variantSchema = typeToSchema(host, variantType, errorNode);
-      variantSchemas.push(variantSchema);
-    }
-    return {
-      allOf: variantSchemas,
-    };
-  }
+  type = host.checker.getBaseConstraintOfType(type) ?? type;
 
   if ((type.flags & host.ts.TypeFlags.Undefined) !== 0) {
     return {
@@ -112,10 +106,10 @@ const typeToSchema = (
   if ((type.flags & host.ts.TypeFlags.Object) !== 0) {
     const objectType = type as ts.ObjectType;
     if ((objectType.objectFlags & host.ts.ObjectFlags.Reference) !== 0) {
-      const typeSymbol = objectType.getSymbol();
+      const objectTypeSymbol = objectType.getSymbol();
       const typeName =
-        typeSymbol !== undefined ?
-          host.checker.getFullyQualifiedName(typeSymbol)
+        objectTypeSymbol !== undefined ?
+          host.checker.getFullyQualifiedName(objectTypeSymbol)
         : undefined;
 
       if (typeName === "Array") {
@@ -204,6 +198,33 @@ const typeToSchema = (
         //"array",
         "object",
       ],
+    };
+  }
+
+  if (type.isUnion()) {
+    const memberSchemas: Schema[] = [];
+    for (const memberType of type.types) {
+      const memberSchema = typeToSchema(host, memberType, errorNode);
+      if (memberSchema.type !== "undefined") {
+        memberSchemas.push(memberSchema);
+      }
+    }
+    if (memberSchemas.length === 1) {
+      return memberSchemas[0]!;
+    }
+    return {
+      anyOf: memberSchemas,
+    };
+  }
+
+  if (type.isIntersection()) {
+    const memberSchemas: Schema[] = [];
+    for (const memberType of type.types) {
+      const memberSchema = typeToSchema(host, memberType, errorNode);
+      memberSchemas.push(memberSchema);
+    }
+    return {
+      allOf: memberSchemas,
     };
   }
 

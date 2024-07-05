@@ -6,7 +6,6 @@ import { Diagnostics } from "./diagnostics.ts";
 import { typeToSchema } from "./schema.ts";
 import { getDocComment } from "./doc-comment.ts";
 import { error, abort } from "./utils/errors.ts";
-import { getErasedType } from "./utils/erasure.ts";
 import { valueToExpression } from "./utils/literals.ts";
 
 const getToolDescriptor = (
@@ -55,10 +54,9 @@ const getToolDescriptor = (
       parameter,
       parameterDeclaration,
     );
-    const erasedParameterType = getErasedType(host, parameterType);
     let parameterSchema = typeToSchema(
       host,
-      erasedParameterType,
+      parameterType,
       parameterDeclaration,
     );
     if (parameterSchema.description === undefined) {
