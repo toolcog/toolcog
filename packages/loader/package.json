@@ -29,7 +29,7 @@
     }
   },
   "peerDependencies": {
-    "typescript": "^5.4"
+    "typescript": "^5.5"
   },
   "dependencies": {
     "@toolcog/core": "workspace:*",
@@ -43,6 +43,6 @@
     "rimraf": "^5.0",
     "rollup": "^4.18",
     "tslib": "^2.6",
-    "typescript": "^5.4"
+    "typescript": "^5.5"
   }
 }
