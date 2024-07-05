@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "turbo watch build",
     "build": "turbo run build",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "toolcog-node": "turbo --filter=@toolcog/node/cli build && node packages/engines/node/cli/dist/bin.js",
     "toolcog": "turbo --filter=toolcog/cli build && node packages/toolcog/cli/dist/bin.js",

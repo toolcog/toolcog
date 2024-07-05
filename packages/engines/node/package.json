@@ -14,7 +14,7 @@
     "check": "tsc --noEmit",
     "lint": "eslint src/",
     "format": "prettier --check src/",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
     "prepack": "toolcog-config prepack",
