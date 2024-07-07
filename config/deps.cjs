@@ -38,6 +38,7 @@ const rewriteSubpackageDeps = (pkg, depType) => {
 const rewriteDeps = (pkg) => {
   rewriteSubpackageDeps(pkg, "peerDependencies");
   rewriteSubpackageDeps(pkg, "dependencies");
+  rewriteSubpackageDeps(pkg, "optionalDependencies");
   rewriteSubpackageDeps(pkg, "devDependencies");
   return pkg;
 };

@@ -23,6 +23,7 @@ export default pluginTs.config(
   {
     files: ["**/*.ts", "**/*.tsx", "!**/*.d.ts"],
     rules: {
+      "@typescript-eslint/class-literal-property-style": "off",
       "@typescript-eslint/consistent-indexed-object-style": "off",
       "@typescript-eslint/no-confusing-void-expression": [
         "error",

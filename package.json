@@ -12,15 +12,15 @@
     "clean": "rimraf .turbo node_modules/.cache"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "prettier": "^3.3",
-    "rimraf": "^5.0",
-    "turbo": "^2.0",
-    "typescript": "^5.5",
-    "vitest": "^1.6"
+    "@types/node": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "turbo": "catalog:build",
+    "typescript": "catalog:build",
+    "vitest": "catalog:build"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@9.4.0"
+  "packageManager": "pnpm@9.5.0"
 }

@@ -26,11 +26,11 @@
   },
   "devDependencies": {
     "@toolcog/config": "workspace:*",
-    "eslint": "^9.6",
-    "prettier": "^3.3",
-    "rimraf": "^5.0",
-    "rollup": "^4.18",
-    "tslib": "^2.6",
-    "typescript": "^5.5"
+    "eslint": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "tslib": "catalog:build",
+    "typescript": "catalog:build"
   }
 }

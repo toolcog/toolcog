@@ -14,16 +14,16 @@
     "./tsconfig.base.json": "./tsconfig.base.json"
   },
   "dependencies": {
-    "@eslint/js": "^9.6",
-    "@rollup/plugin-node-resolve": "^15.2",
-    "@rollup/plugin-typescript": "^11.1",
-    "eslint-plugin-jsdoc": "^48",
-    "rollup": "^4.18",
-    "rollup-plugin-dts": "^6.1",
-    "rollup-plugin-node-externals": "^7.1",
-    "typescript-eslint": "^7.15"
+    "@eslint/js": "catalog:build",
+    "@rollup/plugin-node-resolve": "catalog:build",
+    "@rollup/plugin-typescript": "catalog:build",
+    "eslint-plugin-jsdoc": "catalog:build",
+    "rollup": "catalog:build",
+    "rollup-plugin-dts": "catalog:build",
+    "rollup-plugin-node-externals": "catalog:build",
+    "typescript-eslint": "catalog:build"
   },
   "devDependencies": {
-    "commander": "^12.1"
+    "commander": "catalog:default"
   }
 }

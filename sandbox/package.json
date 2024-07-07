@@ -11,8 +11,8 @@
     "toolcog": "workspace:*"
   },
   "devDependencies": {
-    "rimraf": "^5.0",
-    "ts-patch": "^3.2.1",
-    "typescript": "^5.5"
+    "rimraf": "catalog:build",
+    "ts-patch": "catalog:build",
+    "typescript": "catalog:build"
   }
 }
