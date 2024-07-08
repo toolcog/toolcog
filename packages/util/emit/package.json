@@ -11,7 +11,8 @@
     "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist"
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "sideEffects": false,
   "exports": {

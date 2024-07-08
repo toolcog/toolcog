@@ -1,5 +1,5 @@
 {
-  "name": "@toolcog/node/loader",
+  "name": "@toolcog/node/cli",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
@@ -11,7 +11,8 @@
     "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist"
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "sideEffects": false,
   "exports": {
@@ -21,16 +22,14 @@
       "require": "./dist/lib.cjs"
     }
   },
-  "peerDependencies": {
-    "typescript": "catalog:default"
-  },
   "dependencies": {
-    "@toolcog/core": "workspace:*",
-    "@toolcog/runtime": "workspace:*",
-    "@toolcog/compiler": "workspace:*",
-    "@toolcog/loader": "workspace:*"
+    "@toolcog/repl": "workspace:*",
+    "@toolcog/node/loader": "workspace:*",
+    "@toolcog/node/quiet": "workspace:*",
+    "commander": "catalog:default"
   },
   "devDependencies": {
+    "@rollup/plugin-replace": "catalog:build",
     "@toolcog/config": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",

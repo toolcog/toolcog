@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "tspc --watch",
     "build": "tspc",
-    "clean": "rimraf .turbo dist"
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "dependencies": {
     "toolcog": "workspace:*"

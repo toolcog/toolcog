@@ -1,18 +1,23 @@
 packages:
   - config
-  - packages/util/*
   - packages/util
+  - packages/util/queue
+  - packages/util/emit
+  - packages/util/task
+  - packages/util/async
+  - packages/util/schema
   - packages/core
   - packages/runtime
   - packages/compiler
   - packages/transformer
-  - packages/loader
   - packages/repl
   - packages/models/openai
-  - packages/engines/node/*
-  - packages/engines/node
-  - packages/toolcog/*
+  - packages/adapters/node
+  - packages/adapters/node/loader
+  - packages/adapters/node/quiet
+  - packages/adapters/node/cli
   - packages/toolcog
+  - packages/toolcog/cli
   - sandbox
 
 catalog:

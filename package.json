@@ -7,9 +7,10 @@
     "build": "turbo run build",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "toolcog-node": "turbo --filter=@toolcog/node/cli build && node packages/engines/node/cli/dist/bin.js",
-    "toolcog": "turbo --filter=toolcog/cli build && node packages/toolcog/cli/dist/bin.js",
-    "clean": "rimraf .turbo node_modules/.cache"
+    "toolcog-node": "turbo --filter=@toolcog/node/cli build && node packages/adapters/node/bin/toolcog-node.js",
+    "toolcog": "turbo --filter=toolcog/cli build && node packages/toolcog/bin/toolcog.js",
+    "clean": "pnpm run -r clean && rimraf .turbo node_modules/.cache",
+    "clean-all": "pnpm run -r clean-all && rimraf .turbo node_modules"
   },
   "devDependencies": {
     "@types/node": "catalog:build",

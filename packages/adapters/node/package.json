@@ -1,10 +1,13 @@
 {
-  "name": "@toolcog/loader",
+  "name": "@toolcog/node",
   "version": "0.0.1",
-  "description": "Toolcog dynamic code loader",
+  "description": "Toolcog Node.js adapter",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
+  "bin": {
+    "toolcog-node": "./bin/toolcog-node.js"
+  },
   "scripts": {
     "dev": "rollup --config --watch --no-watch.clearScreen",
     "build": "rollup --config",
@@ -14,27 +17,57 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules",
     "prepack": "toolcog-config prepack",
     "postpack": "toolcog-config postpack"
   },
   "files": [
-    "dist/"
+    "bin/",
+    "dist/",
+    "loader/dist/",
+    "quiet/dist/",
+    "cli/dist/"
   ],
   "sideEffects": false,
+  "imports": {
+    "#cli": {
+      "types": "./cli/dist/lib.d.ts",
+      "import": "./cli/dist/lib.js",
+      "require": "./cli/dist/lib.cjs"
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
+    },
+    "./loader": {
+      "types": "./loader/dist/lib.d.ts",
+      "import": "./loader/dist/lib.js",
+      "require": "./loader/dist/lib.cjs"
+    },
+    "./quiet": {
+      "types": "./quiet/dist/lib.d.ts",
+      "import": "./quiet/dist/lib.js",
+      "require": "./quiet/dist/lib.cjs"
+    },
+    "./cli": {
+      "types": "./cli/dist/lib.d.ts",
+      "import": "./cli/dist/lib.js",
+      "require": "./cli/dist/lib.cjs"
     }
   },
   "peerDependencies": {
     "typescript": "catalog:default"
   },
   "dependencies": {
-    "@toolcog/core": "workspace:*",
-    "@toolcog/runtime": "workspace:*",
-    "@toolcog/compiler": "workspace:*"
+    "@toolcog/compiler": "workspace:*",
+    "@toolcog/repl": "workspace:*",
+    "commander": "catalog:default"
+  },
+  "optionalDependencies": {
+    "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
     "@toolcog/config": "workspace:*",

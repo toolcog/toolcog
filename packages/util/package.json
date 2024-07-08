@@ -14,6 +14,7 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules",
     "prepack": "toolcog-config prepack",
     "postpack": "toolcog-config postpack"
   },
@@ -82,11 +83,6 @@
   },
   "devDependencies": {
     "@toolcog/config": "workspace:*",
-    "@toolcog/util/queue": "workspace:*",
-    "@toolcog/util/emit": "workspace:*",
-    "@toolcog/util/task": "workspace:*",
-    "@toolcog/util/async": "workspace:*",
-    "@toolcog/util/schema": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",
     "rimraf": "catalog:build",

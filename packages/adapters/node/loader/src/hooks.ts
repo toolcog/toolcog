@@ -9,7 +9,8 @@ import type {
 import { pathToFileURL, fileURLToPath } from "node:url";
 import ts from "typescript";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
-import { ProjectLoader, loadConfigFile } from "@toolcog/loader";
+import { loadConfigFile } from "./config.ts";
+import { ProjectLoader } from "./project.ts";
 
 const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
   const projectCache = new Map<string, ProjectLoader>();

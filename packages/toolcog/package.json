@@ -6,7 +6,7 @@
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
   "bin": {
-    "toolcog": "./cli/dist/bin.js"
+    "toolcog": "./bin/toolcog.js"
   },
   "scripts": {
     "dev": "rollup --config --watch --no-watch.clearScreen",
@@ -17,10 +17,12 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules",
     "prepack": "toolcog-config prepack",
     "postpack": "toolcog-config postpack"
   },
   "files": [
+    "bin/",
     "dist/",
     "cli/dist/"
   ],
@@ -42,11 +44,6 @@
       "types": "./cli/dist/lib.d.ts",
       "import": "./cli/dist/lib.js",
       "require": "./cli/dist/lib.cjs"
-    },
-    "./cli/bin": {
-      "types": "./cli/dist/bin.d.ts",
-      "import": "./cli/dist/bin.js",
-      "require": "./cli/dist/bin.cjs"
     }
   },
   "peerDependencies": {
@@ -55,7 +52,7 @@
   "dependencies": {
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "@toolcog/transformer": "workspace:*",
+    "@toolcog/compiler": "workspace:*",
     "commander": "catalog:default"
   },
   "optionalDependencies": {
@@ -67,7 +64,6 @@
     "prettier": "catalog:build",
     "rimraf": "catalog:build",
     "rollup": "catalog:build",
-    "toolcog/cli": "workspace:*",
     "tslib": "catalog:build",
     "typescript": "catalog:build"
   }

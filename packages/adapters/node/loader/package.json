@@ -1,11 +1,8 @@
 {
-  "name": "@toolcog/node/cli",
+  "name": "@toolcog/node/loader",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
-  "bin": {
-    "toolcog-node": "./dist/bin.js"
-  },
   "scripts": {
     "dev": "rollup --config --watch --no-watch.clearScreen",
     "build": "rollup --config",
@@ -14,39 +11,24 @@
     "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist"
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "sideEffects": false,
-  "imports": {
-    "#cli": {
-      "types": "./dist/lib.d.ts",
-      "import": "./dist/lib.js",
-      "require": "./dist/lib.cjs"
-    }
-  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
-    },
-    "./bin": {
-      "types": "./dist/bin.d.ts",
-      "import": "./dist/bin.js",
-      "require": "./dist/bin.cjs"
     }
   },
+  "peerDependencies": {
+    "typescript": "catalog:default"
+  },
   "dependencies": {
-    "@toolcog/core": "workspace:*",
-    "@toolcog/runtime": "workspace:*",
-    "@toolcog/loader": "workspace:*",
-    "@toolcog/repl": "workspace:*",
-    "@toolcog/node/loader": "workspace:*",
-    "@toolcog/node/silence": "workspace:*",
-    "commander": "catalog:default"
+    "@toolcog/compiler": "workspace:*"
   },
   "devDependencies": {
-    "@rollup/plugin-replace": "catalog:build",
     "@toolcog/config": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",

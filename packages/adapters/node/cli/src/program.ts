@@ -18,7 +18,7 @@ const programAction = async (
       process.execPath,
       [
         "--require",
-        fileURLToPath(import.meta.resolve("../../silence/dist/lib.cjs")),
+        fileURLToPath(import.meta.resolve("../../quiet/dist/lib.cjs")),
         "--loader",
         import.meta.resolve("../../loader/dist/lib.js"),
         process.argv[1]!,

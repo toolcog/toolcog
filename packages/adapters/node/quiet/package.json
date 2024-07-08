@@ -1,5 +1,5 @@
 {
-  "name": "@toolcog/node/silence",
+  "name": "@toolcog/node/quiet",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
@@ -11,7 +11,8 @@
     "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist"
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "sideEffects": true,
   "exports": {

@@ -3,9 +3,6 @@
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
-  "bin": {
-    "toolcog": "./dist/bin.js"
-  },
   "scripts": {
     "dev": "rollup --config --watch --no-watch.clearScreen",
     "build": "rollup --config",
@@ -14,32 +11,21 @@
     "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist"
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "sideEffects": true,
-  "imports": {
-    "#cli": {
-      "types": "./dist/lib.d.ts",
-      "import": "./dist/lib.js",
-      "require": "./dist/lib.cjs"
-    }
-  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
-    },
-    "./bin": {
-      "types": "./dist/bin.d.ts",
-      "import": "./dist/bin.js",
-      "require": "./dist/bin.cjs"
     }
   },
   "dependencies": {
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "@toolcog/transformer": "workspace:*",
+    "@toolcog/compiler": "workspace:*",
     "commander": "catalog:default"
   },
   "devDependencies": {

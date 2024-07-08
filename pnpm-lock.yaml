@@ -125,6 +125,133 @@ importers:
         specifier: catalog:default
         version: 12.1.0
 
+  packages/adapters/node:
+    dependencies:
+      '@toolcog/compiler':
+        specifier: workspace:*
+        version: link:../../compiler
+      '@toolcog/repl':
+        specifier: workspace:*
+        version: link:../../repl
+      commander:
+        specifier: catalog:default
+        version: 12.1.0
+    optionalDependencies:
+      '@toolcog/openai':
+        specifier: workspace:*
+        version: link:../../models/openai
+    devDependencies:
+      '@toolcog/config':
+        specifier: workspace:*
+        version: link:../../../config
+      eslint:
+        specifier: catalog:build
+        version: 9.6.0
+      prettier:
+        specifier: catalog:build
+        version: 3.3.2
+      rimraf:
+        specifier: catalog:build
+        version: 5.0.8
+      rollup:
+        specifier: catalog:build
+        version: 4.18.0
+      tslib:
+        specifier: catalog:build
+        version: 2.6.3
+      typescript:
+        specifier: catalog:build
+        version: 5.5.3
+
+  packages/adapters/node/cli:
+    dependencies:
+      '@toolcog/node':
+        specifier: workspace:*
+        version: link:..
+      '@toolcog/repl':
+        specifier: workspace:*
+        version: link:../../../repl
+      commander:
+        specifier: catalog:default
+        version: 12.1.0
+    devDependencies:
+      '@rollup/plugin-replace':
+        specifier: catalog:build
+        version: 5.0.7(rollup@4.18.0)
+      '@toolcog/config':
+        specifier: workspace:*
+        version: link:../../../../config
+      eslint:
+        specifier: catalog:build
+        version: 9.6.0
+      prettier:
+        specifier: catalog:build
+        version: 3.3.2
+      rimraf:
+        specifier: catalog:build
+        version: 5.0.8
+      rollup:
+        specifier: catalog:build
+        version: 4.18.0
+      tslib:
+        specifier: catalog:build
+        version: 2.6.3
+      typescript:
+        specifier: catalog:build
+        version: 5.5.3
+
+  packages/adapters/node/loader:
+    dependencies:
+      '@toolcog/compiler':
+        specifier: workspace:*
+        version: link:../../../compiler
+    devDependencies:
+      '@toolcog/config':
+        specifier: workspace:*
+        version: link:../../../../config
+      eslint:
+        specifier: catalog:build
+        version: 9.6.0
+      prettier:
+        specifier: catalog:build
+        version: 3.3.2
+      rimraf:
+        specifier: catalog:build
+        version: 5.0.8
+      rollup:
+        specifier: catalog:build
+        version: 4.18.0
+      tslib:
+        specifier: catalog:build
+        version: 2.6.3
+      typescript:
+        specifier: catalog:build
+        version: 5.5.3
+
+  packages/adapters/node/quiet:
+    devDependencies:
+      '@toolcog/config':
+        specifier: workspace:*
+        version: link:../../../../config
+      eslint:
+        specifier: catalog:build
+        version: 9.6.0
+      prettier:
+        specifier: catalog:build
+        version: 3.3.2
+      rimraf:
+        specifier: catalog:build
+        version: 5.0.8
+      rollup:
+        specifier: catalog:build
+        version: 4.18.0
+      tslib:
+        specifier: catalog:build
+        version: 2.6.3
+      typescript:
+        specifier: catalog:build
+        version: 5.5.3
+
   packages/compiler:
     dependencies:
       '@toolcog/util':
@@ -161,191 +288,6 @@ importers:
       '@toolcog/util':
         specifier: workspace:*
         version: link:../util
-    devDependencies:
-      '@toolcog/config':
-        specifier: workspace:*
-        version: link:../../config
-      eslint:
-        specifier: catalog:build
-        version: 9.6.0
-      prettier:
-        specifier: catalog:build
-        version: 3.3.2
-      rimraf:
-        specifier: catalog:build
-        version: 5.0.8
-      rollup:
-        specifier: catalog:build
-        version: 4.18.0
-      tslib:
-        specifier: catalog:build
-        version: 2.6.3
-      typescript:
-        specifier: catalog:build
-        version: 5.5.3
-
-  packages/engines/node:
-    dependencies:
-      '@toolcog/core':
-        specifier: workspace:*
-        version: link:../../core
-      '@toolcog/loader':
-        specifier: workspace:*
-        version: link:../../loader
-      '@toolcog/repl':
-        specifier: workspace:*
-        version: link:../../repl
-      '@toolcog/runtime':
-        specifier: workspace:*
-        version: link:../../runtime
-      commander:
-        specifier: catalog:default
-        version: 12.1.0
-    optionalDependencies:
-      '@toolcog/openai':
-        specifier: workspace:*
-        version: link:../../models/openai
-    devDependencies:
-      '@toolcog/config':
-        specifier: workspace:*
-        version: link:../../../config
-      eslint:
-        specifier: catalog:build
-        version: 9.6.0
-      prettier:
-        specifier: catalog:build
-        version: 3.3.2
-      rimraf:
-        specifier: catalog:build
-        version: 5.0.8
-      rollup:
-        specifier: catalog:build
-        version: 4.18.0
-      tslib:
-        specifier: catalog:build
-        version: 2.6.3
-      typescript:
-        specifier: catalog:build
-        version: 5.5.3
-
-  packages/engines/node/cli:
-    dependencies:
-      '@toolcog/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@toolcog/loader':
-        specifier: workspace:*
-        version: link:../../../loader
-      '@toolcog/node':
-        specifier: workspace:*
-        version: link:..
-      '@toolcog/repl':
-        specifier: workspace:*
-        version: link:../../../repl
-      '@toolcog/runtime':
-        specifier: workspace:*
-        version: link:../../../runtime
-      commander:
-        specifier: catalog:default
-        version: 12.1.0
-    devDependencies:
-      '@rollup/plugin-replace':
-        specifier: catalog:build
-        version: 5.0.7(rollup@4.18.0)
-      '@toolcog/config':
-        specifier: workspace:*
-        version: link:../../../../config
-      eslint:
-        specifier: catalog:build
-        version: 9.6.0
-      prettier:
-        specifier: catalog:build
-        version: 3.3.2
-      rimraf:
-        specifier: catalog:build
-        version: 5.0.8
-      rollup:
-        specifier: catalog:build
-        version: 4.18.0
-      tslib:
-        specifier: catalog:build
-        version: 2.6.3
-      typescript:
-        specifier: catalog:build
-        version: 5.5.3
-
-  packages/engines/node/loader:
-    dependencies:
-      '@toolcog/compiler':
-        specifier: workspace:*
-        version: link:../../../compiler
-      '@toolcog/core':
-        specifier: workspace:*
-        version: link:../../../core
-      '@toolcog/loader':
-        specifier: workspace:*
-        version: link:../../../loader
-      '@toolcog/runtime':
-        specifier: workspace:*
-        version: link:../../../runtime
-    devDependencies:
-      '@toolcog/config':
-        specifier: workspace:*
-        version: link:../../../../config
-      eslint:
-        specifier: catalog:build
-        version: 9.6.0
-      prettier:
-        specifier: catalog:build
-        version: 3.3.2
-      rimraf:
-        specifier: catalog:build
-        version: 5.0.8
-      rollup:
-        specifier: catalog:build
-        version: 4.18.0
-      tslib:
-        specifier: catalog:build
-        version: 2.6.3
-      typescript:
-        specifier: catalog:build
-        version: 5.5.3
-
-  packages/engines/node/silence:
-    devDependencies:
-      '@toolcog/config':
-        specifier: workspace:*
-        version: link:../../../../config
-      eslint:
-        specifier: catalog:build
-        version: 9.6.0
-      prettier:
-        specifier: catalog:build
-        version: 3.3.2
-      rimraf:
-        specifier: catalog:build
-        version: 5.0.8
-      rollup:
-        specifier: catalog:build
-        version: 4.18.0
-      tslib:
-        specifier: catalog:build
-        version: 2.6.3
-      typescript:
-        specifier: catalog:build
-        version: 5.5.3
-
-  packages/loader:
-    dependencies:
-      '@toolcog/compiler':
-        specifier: workspace:*
-        version: link:../compiler
-      '@toolcog/core':
-        specifier: workspace:*
-        version: link:../core
-      '@toolcog/runtime':
-        specifier: workspace:*
-        version: link:../runtime
     devDependencies:
       '@toolcog/config':
         specifier: workspace:*
@@ -411,9 +353,6 @@ importers:
       '@toolcog/core':
         specifier: workspace:*
         version: link:../core
-      '@toolcog/loader':
-        specifier: workspace:*
-        version: link:../loader
       '@toolcog/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -470,15 +409,15 @@ importers:
 
   packages/toolcog:
     dependencies:
+      '@toolcog/compiler':
+        specifier: workspace:*
+        version: link:../compiler
       '@toolcog/core':
         specifier: workspace:*
         version: link:../core
       '@toolcog/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@toolcog/transformer':
-        specifier: workspace:*
-        version: link:../transformer
       commander:
         specifier: catalog:default
         version: 12.1.0
@@ -511,15 +450,15 @@ importers:
 
   packages/toolcog/cli:
     dependencies:
+      '@toolcog/compiler':
+        specifier: workspace:*
+        version: link:../../compiler
       '@toolcog/core':
         specifier: workspace:*
         version: link:../../core
       '@toolcog/runtime':
         specifier: workspace:*
         version: link:../../runtime
-      '@toolcog/transformer':
-        specifier: workspace:*
-        version: link:../../transformer
       commander:
         specifier: catalog:default
         version: 12.1.0
@@ -2429,7 +2368,7 @@ snapshots:
 
   '@types/node-fetch@2.6.11':
     dependencies:
-      '@types/node': 18.19.39
+      '@types/node': 20.14.10
       form-data: 4.0.0
 
   '@types/node@18.19.39':
