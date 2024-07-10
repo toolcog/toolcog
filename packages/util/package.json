@@ -24,6 +24,8 @@
     "emit/dist/",
     "task/dist/",
     "async/dist/",
+    "timer/dist/",
+    "tty/dist/",
     "schema/dist/"
   ],
   "sideEffects": false,
@@ -74,6 +76,16 @@
         "import": "./async/dist/lib.polyfill.js",
         "require": "./async/dist/lib.polyfill.cjs"
       }
+    },
+    "./timer": {
+      "types": "./timer/dist/lib.d.ts",
+      "import": "./timer/dist/lib.js",
+      "require": "./timer/dist/lib.cjs"
+    },
+    "./tty": {
+      "types": "./tty/dist/lib.d.ts",
+      "import": "./tty/dist/lib.js",
+      "require": "./tty/dist/lib.cjs"
     },
     "./schema": {
       "types": "./schema/dist/lib.d.ts",

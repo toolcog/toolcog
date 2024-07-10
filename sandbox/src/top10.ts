@@ -48,4 +48,4 @@ export async function top10(subject: string) {
   return list;
 }
 
-console.log(await top10("Llamas"));
+//console.log(await top10("Llamas"));

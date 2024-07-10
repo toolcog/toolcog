@@ -50,4 +50,4 @@ export async function writeStory(genre: string): Promise<Story> {
   });
 }
 
-console.log(await writeStory("campy indie film"));
+//console.log(await writeStory("campy indie film"));

@@ -14,7 +14,7 @@ interface Context {
 
 const Context = (() => {
   const contextVariable = new AsyncContext.Variable<Context>({
-    name: "toolcog.Context",
+    name: "toolcog.context",
   });
 
   let runtime: Context | undefined;
@@ -48,11 +48,11 @@ const Context = (() => {
   };
 
   const run = <F extends (...args: any[]) => unknown>(
-    value: Context,
+    context: Context,
     func: F,
     ...args: Parameters<F>
   ): ReturnType<F> => {
-    return contextVariable.run(value, func, ...args);
+    return contextVariable.run(context, func, ...args);
   };
 
   return {

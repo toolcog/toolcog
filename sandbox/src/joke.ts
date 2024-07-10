@@ -24,4 +24,4 @@ function getCurrentLocation() {
   return "Santa Cruz";
 }
 
-console.log(await joke("airplanes"));
+//console.log(await joke("airplanes"));

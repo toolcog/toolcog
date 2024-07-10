@@ -75,8 +75,8 @@ const programAction = async (
       console.log('Type ".help" for more information.');
       console.log();
 
-      // Start the REPL session.
-      await repl.start();
+      // Run the REPL session.
+      await repl.run();
     }
     if (executeStdin) {
       // TODO

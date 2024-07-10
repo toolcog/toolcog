@@ -1,7 +1,5 @@
 {
-  "name": "@toolcog/runtime",
-  "version": "0.0.1",
-  "description": "Toolcog runtime",
+  "name": "@toolcog/util/timer",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
@@ -14,13 +12,8 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules",
-    "prepack": "toolcog-config prepack",
-    "postpack": "toolcog-config postpack"
+    "clean-all": "rimraf .turbo dist node_modules"
   },
-  "files": [
-    "dist/"
-  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -28,11 +21,6 @@
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     }
-  },
-  "dependencies": {
-    "@toolcog/core": "workspace:*",
-    "@toolcog/util/async": "workspace:*",
-    "@toolcog/util/emit": "workspace:*"
   },
   "devDependencies": {
     "@toolcog/config": "workspace:*",

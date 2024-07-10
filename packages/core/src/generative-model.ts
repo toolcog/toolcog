@@ -5,6 +5,8 @@ import { Context } from "./context.ts";
 interface GenerateOptions {
   modelId?: string | undefined;
 
+  title?: string | undefined;
+
   instructions?: string | undefined;
 
   parameters?: Schema | undefined;

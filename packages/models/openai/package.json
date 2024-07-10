@@ -31,6 +31,7 @@
   },
   "dependencies": {
     "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
     "@toolcog/util/task": "workspace:*",
     "@toolcog/util/schema": "workspace:*",
     "openai": "catalog:models"

@@ -59,9 +59,7 @@ it("should throw when getting a non-existent model", async () => {
 
   vi.mock("pluginC", () => new TestModelPlugin([new TestModel("model3")]));
 
-  await expect(
-    async () => await loader.getModel("pluginC/non-existent"),
-  ).rejects.toThrowError();
+  await expect(loader.getModel("pluginC/non-existent")).rejects.toThrowError();
 });
 
 it("should find a model with an unspecified plugin", async () => {
@@ -101,5 +99,5 @@ it("should return a plugin's default model when no preferred default is specifie
 it("should throw an error if no default model could be loaded", async () => {
   const loader = new TestModelLoader();
 
-  await expect(async () => await loader.getModel()).rejects.toThrowError();
+  await expect(loader.getModel()).rejects.toThrowError();
 });

@@ -35,7 +35,9 @@
   "dependencies": {
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "@toolcog/compiler": "workspace:*"
+    "@toolcog/compiler": "workspace:*",
+    "@toolcog/util/timer": "workspace:*",
+    "@toolcog/util/tty": "workspace:*"
   },
   "devDependencies": {
     "@toolcog/config": "workspace:*",

@@ -120,12 +120,12 @@ it("should remove one of several listeners", () => {
 it("should propagate listener errors", () => {
   const emitter = new Emitter<{ test: [number, string] }>();
   const listener = vi.fn(() => {
-    throw new Error("failed");
+    throw new Error("failure");
   });
 
   emitter.addListener("test", listener);
 
-  expect(() => emitter.emit("test", 42, "hello")).toThrowError("failed");
+  expect(() => emitter.emit("test", 42, "hello")).toThrowError("failure");
 });
 
 it("should capture rejections when enabled", async () => {
@@ -134,7 +134,7 @@ it("should capture rejections when enabled", async () => {
     test: [number, string];
   }>({ captureRejections: true });
   let errorListener: Mock | undefined;
-  const listener = vi.fn().mockRejectedValue(new Error("failed"));
+  const listener = vi.fn().mockRejectedValue(new Error("failure"));
 
   const promise = new Promise<void>((resolve) => {
     errorListener = vi.fn(resolve);
@@ -144,7 +144,7 @@ it("should capture rejections when enabled", async () => {
 
   emitter.emit("test", 42, "hello");
   await promise;
-  expect(errorListener).toHaveBeenCalledWith(new Error("failed"));
+  expect(errorListener).toHaveBeenCalledWith(new Error("failure"));
 });
 
 it("should async iterate on events", async () => {
@@ -235,8 +235,8 @@ it("should interrupt async iterators on error emit", async () => {
   expect(result1.done).toBe(false);
   expect(result1.value).toEqual([1, "a"]);
 
-  emitter.emit(Emitter.error, new Error("failed"));
-  await expect(iterator.next()).rejects.toThrowError("failed");
+  emitter.emit(Emitter.error, new Error("failure"));
+  await expect(iterator.next()).rejects.toThrowError("failure");
 
   emitter.emit("test", 2, "b");
   const result2 = await iterator.next();
@@ -260,8 +260,8 @@ it("should interrupt async iterators on error emit while waiting", async () => {
   expect(result1.value).toEqual([1, "a"]);
 
   const promise2 = iterator.next();
-  emitter.emit(Emitter.error, new Error("failed"));
-  await expect(promise2).rejects.toThrowError("failed");
+  emitter.emit(Emitter.error, new Error("failure"));
+  await expect(promise2).rejects.toThrowError("failure");
 
   emitter.emit("test", 2, "b");
   const result2 = await iterator.next();
@@ -278,16 +278,16 @@ it("should reject once promises on error emit", async () => {
   emitter.addListener(Emitter.error, errorListener);
   const promise = emitter.once("test");
 
-  emitter.emit(Emitter.error, new Error("failed"));
-  await expect(promise).rejects.toThrowError("failed");
+  emitter.emit(Emitter.error, new Error("failure"));
+  await expect(promise).rejects.toThrowError("failure");
 });
 
 it("should throw on error emit if no error listeners", () => {
   const emitter = new Emitter<{ [Emitter.error]: [Error] }>();
 
   expect(() => {
-    emitter.emit(Emitter.error, new Error("failed"));
-  }).toThrowError("failed");
+    emitter.emit(Emitter.error, new Error("failure"));
+  }).toThrowError("failure");
 });
 
 it("should not throw on error emit if at least one error listener", () => {
@@ -296,9 +296,9 @@ it("should not throw on error emit if at least one error listener", () => {
 
   emitter.addListener(Emitter.error, listener);
 
-  expect(emitter.emit(Emitter.error, new Error("failed")));
+  expect(emitter.emit(Emitter.error, new Error("failure")));
   expect(listener).toHaveBeenCalledTimes(1);
-  expect(listener).toHaveBeenCalledWith(new Error("failed"));
+  expect(listener).toHaveBeenCalledWith(new Error("failure"));
 });
 
 it("should iterate over events", () => {

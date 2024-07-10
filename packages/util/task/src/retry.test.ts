@@ -21,7 +21,7 @@ it("should resolve on the first attempt if the task succeeds", async () => {
 it("should retry failed tasks", async () => {
   const task: Task = vi
     .fn()
-    .mockRejectedValueOnce(new Error("failed"))
+    .mockRejectedValueOnce(new Error("failure"))
     .mockResolvedValueOnce("success");
   const options = { retries: 1 };
 
@@ -34,10 +34,10 @@ it("should retry failed tasks", async () => {
 });
 
 it("should fail after the maximum number of retries", async () => {
-  const task: Task = vi.fn().mockRejectedValue(new Error("failed"));
+  const task: Task = vi.fn().mockRejectedValue(new Error("failure"));
   const options = { retries: 3 };
 
-  const promise = expect(retry(task, options)).rejects.toThrowError("failed");
+  const promise = expect(retry(task, options)).rejects.toThrowError("failure");
   await vi.runAllTimersAsync();
 
   await promise;
@@ -45,11 +45,11 @@ it("should fail after the maximum number of retries", async () => {
 });
 
 it("should call onFailedAttempt after each failed", async () => {
-  const task: Task = vi.fn().mockRejectedValue(new Error("failed"));
+  const task: Task = vi.fn().mockRejectedValue(new Error("failure"));
   const onFailedAttempt = vi.fn();
   const options = { retries: 1, onFailedAttempt };
 
-  const promise = expect(retry(task, options)).rejects.toThrowError("failed");
+  const promise = expect(retry(task, options)).rejects.toThrowError("failure");
   await vi.runAllTimersAsync();
 
   await promise;
@@ -58,11 +58,11 @@ it("should call onFailedAttempt after each failed", async () => {
 });
 
 it("should respect the shouldRetry predicate", async () => {
-  const task: Task = vi.fn().mockRejectedValue(new Error("failed"));
+  const task: Task = vi.fn().mockRejectedValue(new Error("failure"));
   const shouldRetry = vi.fn().mockReturnValue(false);
   const options = { retries: 2, shouldRetry };
 
-  const promise = expect(retry(task, options)).rejects.toThrowError("failed");
+  const promise = expect(retry(task, options)).rejects.toThrowError("failure");
   await vi.runAllTimersAsync();
 
   await promise;
@@ -71,7 +71,7 @@ it("should respect the shouldRetry predicate", async () => {
 });
 
 it("should abort when the signal is aborted", async () => {
-  const task: Task = vi.fn().mockRejectedValue(new Error("failed"));
+  const task: Task = vi.fn().mockRejectedValue(new Error("failure"));
   const controller = new AbortController();
   const options = { retries: 2, signal: controller.signal };
 

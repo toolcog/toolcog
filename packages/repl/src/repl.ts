@@ -8,9 +8,12 @@ import { createInterface } from "node:readline/promises";
 import { inspect } from "node:util";
 import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
+import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
+import { Context } from "@toolcog/core";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
+import { JobReporter } from "./job-reporter.ts";
 
 interface ReplOptions {
   input?: NodeJS.ReadableStream | undefined;
@@ -159,7 +162,7 @@ class Repl {
     return "| ".padStart(turn.toString().length + 2, " ");
   }
 
-  async start(): Promise<void> {
+  async run(): Promise<void> {
     // Load REPL history from file.
     let history: string[] | undefined;
     if (this.#historySize > 0 && existsSync(this.#historyFile)) {
@@ -211,32 +214,37 @@ class Repl {
     for await (const line of readline) {
       this.#bufferedInput += line + EOL;
 
-      if (this.#bufferedInput.trim() === ".exit") {
+      const trimmedInput = this.#bufferedInput.trim();
+      if (trimmedInput.length === 0) {
+        this.#bufferedInput = "";
+        readline.prompt();
+        continue;
+      } else if (trimmedInput === ".exit") {
         readline.close();
         break;
       }
 
-      if (this.#needsContinuation(this.#bufferedInput)) {
-        readline.setPrompt(this.continuationPrompt(this.#turnCount));
-        readline.prompt();
-      } else {
+      const inputType = this.#classifyInput(this.#bufferedInput);
+      if (inputType === "lang") {
         try {
-          // Preprocess the currently buffered input.
-          const processedInput = this.#preprocess(this.#bufferedInput);
+          await this.#runLang();
+          this.#output.write(EOL);
+        } catch (error) {
+          console.error(error);
+          this.#output.write(EOL);
+        } finally {
+          this.#bufferedInput = "";
+          this.#turnCount += 1;
 
-          // Compile and evaluate the preprocessed input.
-          const bindings = await this.#evaluate(processedInput);
-
-          // Assign all newly declared bindings to the VM context.
-          Object.assign(globalThis, bindings);
-
-          // Print all newly declared bindings to the output.
-          this.#printOutput(bindings);
-
-          // Commit the successfully evaluated code.
-          this.#cumulativeInput += processedInput;
-          this.#executedStatementCount += this.#pendingStatementCount;
-          this.#pendingStatementCount = 0;
+          readline.prompt();
+        }
+      } else if (inputType === "code") {
+        try {
+          await this.#runCode();
+          this.#output.write(EOL);
+        } catch (error) {
+          console.error(error);
+          this.#output.write(EOL);
         } finally {
           // Reset the input buffer and increment the turn count.
           this.#bufferedInput = "";
@@ -245,10 +253,54 @@ class Repl {
           readline.setPrompt(this.initialPrompt(this.#turnCount));
           readline.prompt();
         }
+      } else {
+        readline.setPrompt(this.continuationPrompt(this.#turnCount));
+        readline.prompt();
       }
     }
 
     this.#output.write(EOL);
+  }
+
+  async #runLang(): Promise<void> {
+    const context = await Context.current();
+    const model = await context.getGenerativeModel();
+    const output = await model.prompt(this.#bufferedInput, undefined, {});
+    console.log(output);
+  }
+
+  async #runCode(): Promise<void> {
+    // Preprocess the currently buffered input.
+    const processedInput = this.#preprocess(this.#bufferedInput);
+
+    await Job.run({ title: "Evaluate" }, async (root) => {
+      // Create a job reporter to monitor the evaluation.
+      const reporter = new JobReporter(
+        root,
+        this.#input as NodeJS.ReadStream,
+        this.#output as NodeJS.WriteStream,
+      );
+      // Start printing job status updates.
+      const finished = reporter.start();
+
+      // Compile and evaluate the preprocessed input.
+      const bindings = await this.#evaluate(processedInput);
+
+      // Wait for the final job status update to complete.
+      root.finish();
+      await finished;
+
+      // Assign all newly declared bindings to the VM context.
+      Object.assign(globalThis, bindings);
+
+      // Print all newly declared bindings to the output.
+      this.#printOutput(bindings);
+    });
+
+    // Commit the successfully evaluated code.
+    this.#cumulativeInput += processedInput;
+    this.#executedStatementCount += this.#pendingStatementCount;
+    this.#pendingStatementCount = 0;
   }
 
   #preprocess(bufferedInput: string): string {
@@ -330,7 +382,6 @@ class Repl {
         key + ": " + inspect(value, { colors: true, showProxy: true }) + "\n",
       );
     }
-    this.#output.write(EOL);
   }
 
   #completer = (line: string): CompleterResult => {
@@ -363,14 +414,20 @@ class Repl {
     return [filteredCompletions, line];
   };
 
-  #needsContinuation(source: string): boolean {
+  #classifyInput(source: string): "lang" | "code" | "cont" {
     this.#scanner.setText(source);
+
+    // Natural language heuristic.
+    let lastToken: ts.SyntaxKind | undefined;
+    let tokenCount = 0;
+    let consecutiveIdentifiers = 0;
 
     // Punctuation counters.
     let parenthesisCount = 0;
     let braceCount = 0;
     let bracketCount = 0;
 
+    // Trailing comment state.
     let atComment = false;
     let atNewLine = false;
 
@@ -378,6 +435,30 @@ class Repl {
       // Scan the source code.
       while (this.#scanner.scan() !== ts.SyntaxKind.EndOfFileToken) {
         const token = this.#scanner.getToken();
+        if (token !== ts.SyntaxKind.NewLineTrivia) {
+          lastToken = token;
+        }
+        tokenCount += 1;
+
+        if (braceCount === 0 && bracketCount === 0) {
+          switch (token) {
+            case ts.SyntaxKind.Unknown:
+              return "lang";
+            case ts.SyntaxKind.Identifier:
+              consecutiveIdentifiers += 1;
+              if (consecutiveIdentifiers >= 2) {
+                return "lang";
+              }
+              continue;
+            case ts.SyntaxKind.NewLineTrivia:
+            case ts.SyntaxKind.WhitespaceTrivia:
+            case ts.SyntaxKind.CommaToken:
+              break;
+            default:
+              consecutiveIdentifiers = 0;
+              break;
+          }
+        }
 
         switch (token) {
           case ts.SyntaxKind.OpenParenToken:
@@ -416,18 +497,27 @@ class Repl {
         }
 
         if (parenthesisCount < 0 || braceCount < 0 || bracketCount < 0) {
-          return false;
+          return "code";
         }
+      }
+
+      // Treat single word sentences ending with a period as language.
+      if (tokenCount <= 3 && lastToken === ts.SyntaxKind.DotToken) {
+        return "lang";
       }
 
       // Verify that all punctuation is balanced,
       // and that the input does not end with a comment.
-      return (
-        parenthesisCount !== 0 ||
-        braceCount !== 0 ||
-        bracketCount !== 0 ||
-        atComment
-      );
+      if (
+        parenthesisCount === 0 &&
+        braceCount === 0 &&
+        bracketCount === 0 &&
+        !atComment
+      ) {
+        return "code";
+      } else {
+        return "cont";
+      }
     } finally {
       this.#scanner.setText(undefined);
     }

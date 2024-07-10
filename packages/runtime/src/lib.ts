@@ -12,3 +12,6 @@ export { EmbeddingLoader } from "./embedding-loader.ts";
 
 export type { RuntimeOptions } from "./runtime.ts";
 export { Runtime } from "./runtime.ts";
+
+export type { JobInfo, JobEvents } from "./job.ts";
+export { Job } from "./job.ts";
