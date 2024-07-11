@@ -134,7 +134,7 @@ class Repl {
       documentRegistry,
     );
 
-    this.#scriptName = resolve(process.cwd(), ".toolcog", `[repl].ts`);
+    this.#scriptName = resolve(process.cwd(), ".toolcog", `[repl].mts`);
     this.#scriptSnapshot = undefined;
     this.#scriptVersion = 0;
 
@@ -226,26 +226,37 @@ class Repl {
 
       const inputType = this.#classifyInput(this.#bufferedInput);
       if (inputType === "lang") {
+        const stackTraceLimit = Error.stackTraceLimit;
+        Error.stackTraceLimit = Infinity;
         try {
           await this.#runLang();
           this.#output.write(EOL);
         } catch (error) {
-          console.error(error);
+          this.#output.write(String(error));
+          this.#output.write(EOL);
           this.#output.write(EOL);
         } finally {
+          Error.stackTraceLimit = stackTraceLimit;
+
+          // Reset the input buffer and increment the turn count.
           this.#bufferedInput = "";
           this.#turnCount += 1;
 
           readline.prompt();
         }
       } else if (inputType === "code") {
+        const stackTraceLimit = Error.stackTraceLimit;
+        Error.stackTraceLimit = Infinity;
         try {
           await this.#runCode();
           this.#output.write(EOL);
         } catch (error) {
-          console.error(error);
+          this.#output.write(String(error));
+          this.#output.write(EOL);
           this.#output.write(EOL);
         } finally {
+          Error.stackTraceLimit = stackTraceLimit;
+
           // Reset the input buffer and increment the turn count.
           this.#bufferedInput = "";
           this.#turnCount += 1;
@@ -266,7 +277,8 @@ class Repl {
     const context = await Context.current();
     const model = await context.getGenerativeModel();
     const output = await model.prompt(this.#bufferedInput, undefined, {});
-    console.log(output);
+    this.#output.write(output);
+    this.#output.write(EOL);
   }
 
   async #runCode(): Promise<void> {

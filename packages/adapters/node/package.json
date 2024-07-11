@@ -59,7 +59,13 @@
     }
   },
   "peerDependencies": {
+    "toolcog": "workspace:*",
     "typescript": "catalog:default"
+  },
+  "peerDependenciesMeta": {
+    "toolcog": {
+      "optional": true
+    }
   },
   "dependencies": {
     "@toolcog/compiler": "workspace:*",

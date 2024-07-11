@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 class CompiledSource {
@@ -141,6 +142,30 @@ const createLoaderHost = (
     if (sourceText === undefined) {
       return undefined;
     }
+
+    const packageJsonInfo = ts.getPackageScopeForPath(
+      fileName,
+      ts.getTemporaryModuleResolutionState(
+        moduleResolutionCache.getPackageJsonInfoCache(),
+        compilerHost,
+        compilerOptions,
+      ),
+    );
+    if (packageJsonInfo === undefined) {
+      // Default to ESM when no package.json is present.
+      if (typeof languageVersionOrOptions === "object") {
+        languageVersionOrOptions = {
+          ...languageVersionOrOptions,
+          impliedNodeFormat: ts.ModuleKind.ESNext,
+        };
+      } else {
+        languageVersionOrOptions = {
+          languageVersion: languageVersionOrOptions,
+          impliedNodeFormat: ts.ModuleKind.ESNext,
+        };
+      }
+    }
+
     return ts.createSourceFile(fileName, sourceText, languageVersionOrOptions);
   };
 
@@ -227,7 +252,7 @@ const createLoaderHost = (
   ): (ts.ResolvedModule | undefined)[] => {
     return moduleNames.map(
       (moduleName: string): ts.ResolvedModule | undefined => {
-        return ts.resolveModuleName(
+        let resolvedModule = ts.resolveModuleName(
           moduleName,
           containingFile,
           compilerOptions,
@@ -235,6 +260,25 @@ const createLoaderHost = (
           moduleResolutionCache,
           redirectedReference,
         ).resolvedModule;
+
+        // Check for a failed resolution of a builtin module.
+        if (
+          resolvedModule === undefined &&
+          (moduleName === "toolcog" || moduleName.startsWith("@toolcog/"))
+        ) {
+          // Try to resolve builtin modules relative to the loader;
+          // this enables builtin imports regardless of current directory.
+          resolvedModule = ts.resolveModuleName(
+            moduleName,
+            fileURLToPath(import.meta.url),
+            compilerOptions,
+            moduleResolutionHost,
+            moduleResolutionCache,
+            redirectedReference,
+          ).resolvedModule;
+        }
+
+        return resolvedModule;
       },
     );
   };

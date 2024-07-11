@@ -7,7 +7,7 @@ const getModuleExportType = (
   checker: ts.TypeChecker,
   exportName: string,
   moduleName: string,
-  containingFile: string = "",
+  containingFile: string,
 ): ts.Type | undefined => {
   const resolvedModule = ts.resolveModuleName(
     moduleName,

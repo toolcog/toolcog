@@ -14,4 +14,20 @@ declare module "typescript" {
   interface System {
     getEnvironmentVariable(name: string): string;
   }
+
+  interface PackageJsonInfo {
+    packageDirectory: string;
+    contents: ts.PackageJsonInfoContents;
+  }
+
+  function getPackageScopeForPath(
+    fileName: string,
+    state: ts.ModuleResolutionState,
+  ): ts.PackageJsonInfo | undefined;
+
+  function getTemporaryModuleResolutionState(
+    packageJsonInfoCache: ts.PackageJsonInfoCache | undefined,
+    host: ts.ModuleResolutionHost,
+    options: ts.CompilerOptions,
+  ): ts.ModuleResolutionState;
 }

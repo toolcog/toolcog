@@ -11,6 +11,7 @@ const queryCursorPosition = (
 
     // Read the cursor position query response.
     input.once("data", (data: Buffer): void => {
+      // eslint-disable-next-line no-control-regex
       const match = /\x1B\[(\d+);(\d+)R/.exec(data.toString());
       if (match !== null) {
         resolve({

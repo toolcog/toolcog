@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import type ts from "typescript";
 import typescript from "typescript";
 import { Diagnostics } from "./diagnostics.ts";
@@ -28,26 +29,17 @@ const toolcogTransformer = (
   const checker = program.getTypeChecker();
   const addDiagnostic = context.addDiagnostic;
 
-  let useToolType = getModuleExportType(
+  const containingFile = fileURLToPath(import.meta.url);
+
+  const useToolType = getModuleExportType(
     ts,
     host,
     program,
     checker,
     "UseTool",
     "@toolcog/core",
-    "",
+    containingFile,
   );
-  if (useToolType === undefined) {
-    useToolType = getModuleExportType(
-      ts,
-      host,
-      program,
-      checker,
-      "UseTool",
-      "toolcog",
-      "",
-    );
-  }
   if (useToolType === undefined) {
     return transformerError(
       ts,
@@ -59,24 +51,15 @@ const toolcogTransformer = (
     );
   }
 
-  let useToolFunctionType = getModuleExportType(
+  const useToolFunctionType = getModuleExportType(
     ts,
     host,
     program,
     checker,
     "useTool",
     "@toolcog/core",
+    containingFile,
   );
-  if (useToolFunctionType === undefined) {
-    useToolFunctionType = getModuleExportType(
-      ts,
-      host,
-      program,
-      checker,
-      "useTool",
-      "toolcog",
-    );
-  }
   if (useToolFunctionType === undefined) {
     return transformerError(
       ts,
@@ -88,24 +71,15 @@ const toolcogTransformer = (
     );
   }
 
-  let generateFunctionType = getModuleExportType(
+  const generateFunctionType = getModuleExportType(
     ts,
     host,
     program,
     checker,
     "generate",
     "@toolcog/core",
+    containingFile,
   );
-  if (generateFunctionType === undefined) {
-    generateFunctionType = getModuleExportType(
-      ts,
-      host,
-      program,
-      checker,
-      "generate",
-      "toolcog",
-    );
-  }
   if (generateFunctionType === undefined) {
     return transformerError(
       ts,
@@ -117,24 +91,15 @@ const toolcogTransformer = (
     );
   }
 
-  let promptFunctionType = getModuleExportType(
+  const promptFunctionType = getModuleExportType(
     ts,
     host,
     program,
     checker,
     "prompt",
     "@toolcog/core",
+    containingFile,
   );
-  if (promptFunctionType === undefined) {
-    promptFunctionType = getModuleExportType(
-      ts,
-      host,
-      program,
-      checker,
-      "prompt",
-      "toolcog",
-    );
-  }
   if (promptFunctionType === undefined) {
     return transformerError(
       ts,

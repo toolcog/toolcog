@@ -6,6 +6,7 @@ import type {
   LoadFnOutput,
   LoadHook,
 } from "node:module";
+import { resolve as resolvePath } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import ts from "typescript";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
@@ -17,10 +18,23 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
 
   const programTransformers = [toolcogTransformerFactory];
 
-  const resolveProject = (specifier: string): ProjectLoader | undefined => {
+  const resolveProject = (specifier: string): ProjectLoader => {
     const configPath = ts.findConfigFile(specifier, ts.sys.fileExists);
     if (configPath === undefined) {
-      return undefined; // TODO: create temporary project
+      // Create a temporary project to load the typescript source.
+      const config = {
+        options: {
+          allowImportingTsExtensions: true,
+          module: ts.ModuleKind.NodeNext,
+          outdir: resolvePath(process.cwd(), "dist"),
+          skipLibCheck: true,
+          strict: true,
+          target: ts.ScriptTarget.ESNext,
+        },
+        fileNames: [specifier],
+        errors: [],
+      } satisfies ts.ParsedCommandLine;
+      return new ProjectLoader(config, ts.sys, programTransformers);
     }
 
     let project = projectCache.get(configPath);
@@ -29,28 +43,38 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       config.options.noEmit = false;
 
       project = new ProjectLoader(config, ts.sys, programTransformers);
-
       projectCache.set(configPath, project);
     }
     return project;
   };
 
-  const resolve = (
+  const resolve = async (
     specifier: string,
     context: ResolveHookContext,
     nextResolve: (
       specifier: string,
       context?: ResolveHookContext,
     ) => ResolveFnOutput | Promise<ResolveFnOutput>,
-  ): ResolveFnOutput | Promise<ResolveFnOutput> => {
-    if (!/\.tsx?$/.test(specifier)) {
-      return nextResolve(specifier, context);
+  ): Promise<ResolveFnOutput> => {
+    if (!/\.m?tsx?$/.test(specifier)) {
+      try {
+        return await Promise.resolve(nextResolve(specifier, context));
+      } catch (error) {
+        // Rethrow if the failed resolution wasn't a builtin module.
+        if (specifier !== "toolcog" && !specifier.startsWith("@toolcog/")) {
+          throw error;
+        }
+
+        // Try to resolve builtin modules relative to the loader;
+        // this enables builtin imports regardless of current directory.
+        return nextResolve(specifier, {
+          ...context,
+          parentURL: import.meta.url,
+        });
+      }
     }
 
     const project = resolveProject(specifier);
-    if (project === undefined) {
-      return nextResolve(specifier, context);
-    }
 
     const resolvedModule = project.resolveModuleName(
       specifier,
@@ -74,16 +98,13 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       context?: LoadHookContext,
     ) => LoadFnOutput | Promise<LoadFnOutput>,
   ): LoadFnOutput | Promise<LoadFnOutput> => {
-    if (!/\.tsx?$/.test(url)) {
+    if (!/\.m?tsx?$/.test(url)) {
       return nextLoad(url, context);
     }
 
     const sourceName = fileURLToPath(url);
 
     const project = resolveProject(sourceName);
-    if (project === undefined) {
-      return nextLoad(url, context);
-    }
 
     const compiledProject = project.compile();
 
@@ -98,14 +119,31 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       return nextLoad(url, context);
     }
 
-    const resolutionMode = ts.getImpliedNodeFormatForFile(
-      outputFile,
-      project.compilerHost
-        .getModuleResolutionCache?.()
-        ?.getPackageJsonInfoCache(),
-      project.compilerHost,
-      project.compilerOptions,
+    const packageJsonInfoCache = project.compilerHost
+      .getModuleResolutionCache?.()
+      ?.getPackageJsonInfoCache();
+
+    const packageJsonInfo = ts.getPackageScopeForPath(
+      sourceName,
+      ts.getTemporaryModuleResolutionState(
+        packageJsonInfoCache,
+        project.compilerHost,
+        project.compilerOptions,
+      ),
     );
+
+    let resolutionMode: ts.ResolutionMode;
+    if (packageJsonInfo !== undefined) {
+      resolutionMode = ts.getImpliedNodeFormatForFile(
+        outputFile,
+        packageJsonInfoCache,
+        project.compilerHost,
+        project.compilerOptions,
+      );
+    } else {
+      // Default to ESM when no package.json is present.
+      resolutionMode = ts.ModuleKind.ESNext;
+    }
 
     const moduleFormat =
       resolutionMode === ts.ModuleKind.CommonJS ? "commonjs"
