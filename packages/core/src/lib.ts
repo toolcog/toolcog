@@ -11,7 +11,8 @@ export type {
   ToolCall,
 } from "./message.ts";
 
-export type { ToolFunction, FunctionTool, FunctionDescriptor } from "./tool.ts";
+export type { ToolDescriptor, ToolFunction } from "./tool.ts";
+export { Tool } from "./tool.ts";
 
 export type {
   Embedding,
@@ -23,7 +24,7 @@ export { State } from "./state.ts";
 
 export { Context } from "./context.ts";
 
-export type { UseToolOptions, UseTool } from "./use-tool.ts";
+export type { UseToolOptions } from "./use-tool.ts";
 export { useTool } from "./use-tool.ts";
 
 export type { GenerateOptions, GenerativeModel } from "./generative-model.ts";

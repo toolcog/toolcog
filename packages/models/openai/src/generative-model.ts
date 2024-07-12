@@ -3,6 +3,7 @@ import type { DispatcherOptions } from "@toolcog/util/task";
 import { Dispatcher } from "@toolcog/util/task";
 import type { Schema } from "@toolcog/util/schema";
 import type { GenerateOptions, GenerativeModel } from "@toolcog/core";
+import { Tool } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 
 type OpenAIGenerativeModelName =
@@ -107,7 +108,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
     options?: GenerateOptions,
   ): Promise<T> {
     if (options === undefined) {
-      throw new Error("Prompt not compiled");
+      throw new Error("Uncompiled prompt");
     }
 
     let returnSchema: Schema;
@@ -139,9 +140,9 @@ class OpenAIGenerativeModel implements GenerativeModel {
     if (options.tools !== undefined) {
       tools = options.tools.map((tool) => {
         return {
-          type: tool.type,
-          function: tool.function,
-        } as OpenAI.ChatCompletionTool;
+          type: "function",
+          function: tool[Tool.descriptor] as OpenAI.FunctionDefinition,
+        } satisfies OpenAI.ChatCompletionTool;
       });
     }
 
@@ -279,9 +280,9 @@ class OpenAIGenerativeModel implements GenerativeModel {
           const toolArguments = JSON.parse(
             toolCallDescriptor.arguments,
           ) as Record<string, unknown>;
-          const tool = options.tools!.find(
-            (tool) => tool.function.name === toolCallDescriptor.name,
-          )!;
+          const tool = options.tools!.find((tool) => {
+            return tool[Tool.descriptor]!.name === toolCallDescriptor.name;
+          })!;
           const toolArgs: unknown[] = [];
           for (const key in toolArguments) {
             toolArgs.push(toolArguments[key]);
@@ -292,7 +293,9 @@ class OpenAIGenerativeModel implements GenerativeModel {
               title: toolCallDescriptor.name,
             },
             async (toolJob) => {
-              const toolReturn = await tool.callable!.call(null, ...toolArgs);
+              const toolReturn = await Promise.resolve(
+                tool.call(null, ...toolArgs),
+              );
               const toolContent = JSON.stringify(toolReturn);
               toolJob.finish(toolContent);
               return {

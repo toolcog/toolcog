@@ -31,22 +31,22 @@ const toolcogTransformer = (
 
   const containingFile = fileURLToPath(import.meta.url);
 
-  const useToolType = getModuleExportType(
+  const toolType = getModuleExportType(
     ts,
     host,
     program,
     checker,
-    "UseTool",
+    "Tool",
     "@toolcog/core",
     containingFile,
   );
-  if (useToolType === undefined) {
+  if (toolType === undefined) {
     return transformerError(
       ts,
       addDiagnostic,
       undefined,
       Diagnostics.UnableToResolveType,
-      "UseTool",
+      "Tool",
       "@toolcog/core",
     );
   }
@@ -140,7 +140,7 @@ const toolcogTransformer = (
       return toolStatement;
     } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
       const variableType = checker.getTypeAtLocation(node.name);
-      if (checker.isTypeAssignableTo(variableType, useToolType)) {
+      if (checker.isTypeAssignableTo(variableType, toolType)) {
         toolScope[node.name.escapedText as string] = node.name;
       }
     }

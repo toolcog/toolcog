@@ -1,19 +1,33 @@
 import type { Schema } from "@toolcog/util/schema";
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
-type ToolFunction = (...args: any[]) => Promise<unknown> | unknown;
-
-interface FunctionTool {
-  readonly type: "function";
-  readonly function: FunctionDescriptor;
-  readonly callable?: ToolFunction | undefined;
-}
-
-interface FunctionDescriptor {
+interface ToolDescriptor {
   readonly name: string;
   readonly description?: string | undefined;
   readonly parameters?: Schema | undefined;
   readonly return?: Schema | undefined;
 }
 
-export type { ToolFunction, FunctionTool, FunctionDescriptor };
+interface ToolFunction {
+  (...args: any[]): unknown;
+
+  readonly [Tool.descriptor]?: ToolDescriptor;
+}
+
+interface Tool extends ToolFunction {
+  readonly [Tool.descriptor]: ToolDescriptor;
+}
+
+const Tool: {
+  readonly descriptor: unique symbol;
+
+  [Symbol.hasInstance](value: unknown): value is Tool;
+} = {
+  descriptor: Symbol("toolcog.tool"),
+
+  [Symbol.hasInstance](value: unknown): value is Tool {
+    return typeof value === "function" && Tool.descriptor in value;
+  },
+} as typeof Tool;
+
+export type { ToolFunction, ToolDescriptor };
+export { Tool };

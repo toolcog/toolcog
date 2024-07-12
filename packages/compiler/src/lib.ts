@@ -1,9 +1,6 @@
 export { typeToSchema } from "./schema.ts";
 
-export {
-  getToolDescriptor,
-  getToolDescriptorExpression,
-} from "./tool-descriptor.ts";
+export { getToolDescriptor } from "./tool-descriptor.ts";
 
 export {
   transformUseToolExpression,

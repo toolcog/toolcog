@@ -1,18 +1,17 @@
 import type ts from "typescript";
 import type { Schema, SchemaDefinition } from "@toolcog/util/schema";
-import type { FunctionDescriptor } from "@toolcog/core";
+import type { ToolDescriptor } from "@toolcog/core";
 import { Diagnostics } from "./diagnostics.ts";
 import { typeToSchema } from "./schema.ts";
 import { getDocComment } from "./doc-comment.ts";
 import { error, abort } from "./utils/errors.ts";
-import { valueToExpression } from "./utils/literals.ts";
 
 const getToolDescriptor = (
   ts: typeof import("typescript"),
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   node: ts.Node,
-): FunctionDescriptor => {
+): ToolDescriptor => {
   const docComment = getDocComment(ts, checker, node);
   if (docComment === undefined) {
     error(ts, addDiagnostic, node, Diagnostics.MissingToolComment);
@@ -129,36 +128,4 @@ const getToolDescriptor = (
   };
 };
 
-const getToolDescriptorExpression = (
-  ts: typeof import("typescript"),
-  factory: ts.NodeFactory,
-  checker: ts.TypeChecker,
-  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  node: ts.Node,
-): ts.Expression => {
-  const descriptor = getToolDescriptor(ts, checker, addDiagnostic, node);
-
-  const propertyLiterals: ts.ObjectLiteralElementLike[] = [];
-  propertyLiterals.push(
-    factory.createPropertyAssignment(
-      "type",
-      factory.createStringLiteral("function"),
-    ),
-  );
-  propertyLiterals.push(
-    factory.createPropertyAssignment(
-      "function",
-      valueToExpression(ts, factory, node, descriptor),
-    ),
-  );
-  propertyLiterals.push(
-    factory.createPropertyAssignment(
-      "callable",
-      factory.createIdentifier(descriptor.name),
-    ),
-  );
-
-  return factory.createObjectLiteralExpression(propertyLiterals, true);
-};
-
-export { getToolDescriptor, getToolDescriptorExpression };
+export { getToolDescriptor };

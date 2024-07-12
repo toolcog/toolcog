@@ -1,5 +1,5 @@
 import type { Schema } from "@toolcog/util/schema";
-import type { FunctionTool } from "./tool.ts";
+import type { ToolFunction } from "./tool.ts";
 import { Context } from "./context.ts";
 
 interface GenerateOptions {
@@ -13,7 +13,7 @@ interface GenerateOptions {
 
   return?: Schema | undefined;
 
-  tools?: FunctionTool[] | undefined;
+  tools?: ToolFunction[] | undefined;
 }
 
 interface GenerativeModel {

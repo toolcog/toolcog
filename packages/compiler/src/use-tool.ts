@@ -24,7 +24,7 @@ const transformUseToolExpression = (
   const optionsLiterals: ts.ObjectLiteralElementLike[] = [];
   optionsLiterals.push(
     factory.createPropertyAssignment(
-      "function",
+      "descriptor",
       valueToExpression(ts, factory, callableExpression, descriptor),
     ),
   );

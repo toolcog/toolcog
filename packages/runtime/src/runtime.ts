@@ -1,5 +1,5 @@
 import type {
-  FunctionTool,
+  Tool,
   GenerativeModel,
   EmbeddingModel,
   Context,
@@ -49,7 +49,7 @@ class Runtime implements Context {
     );
   }
 
-  useTool(tool: FunctionTool, options?: UseToolOptions): FunctionTool {
+  useTool(tool: Tool, options?: UseToolOptions): Tool {
     return tool;
   }
 
