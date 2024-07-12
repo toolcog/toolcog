@@ -76,14 +76,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
   }
 
   generate<T = string>(args?: unknown, options?: GenerateOptions): Promise<T> {
-    return Job.run(
-      {
-        icon: "≡",
-        title: options?.title ?? "Generate",
-        status: "pending",
-      },
-      (job) => this.#prompt<T>(job, undefined, args, options),
-    );
+    return this.#prompt<T>(undefined, args, options);
   }
 
   prompt<T = string>(
@@ -91,18 +84,10 @@ class OpenAIGenerativeModel implements GenerativeModel {
     args?: unknown,
     options?: GenerateOptions,
   ): Promise<T> {
-    return Job.run(
-      {
-        icon: "≡",
-        title: options?.title ?? "Prompt",
-        status: "pending",
-      },
-      (job) => this.#prompt<T>(job, instructions, args, options),
-    );
+    return this.#prompt<T>(instructions, args, options);
   }
 
   async #prompt<T>(
-    job: Job,
     instructions?: string,
     args?: unknown,
     options?: GenerateOptions,
@@ -180,7 +165,8 @@ class OpenAIGenerativeModel implements GenerativeModel {
     while (true) {
       let content: string | null | undefined;
       let toolCalls: OpenAI.ChatCompletionMessageToolCall[] | undefined;
-      let message: OpenAI.ChatCompletionMessageParam;
+      let message: OpenAI.ChatCompletionMessageParam | undefined;
+      let tokenCount = 0;
 
       const request = {
         model: this.#modelName,
@@ -189,28 +175,105 @@ class OpenAIGenerativeModel implements GenerativeModel {
         response_format: { type: "json_object" },
       } satisfies OpenAI.ChatCompletionCreateParams;
 
-      if (this.#streaming) {
-        const stream = await this.#dispatcher.enqueue(() => {
-          return this.#client.chat.completions.create({
-            ...request,
-            stream: true,
-          });
-        });
+      await Job.run(
+        {
+          icon: "≡",
+          title: options.title ?? this.modelName,
+          status: "...",
+        },
+        async (job) => {
+          if (this.#streaming) {
+            const stream = await this.#dispatcher.enqueue(() => {
+              return this.#client.chat.completions.create({
+                ...request,
+                stream: true,
+                stream_options: {
+                  include_usage: true,
+                },
+              });
+            });
 
-        for await (const chunk of stream) {
-          const delta = chunk.choices[0]?.delta;
-          if (delta === undefined) {
-            continue;
-          }
+            for await (const chunk of stream) {
+              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+              if (chunk.usage !== undefined && chunk.usage !== null) {
+                tokenCount += chunk.usage.total_tokens;
+              }
 
-          const deltaContent = delta.content;
-          if (typeof deltaContent === "string") {
-            if (content === undefined) {
-              content = deltaContent;
-            } else {
-              // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
-              content += deltaContent;
+              const delta = chunk.choices[0]?.delta;
+              if (delta === undefined) {
+                continue;
+              }
+
+              const deltaContent = delta.content;
+              if (typeof deltaContent === "string") {
+                if (content === undefined) {
+                  content = deltaContent;
+                } else {
+                  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+                  content += deltaContent;
+                }
+
+                job.update({
+                  status: content ?? "",
+                  ellipsize: -1,
+                });
+              }
+
+              if (delta.tool_calls !== undefined) {
+                if (toolCalls === undefined) {
+                  toolCalls = [];
+                }
+                for (const toolCallDelta of delta.tool_calls) {
+                  let toolCall = toolCalls[toolCallDelta.index];
+                  if (toolCall === undefined) {
+                    toolCall = {
+                      id: toolCallDelta.id ?? "",
+                      type: "function",
+                      function: {
+                        name: toolCallDelta.function?.name ?? "",
+                        arguments: toolCallDelta.function?.arguments ?? "",
+                      },
+                    };
+                    toolCalls[toolCallDelta.index] = toolCall;
+                    continue;
+                  }
+
+                  if (toolCallDelta.id !== undefined) {
+                    toolCall.id = toolCallDelta.id;
+                  }
+                  if (toolCallDelta.function !== undefined) {
+                    if (toolCallDelta.function.name !== undefined) {
+                      toolCall.function.name = toolCallDelta.function.name;
+                    }
+                    if (toolCallDelta.function.arguments !== undefined) {
+                      toolCall.function.arguments +=
+                        toolCallDelta.function.arguments;
+                    }
+                  }
+                }
+              }
             }
+
+            message = {
+              role: "assistant",
+              ...(content !== undefined ? { content } : undefined),
+              ...(toolCalls !== undefined ?
+                { tool_calls: toolCalls }
+              : undefined),
+            };
+          } else {
+            const response = await this.#dispatcher.enqueue(() => {
+              return this.#client.chat.completions.create(request);
+            });
+
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            if (response.usage !== undefined && response.usage !== null) {
+              tokenCount += response.usage.total_tokens;
+            }
+
+            message = response.choices[0]!.message;
+            content = message.content;
+            toolCalls = message.tool_calls;
 
             job.update({
               status: content ?? "",
@@ -218,60 +281,14 @@ class OpenAIGenerativeModel implements GenerativeModel {
             });
           }
 
-          if (delta.tool_calls !== undefined) {
-            if (toolCalls === undefined) {
-              toolCalls = [];
-            }
-            for (const toolCallDelta of delta.tool_calls) {
-              let toolCall = toolCalls[toolCallDelta.index];
-              if (toolCall === undefined) {
-                toolCall = {
-                  id: toolCallDelta.id ?? "",
-                  type: "function",
-                  function: {
-                    name: toolCallDelta.function?.name ?? "",
-                    arguments: toolCallDelta.function?.arguments ?? "",
-                  },
-                };
-                toolCalls[toolCallDelta.index] = toolCall;
-                continue;
-              }
+          job.update({
+            status: tokenCount === 1 ? "<1 token>" : `<${tokenCount} tokens>`,
+            ellipsize: 1,
+          });
 
-              if (toolCallDelta.id !== undefined) {
-                toolCall.id = toolCallDelta.id;
-              }
-              if (toolCallDelta.function !== undefined) {
-                if (toolCallDelta.function.name !== undefined) {
-                  toolCall.function.name = toolCallDelta.function.name;
-                }
-                if (toolCallDelta.function.arguments !== undefined) {
-                  toolCall.function.arguments +=
-                    toolCallDelta.function.arguments;
-                }
-              }
-            }
-          }
-        }
-
-        message = {
-          role: "assistant",
-          ...(content !== undefined ? { content } : undefined),
-          ...(toolCalls !== undefined ? { tool_calls: toolCalls } : undefined),
-        };
-      } else {
-        const response = await this.#dispatcher.enqueue(() => {
-          return this.#client.chat.completions.create(request);
-        });
-
-        message = response.choices[0]!.message;
-        content = message.content;
-        toolCalls = message.tool_calls;
-
-        job.update({
-          status: content ?? "",
-          ellipsize: -1,
-        });
-      }
+          job.finish();
+        },
+      );
 
       thread.addMessage(message as Message);
 
@@ -294,9 +311,9 @@ class OpenAIGenerativeModel implements GenerativeModel {
               title: toolCallDescriptor.name,
             },
             async (toolJob) => {
-              const toolReturn = await Promise.resolve(
-                tool.call(null, ...toolArgs),
-              );
+              const toolReturn = await Thread.run(Thread.create(), () => {
+                return Promise.resolve(tool.call(null, ...toolArgs));
+              });
               const toolContent = JSON.stringify(toolReturn);
               toolJob.finish(toolContent);
               return {
@@ -312,11 +329,6 @@ class OpenAIGenerativeModel implements GenerativeModel {
         }
         continue;
       }
-
-      job.finish({
-        status: undefined,
-        ellipsize: 1,
-      });
 
       let value: T;
       if (returnWrapper) {
