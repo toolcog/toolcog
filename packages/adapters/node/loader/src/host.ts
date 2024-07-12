@@ -261,7 +261,7 @@ const createLoaderHost = (
           redirectedReference,
         ).resolvedModule;
 
-        // Check for a failed resolution of a builtin module.
+        // Check for failed resolution of a builtin module.
         if (
           resolvedModule === undefined &&
           (moduleName === "toolcog" || moduleName.startsWith("@toolcog/"))

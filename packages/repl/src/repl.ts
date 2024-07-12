@@ -5,9 +5,11 @@ import { dirname, resolve } from "node:path";
 import type { CompleterResult } from "node:readline";
 import { cursorTo } from "node:readline";
 import { createInterface } from "node:readline/promises";
+import { fileURLToPath } from "node:url";
 import { inspect } from "node:util";
 import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
+import { useTool, generate, prompt } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
 import { Context } from "@toolcog/core";
@@ -93,16 +95,22 @@ class Repl {
 
     const languageServiceHost = {
       getScriptFileNames: () => [this.#scriptName],
-      getScriptVersion: (fileName) =>
-        fileName === this.#scriptName ? this.#scriptVersion.toString() : "0",
+      getScriptVersion: (fileName) => {
+        if (fileName === this.#scriptName) {
+          return this.#scriptVersion.toString();
+        }
+        return "0";
+      },
       getScriptSnapshot: (fileName) => {
         if (fileName === this.#scriptName) {
           return this.#scriptSnapshot;
         }
+
         const fileText = ts.sys.readFile(fileName);
         if (fileText !== undefined) {
           return ts.ScriptSnapshot.fromString(fileText);
         }
+
         return undefined;
       },
       getCurrentDirectory: () => process.cwd(),
@@ -127,6 +135,46 @@ class Repl {
           ],
         };
       },
+      resolveModuleNames: (
+        moduleNames: string[],
+        containingFile: string,
+        reusedNames: string[] | undefined,
+        redirectedReference: ts.ResolvedProjectReference | undefined,
+        compilerOptions: ts.CompilerOptions,
+        containingSourceFile?: ts.SourceFile,
+      ): (ts.ResolvedModule | undefined)[] => {
+        return moduleNames.map(
+          (moduleName: string): ts.ResolvedModule | undefined => {
+            let resolvedModule = ts.resolveModuleName(
+              moduleName,
+              containingFile,
+              compilerOptions,
+              languageServiceHost,
+              undefined,
+              redirectedReference,
+            ).resolvedModule;
+
+            // Check for failed resolution of a builtin module.
+            if (
+              resolvedModule === undefined &&
+              (moduleName === "toolcog" || moduleName.startsWith("@toolcog/"))
+            ) {
+              // Try to resolve builtin modules relative to the loader;
+              // this enables builtin imports regardless of current directory.
+              resolvedModule = ts.resolveModuleName(
+                moduleName,
+                fileURLToPath(import.meta.url),
+                compilerOptions,
+                languageServiceHost,
+                undefined,
+                redirectedReference,
+              ).resolvedModule;
+            }
+
+            return resolvedModule;
+          },
+        );
+      },
     } satisfies ts.LanguageServiceHost;
 
     this.#languageService = ts.createLanguageService(
@@ -134,7 +182,7 @@ class Repl {
       documentRegistry,
     );
 
-    this.#scriptName = resolve(process.cwd(), ".toolcog", `[repl].mts`);
+    this.#scriptName = resolve(process.cwd(), "[repl].mts");
     this.#scriptSnapshot = undefined;
     this.#scriptVersion = 0;
 
@@ -144,6 +192,14 @@ class Repl {
 
     this.#executedStatementCount = 0;
     this.#pendingStatementCount = 0;
+
+    // Inject REPL prelude.
+    (globalThis as Record<string, unknown>).useTool = useTool;
+    (globalThis as Record<string, unknown>).generate = generate;
+    (globalThis as Record<string, unknown>).prompt = prompt;
+    this.#cumulativeInput +=
+      'import { useTool, generate, prompt } from "@toolcog/core";\n';
+    this.#executedStatementCount += 1;
   }
 
   get input(): NodeJS.ReadableStream {
@@ -355,12 +411,19 @@ class Repl {
 
     // Transpile typescript to javascript.
     const output = this.#languageService.getEmitOutput(this.#scriptName, false);
-    if (output.emitSkipped) {
-      const diagnostics = this.#languageService
-        .getCompilerOptionsDiagnostics()
-        .concat(
-          this.#languageService.getSyntacticDiagnostics(this.#scriptName),
-        );
+    const diagnostics = [
+      ...this.#languageService.getCompilerOptionsDiagnostics(),
+      ...this.#languageService.getSyntacticDiagnostics(this.#scriptName),
+      ...this.#languageService.getSemanticDiagnostics(this.#scriptName),
+    ].filter((diagnostic) => {
+      if (
+        diagnostic.code === 5096 // Allow importing .ts extensions.
+      ) {
+        return false;
+      }
+      return true;
+    });
+    if (diagnostics.length !== 0) {
       let message = "";
       for (let i = 0; i < diagnostics.length; i += 1) {
         if (i !== 0) {
