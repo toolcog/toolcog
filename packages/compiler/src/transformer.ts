@@ -130,6 +130,7 @@ const toolcogTransformer = (
         factory,
         checker,
         addDiagnostic,
+        useToolFunctionType,
         node,
       );
       const toolDeclaration = toolStatement.declarationList.declarations[0]!;
@@ -151,6 +152,7 @@ const toolcogTransformer = (
         factory,
         checker,
         addDiagnostic,
+        useToolFunctionType,
         node,
       );
       return ts.visitEachChild(toolExpression, visit, context);

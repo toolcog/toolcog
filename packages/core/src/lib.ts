@@ -20,7 +20,7 @@ export type {
   EmbeddingSimilarity,
 } from "./embedding.ts";
 
-export { State } from "./state.ts";
+export { Thread } from "./thread.ts";
 
 export { Toolcog } from "./toolcog.ts";
 

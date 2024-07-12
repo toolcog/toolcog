@@ -2,8 +2,8 @@ import { OpenAI } from "openai";
 import type { DispatcherOptions } from "@toolcog/util/task";
 import { Dispatcher } from "@toolcog/util/task";
 import type { Schema } from "@toolcog/util/schema";
-import type { GenerateOptions, GenerativeModel } from "@toolcog/core";
-import { Tool } from "@toolcog/core";
+import type { Message, GenerateOptions, GenerativeModel } from "@toolcog/core";
+import { Tool, Thread } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 
 type OpenAIGenerativeModelName =
@@ -94,7 +94,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
     return Job.run(
       {
         icon: "≡",
-        title: options?.title ?? "Generate",
+        title: options?.title ?? "Prompt",
         status: "pending",
       },
       (job) => this.#prompt<T>(job, instructions, args, options),
@@ -137,7 +137,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
     }
 
     let tools: OpenAI.ChatCompletionTool[] | undefined;
-    if (options.tools !== undefined) {
+    if (options.tools !== undefined && options.tools.length !== 0) {
       tools = options.tools.map((tool) => {
         return {
           type: "function",
@@ -172,9 +172,10 @@ class OpenAIGenerativeModel implements GenerativeModel {
       "\n\n" +
       instructions;
 
-    const messages: OpenAI.ChatCompletionMessageParam[] = [];
-    messages.push({ role: "system", content: systemMessage });
-    messages.push({ role: "user", content: userMessage });
+    const thread = Thread.getOrCreate();
+
+    thread.addMessage({ role: "system", content: systemMessage });
+    thread.addMessage({ role: "user", content: userMessage });
 
     while (true) {
       let content: string | null | undefined;
@@ -183,7 +184,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
 
       const request = {
         model: this.#modelName,
-        messages,
+        messages: thread.messages as OpenAI.ChatCompletionMessageParam[],
         ...(tools !== undefined ? { tools } : undefined),
         response_format: { type: "json_object" },
       } satisfies OpenAI.ChatCompletionCreateParams;
@@ -272,7 +273,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
         });
       }
 
-      messages.push(message);
+      thread.addMessage(message as Message);
 
       if (toolCalls !== undefined) {
         const toolResults = toolCalls.map((toolCall) => {
@@ -306,7 +307,9 @@ class OpenAIGenerativeModel implements GenerativeModel {
             },
           );
         });
-        messages.push(...(await Promise.all(toolResults)));
+        for (const toolResult of await Promise.all(toolResults)) {
+          thread.addMessage(toolResult);
+        }
         continue;
       }
 

@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Command, Option } from "commander";
 import ts from "typescript";
+import { Thread } from "@toolcog/core";
 import { Repl } from "@toolcog/repl";
 
 declare const __version__: string;
@@ -65,18 +66,21 @@ const programAction = async (
       // Random node warnings are extremely disruptive and unhelpful.
       process.removeAllListeners("warning");
 
-      // Instantiate the REPL.
-      const repl = new Repl();
+      const thread = Thread.create();
+      await Thread.run(thread, async () => {
+        // Instantiate the REPL.
+        const repl = new Repl();
 
-      // Print the REPL banner.
-      console.log(
-        `Welcome to Toolcog v${__version__} (Node.js ${process.version}, TypeScript v${ts.version}).`,
-      );
-      console.log('Type ".help" for more information.');
-      console.log();
+        // Print the REPL banner.
+        console.log(
+          `Welcome to Toolcog v${__version__} (Node.js ${process.version}, TypeScript v${ts.version}).`,
+        );
+        console.log('Type ".help" for more information.');
+        console.log();
 
-      // Run the REPL session.
-      await repl.run();
+        // Run the REPL session.
+        await repl.run();
+      });
     }
     if (executeStdin) {
       // TODO

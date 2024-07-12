@@ -5,11 +5,13 @@ import { Diagnostics } from "./diagnostics.ts";
 import { typeToSchema } from "./schema.ts";
 import { getDocComment } from "./doc-comment.ts";
 import { error, abort } from "./utils/errors.ts";
+import { isFunctionCallExpression } from "./utils/functions.ts";
 
 const getToolDescriptor = (
   ts: typeof import("typescript"),
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  useToolFunctionType: ts.Type | undefined,
   node: ts.Node,
 ): ToolDescriptor => {
   const docComment = getDocComment(ts, checker, node);
@@ -42,12 +44,61 @@ const getToolDescriptor = (
     }
     toolName = ts.idText(declarationName);
     toolDeclaration = node;
+  } else if (ts.isFunctionExpression(node)) {
+    let declarationName = ts.getNameOfDeclaration(node);
+    if (
+      declarationName === undefined &&
+      useToolFunctionType !== undefined &&
+      isFunctionCallExpression(ts, checker, node.parent, useToolFunctionType) &&
+      ts.isVariableDeclaration(node.parent.parent)
+    ) {
+      declarationName = node.parent.parent.name;
+    }
+    if (
+      declarationName === undefined ||
+      (!ts.isIdentifier(declarationName) &&
+        !ts.isPrivateIdentifier(declarationName))
+    ) {
+      return abort(
+        ts,
+        addDiagnostic,
+        node,
+        Diagnostics.UnableToDetermineToolName,
+      );
+    }
+    toolName = ts.idText(declarationName);
+    toolDeclaration = node;
+  } else if (ts.isArrowFunction(node)) {
+    let declarationName: ts.DeclarationName | undefined;
+    if (
+      declarationName === undefined &&
+      useToolFunctionType !== undefined &&
+      isFunctionCallExpression(ts, checker, node.parent, useToolFunctionType) &&
+      ts.isVariableDeclaration(node.parent.parent)
+    ) {
+      declarationName = node.parent.parent.name;
+    }
+    if (
+      declarationName === undefined ||
+      (!ts.isIdentifier(declarationName) &&
+        !ts.isPrivateIdentifier(declarationName))
+    ) {
+      return abort(
+        ts,
+        addDiagnostic,
+        node,
+        Diagnostics.UnableToDetermineToolName,
+      );
+    }
+    toolName = ts.idText(declarationName);
+    toolDeclaration = node;
   } else {
     return abort(
       ts,
       addDiagnostic,
       node,
-      Diagnostics.UnsupportedToolExpression,
+      Diagnostics.UnableToExtractTool,
+      ts.SyntaxKind[node.kind],
     );
   }
 

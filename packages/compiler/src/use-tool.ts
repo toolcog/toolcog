@@ -7,6 +7,7 @@ const transformUseToolExpression = (
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  useToolFunctionType: ts.Type | undefined,
   callExpression: ts.CallExpression,
 ): ts.Expression => {
   const callableExpression = callExpression.arguments[0];
@@ -18,6 +19,7 @@ const transformUseToolExpression = (
     ts,
     checker,
     addDiagnostic,
+    useToolFunctionType,
     callableExpression,
   );
 
@@ -48,6 +50,7 @@ const transformUseToolStatement = (
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  useToolFunctionType: ts.Type | undefined,
   callStatement: ts.ExpressionStatement & {
     readonly expression: ts.CallExpression;
   },
@@ -69,6 +72,7 @@ const transformUseToolStatement = (
     factory,
     checker,
     addDiagnostic,
+    useToolFunctionType,
     callStatement.expression,
   );
 

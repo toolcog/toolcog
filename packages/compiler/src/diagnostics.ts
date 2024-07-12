@@ -25,11 +25,11 @@ const Diagnostics = {
     code: 900004,
     message: "Unable to determine tool name",
   },
-  UnsupportedToolExpression: {
-    key: "UnsupportedToolExpression",
+  UnableToExtractTool: {
+    key: "UnableToExtractTool",
     category: ts.DiagnosticCategory.Error,
     code: 900005,
-    message: "Unsupported tool expression",
+    message: "Unable to extract tool from {0}",
   },
   MissingToolComment: {
     key: "MissingToolComment",

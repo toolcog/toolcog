@@ -7,17 +7,20 @@ import { cursorTo } from "node:readline";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { inspect } from "node:util";
-import { constants, runInThisContext } from "node:vm";
+import type { Context } from "node:vm";
+import { constants, createContext, runInContext } from "node:vm";
 import ts from "typescript";
 import { useTool, generate, prompt } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
-import { Toolcog } from "@toolcog/core";
+import { Tool, Toolcog } from "@toolcog/core";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
 import { JobReporter } from "./job-reporter.ts";
 
 interface ReplOptions {
+  context?: Context | undefined;
+
   input?: NodeJS.ReadableStream | undefined;
   output?: NodeJS.WritableStream | undefined;
   terminal?: boolean | undefined;
@@ -34,6 +37,8 @@ interface ReplOptions {
 }
 
 class Repl {
+  readonly #context: Context;
+
   readonly #input: NodeJS.ReadableStream;
   readonly #output: NodeJS.WritableStream;
   readonly #terminal: boolean | undefined;
@@ -63,9 +68,19 @@ class Repl {
   #pendingStatementCount: number;
 
   constructor(options?: ReplOptions) {
+    this.#context =
+      options?.context ??
+      createContext(
+        {},
+        {
+          name: "Toolcog REPL",
+        },
+      );
+
     this.#input = options?.input ?? process.stdin;
     this.#output = options?.output ?? process.stdout;
     this.#terminal = options?.terminal;
+
     this.#historyFile =
       options?.historyFile ?? resolve(homedir(), ".toolcog", "repl_history");
     this.#historySize = options?.historySize ?? 50;
@@ -194,9 +209,9 @@ class Repl {
     this.#pendingStatementCount = 0;
 
     // Inject REPL prelude.
-    (globalThis as Record<string, unknown>).useTool = useTool;
-    (globalThis as Record<string, unknown>).generate = generate;
-    (globalThis as Record<string, unknown>).prompt = prompt;
+    this.#context.useTool = useTool;
+    this.#context.generate = generate;
+    this.#context.prompt = prompt;
     this.#cumulativeInput +=
       'import { useTool, generate, prompt } from "@toolcog/core";\n';
     this.#executedStatementCount += 1;
@@ -285,7 +300,7 @@ class Repl {
         const stackTraceLimit = Error.stackTraceLimit;
         Error.stackTraceLimit = Infinity;
         try {
-          await this.#runLang();
+          await this.#runLang(this.#bufferedInput);
           this.#output.write(EOL);
         } catch (error) {
           this.#output.write(String(error));
@@ -304,7 +319,7 @@ class Repl {
         const stackTraceLimit = Error.stackTraceLimit;
         Error.stackTraceLimit = Infinity;
         try {
-          await this.#runCode();
+          await this.#runCode(this.#bufferedInput);
           this.#output.write(EOL);
         } catch (error) {
           this.#output.write(String(error));
@@ -329,17 +344,46 @@ class Repl {
     this.#output.write(EOL);
   }
 
-  async #runLang(): Promise<void> {
-    const toolcog = await Toolcog.current();
-    const model = await toolcog.getGenerativeModel();
-    const output = await model.prompt(this.#bufferedInput, undefined, {});
-    this.#output.write(output);
-    this.#output.write(EOL);
+  async #runLang(input: string): Promise<void> {
+    // Collect all top-level tools in the VM context.
+    const tools: Tool[] = [];
+    for (const key in this.#context) {
+      const value = this.#context[key] as unknown;
+      if (value instanceof Tool) {
+        tools.push(value);
+      }
+    }
+
+    await Job.run({ title: "Prompt" }, async (root) => {
+      // Create a job reporter to monitor the prompt.
+      const reporter = new JobReporter(
+        root,
+        this.#input as NodeJS.ReadStream,
+        this.#output as NodeJS.WriteStream,
+      );
+      // Start printing job status updates.
+      const finished = reporter.start();
+
+      // Complete the prompt using the default generative model.
+      const toolcog = await Toolcog.current();
+      const model = await toolcog.getGenerativeModel();
+      const output = await model.prompt(input, undefined, {
+        tools,
+      });
+
+      // Wait for the final job status update to complete.
+      root.finish();
+      await finished;
+
+      // Print the completion to the output stream.
+      this.#output.write(output);
+      this.#output.write(EOL);
+    });
   }
 
-  async #runCode(): Promise<void> {
+  async #runCode(input: string): Promise<void> {
     // Preprocess the currently buffered input.
-    const processedInput = this.#preprocess(this.#bufferedInput);
+    const processedInput = this.#preprocess(input);
 
     await Job.run({ title: "Evaluate" }, async (root) => {
       // Create a job reporter to monitor the evaluation.
@@ -359,9 +403,9 @@ class Repl {
       await finished;
 
       // Assign all newly declared bindings to the VM context.
-      Object.assign(globalThis, bindings);
+      Object.assign(this.#context, bindings);
 
-      // Print all newly declared bindings to the output.
+      // Print all newly declared bindings to the output stream.
       this.#printOutput(bindings);
     });
 
@@ -371,8 +415,8 @@ class Repl {
     this.#pendingStatementCount = 0;
   }
 
-  #preprocess(bufferedInput: string): string {
-    const sourceFile = ts.createSourceFile(this.#scriptName, bufferedInput, {
+  #preprocess(input: string): string {
+    const sourceFile = ts.createSourceFile(this.#scriptName, input, {
       languageVersion: this.#languageVersion,
       impliedNodeFormat: ts.ModuleKind.ESNext,
     });
@@ -395,7 +439,7 @@ class Repl {
     const executableCode = this.#compile(processedInput);
 
     // Execute the transpiled javascript code.
-    const bindings = runInThisContext(executableCode, {
+    const bindings = runInContext(executableCode, this.#context, {
       importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER,
     }) as Record<string, unknown>;
 
