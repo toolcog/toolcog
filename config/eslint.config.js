@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import pluginJs from "@eslint/js";
 import pluginJsdoc from "eslint-plugin-jsdoc";
 import pluginTs from "typescript-eslint";
@@ -21,7 +20,7 @@ export default pluginTs.config(
     },
   },
   {
-    files: ["**/*.ts", "**/*.tsx", "!**/*.d.ts"],
+    files: ["**/*.ts"],
     rules: {
       "@typescript-eslint/class-literal-property-style": "off",
       "@typescript-eslint/consistent-indexed-object-style": "off",
@@ -53,8 +52,7 @@ export default pluginTs.config(
     },
     languageOptions: {
       parserOptions: {
-        project: true,
-        tsconfigRootDir: resolve(import.meta.dirname, ".."),
+        EXPERIMENTAL_useProjectService: true,
       },
     },
   },

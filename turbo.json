@@ -34,12 +34,14 @@
     "lint": {
       "dependsOn": ["topo"],
       "inputs": [
+        "eslint.config.js",
         "src/**"
       ]
     },
     "format": {
       "dependsOn": ["topo"],
       "inputs": [
+        "prettier.config.js",
         "src/**"
       ]
     },
