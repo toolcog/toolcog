@@ -243,7 +243,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
                   toolCall.function.name = toolCallDelta.function.name;
                 }
                 if (toolCallDelta.function.arguments !== undefined) {
-                  toolCall.function.arguments =
+                  toolCall.function.arguments +=
                     toolCallDelta.function.arguments;
                 }
               }
