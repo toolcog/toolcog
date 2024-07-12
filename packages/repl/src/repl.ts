@@ -12,7 +12,7 @@ import ts from "typescript";
 import { useTool, generate, prompt } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
-import { Context } from "@toolcog/core";
+import { Toolcog } from "@toolcog/core";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
 import { JobReporter } from "./job-reporter.ts";
@@ -330,8 +330,8 @@ class Repl {
   }
 
   async #runLang(): Promise<void> {
-    const context = await Context.current();
-    const model = await context.getGenerativeModel();
+    const toolcog = await Toolcog.current();
+    const model = await toolcog.getGenerativeModel();
     const output = await model.prompt(this.#bufferedInput, undefined, {});
     this.#output.write(output);
     this.#output.write(EOL);

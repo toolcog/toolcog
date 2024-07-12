@@ -1,5 +1,5 @@
 import type { Embedding, EmbeddingMap } from "./embedding.ts";
-import { Context } from "./context.ts";
+import { Toolcog } from "./toolcog.ts";
 
 interface EmbedOptions {
   modelId?: string | undefined;
@@ -39,8 +39,8 @@ const embed: {
     content: string | readonly string[],
     options?: EmbedOptions,
   ): Promise<Embedding | Embedding[]> => {
-    const context = await Context.current();
-    const model = await context.getEmbeddingModel(options?.modelId);
+    const toolcog = await Toolcog.current();
+    const model = await toolcog.getEmbeddingModel(options?.modelId);
     return model.embed(content, options);
   }) as unknown as typeof embed,
   {

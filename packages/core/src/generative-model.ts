@@ -1,6 +1,6 @@
 import type { Schema } from "@toolcog/util/schema";
 import type { ToolFunction } from "./tool.ts";
-import { Context } from "./context.ts";
+import { Toolcog } from "./toolcog.ts";
 
 interface GenerateOptions {
   modelId?: string | undefined;
@@ -35,8 +35,8 @@ const generate: {
   readonly brand: unique symbol;
 } = Object.assign(
   async <T>(args?: unknown, options?: GenerateOptions): Promise<T> => {
-    const context = await Context.current();
-    const model = await context.getGenerativeModel(options?.modelId);
+    const toolcog = await Toolcog.current();
+    const model = await toolcog.getGenerativeModel(options?.modelId);
     return model.generate(args, options);
   },
   {
@@ -59,8 +59,8 @@ const prompt: {
     args?: unknown,
     options?: GenerateOptions,
   ): Promise<T> => {
-    const context = await Context.current();
-    const model = await context.getGenerativeModel(options?.modelId);
+    const toolcog = await Toolcog.current();
+    const model = await toolcog.getGenerativeModel(options?.modelId);
     return model.prompt(instructions, args, options);
   },
   {

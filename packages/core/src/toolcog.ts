@@ -4,7 +4,7 @@ import type { UseToolOptions } from "./use-tool.ts";
 import type { GenerativeModel } from "./generative-model.ts";
 import type { EmbeddingModel } from "./embedding-model.ts";
 
-interface Context {
+interface Toolcog {
   useTool(tool: Tool, options?: UseToolOptions): Tool;
 
   getGenerativeModel(modelId?: string): Promise<GenerativeModel>;
@@ -12,47 +12,47 @@ interface Context {
   getEmbeddingModel(modelId?: string): Promise<EmbeddingModel>;
 }
 
-const Context = (() => {
-  const contextVariable = new AsyncContext.Variable<Context>({
-    name: "toolcog.context",
+const Toolcog = (() => {
+  const toolcogVariable = new AsyncContext.Variable<Toolcog>({
+    name: "toolcog",
   });
 
-  let runtime: Context | undefined;
+  let runtime: Toolcog | undefined;
 
-  const load = async (): Promise<Context> => {
+  const load = async (): Promise<Toolcog> => {
     try {
       const { Runtime } = await import("@toolcog/runtime");
-      return new Runtime() as Context;
+      return new Runtime() as Toolcog;
     } catch {
       throw new Error('Unable to load "@toolcog/runtime"');
     }
   };
 
-  const global = async (): Promise<Context> => {
+  const global = async (): Promise<Toolcog> => {
     if (runtime === undefined) {
       runtime = await load();
     }
     return runtime;
   };
 
-  const current = async (): Promise<Context> => {
-    let context = contextVariable.get();
-    if (context === undefined) {
-      context = await global();
+  const current = async (): Promise<Toolcog> => {
+    let toolcog = toolcogVariable.get();
+    if (toolcog === undefined) {
+      toolcog = await global();
     }
-    return context;
+    return toolcog;
   };
 
-  const get = (): Context | undefined => {
-    return contextVariable.get();
+  const get = (): Toolcog | undefined => {
+    return toolcogVariable.get();
   };
 
   const run = <F extends (...args: any[]) => unknown>(
-    context: Context,
+    toolcog: Toolcog,
     func: F,
     ...args: Parameters<F>
   ): ReturnType<F> => {
-    return contextVariable.run(context, func, ...args);
+    return toolcogVariable.run(toolcog, func, ...args);
   };
 
   return {
@@ -63,5 +63,4 @@ const Context = (() => {
   };
 })();
 
-export type { UseToolOptions };
-export { Context };
+export { Toolcog };

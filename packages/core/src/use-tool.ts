@@ -1,6 +1,6 @@
 import type { ToolDescriptor, ToolFunction } from "./tool.ts";
 import { Tool } from "./tool.ts";
-import { Context } from "./context.ts";
+import { Toolcog } from "./toolcog.ts";
 
 interface UseToolOptions {
   descriptor?: ToolDescriptor | undefined;
@@ -27,9 +27,9 @@ const useTool: {
       },
     );
 
-    const context = Context.get();
-    if (context !== undefined) {
-      tool = context.useTool(tool, options);
+    const toolcog = Toolcog.get();
+    if (toolcog !== undefined) {
+      tool = toolcog.useTool(tool, options);
     }
 
     return tool;

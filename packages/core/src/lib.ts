@@ -22,7 +22,7 @@ export type {
 
 export { State } from "./state.ts";
 
-export { Context } from "./context.ts";
+export { Toolcog } from "./toolcog.ts";
 
 export type { UseToolOptions } from "./use-tool.ts";
 export { useTool } from "./use-tool.ts";

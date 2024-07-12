@@ -2,7 +2,7 @@ import type {
   Tool,
   GenerativeModel,
   EmbeddingModel,
-  Context,
+  Toolcog,
   UseToolOptions,
 } from "@toolcog/core";
 import type { PluginLoaderOptions } from "./plugin-loader.ts";
@@ -26,7 +26,7 @@ interface RuntimeOptions {
   embeddingLoader?: ModelLoaderOptions | undefined;
 }
 
-class Runtime implements Context {
+class Runtime implements Toolcog {
   readonly #pluginLoader: PluginLoader<GenerativePlugin & EmbeddingPlugin>;
 
   readonly #generativeLoader: GenerativeLoader;
