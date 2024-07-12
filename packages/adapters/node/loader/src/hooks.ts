@@ -6,7 +6,11 @@ import type {
   LoadFnOutput,
   LoadHook,
 } from "node:module";
-import { resolve as resolvePath } from "node:path";
+import {
+  resolve as resolvePath,
+  parse as parsePath,
+  format as formatPath,
+} from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import ts from "typescript";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
@@ -60,17 +64,28 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       try {
         return await Promise.resolve(nextResolve(specifier, context));
       } catch (error) {
-        // Rethrow if the failed resolution wasn't a builtin module.
-        if (specifier !== "toolcog" && !specifier.startsWith("@toolcog/")) {
-          throw error;
+        // Check if the failed resolution was a builtin module.
+        if (specifier === "toolcog" || specifier.startsWith("@toolcog/")) {
+          // Try to resolve builtin modules relative to the loader;
+          // this enables builtin imports regardless of current directory.
+          return nextResolve(specifier, {
+            ...context,
+            parentURL: import.meta.url,
+          });
         }
 
-        // Try to resolve builtin modules relative to the loader;
-        // this enables builtin imports regardless of current directory.
-        return nextResolve(specifier, {
-          ...context,
-          parentURL: import.meta.url,
-        });
+        // Try to rewrite js extensions back to their original ts files.
+        const { dir, name, ext } = parsePath(specifier);
+        const tsExt =
+          ext === ".js" ? ".ts"
+          : ext === ".mjs" ? ".mts"
+          : undefined;
+        if (tsExt !== undefined) {
+          const tsSpecifier = formatPath({ dir, name, ext: tsExt });
+          return nextResolve(tsSpecifier, context);
+        }
+
+        throw error;
       }
     }
 
