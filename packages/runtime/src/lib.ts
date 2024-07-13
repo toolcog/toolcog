@@ -10,6 +10,8 @@ export { GenerativeLoader } from "./generative-loader.ts";
 export type { EmbeddingPlugin } from "./embedding-loader.ts";
 export { EmbeddingLoader } from "./embedding-loader.ts";
 
+export { TemporaryThread } from "./thread.ts";
+
 export type { RuntimeOptions } from "./runtime.ts";
 export { Runtime } from "./runtime.ts";
 

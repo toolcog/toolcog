@@ -1,5 +1,6 @@
 import { AsyncContext } from "@toolcog/util/async";
 import type { Message } from "./message.ts";
+import { Toolcog } from "./toolcog.ts";
 
 interface Thread {
   readonly messages: readonly Message[];
@@ -12,23 +13,19 @@ const Thread = (() => {
     name: "toolcog.thread",
   });
 
-  const create = (): Thread => {
-    return {
-      messages: [],
-      addMessage(message: Message): void {
-        (this.messages as Message[]).push(message);
-      },
-    };
-  };
-
   const get = (): Thread | undefined => {
     return threadVariable.get();
   };
 
-  const getOrCreate = (): Thread => {
+  const create = async (messages?: Message[]): Promise<Thread> => {
+    const toolcog = await Toolcog.current();
+    return toolcog.createThread(messages);
+  };
+
+  const getOrCreate = async (): Promise<Thread> => {
     let thread = get();
     if (thread === undefined) {
-      thread = create();
+      thread = await create();
     }
     return thread;
   };

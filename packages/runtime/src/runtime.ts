@@ -1,8 +1,10 @@
 import type {
+  Message,
   Tool,
+  Toolcog,
+  Thread,
   GenerativeModel,
   EmbeddingModel,
-  Toolcog,
   UseToolOptions,
 } from "@toolcog/core";
 import type { PluginLoaderOptions } from "./plugin-loader.ts";
@@ -12,6 +14,7 @@ import type { GenerativePlugin } from "./generative-loader.ts";
 import { GenerativeLoader } from "./generative-loader.ts";
 import type { EmbeddingPlugin } from "./embedding-loader.ts";
 import { EmbeddingLoader } from "./embedding-loader.ts";
+import { TemporaryThread } from "./thread.ts";
 
 const DEFAULT_PLUGIN_LOADER_OPTIONS = {
   modulePrefixes: ["@toolcog/", "toolcog-model-"],
@@ -47,6 +50,10 @@ class Runtime implements Toolcog {
       this.#pluginLoader,
       options?.embeddingLoader,
     );
+  }
+
+  createThread(messages?: Message[]): Thread {
+    return new TemporaryThread(messages);
   }
 
   useTool(tool: Tool, options?: UseToolOptions): Tool {

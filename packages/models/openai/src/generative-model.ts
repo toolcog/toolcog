@@ -76,18 +76,10 @@ class OpenAIGenerativeModel implements GenerativeModel {
   }
 
   generate<T = string>(args?: unknown, options?: GenerateOptions): Promise<T> {
-    return this.#prompt<T>(undefined, args, options);
+    return this.prompt<T>(undefined, args, options);
   }
 
-  prompt<T = string>(
-    instructions?: string,
-    args?: unknown,
-    options?: GenerateOptions,
-  ): Promise<T> {
-    return this.#prompt<T>(instructions, args, options);
-  }
-
-  async #prompt<T>(
+  async prompt<T>(
     instructions?: string,
     args?: unknown,
     options?: GenerateOptions,
@@ -138,11 +130,8 @@ class OpenAIGenerativeModel implements GenerativeModel {
       instructions = "Use the function arguments to generate a response.";
     }
 
-    const systemMessage =
-      "You are an AI function embedded in a computer program.";
-
     const userMessage =
-      "Use the JSON parameters schema to interpret the JSON function arguments. " +
+      "Use the following JSON parameters schema to interpret the JSON function arguments. " +
       "Then use the interpreted arguments to perform the function as instructed. " +
       "Respond with JSON object that conforms to the JSON return schema. " +
       "\n\n" +
@@ -157,9 +146,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
       "\n\n" +
       instructions;
 
-    const thread = Thread.getOrCreate();
-
-    thread.addMessage({ role: "system", content: systemMessage });
+    const thread = await Thread.getOrCreate();
     thread.addMessage({ role: "user", content: userMessage });
 
     while (true) {
@@ -311,7 +298,8 @@ class OpenAIGenerativeModel implements GenerativeModel {
               title: toolCallDescriptor.name,
             },
             async (toolJob) => {
-              const toolReturn = await Thread.run(Thread.create(), () => {
+              const toolThread = await Thread.create();
+              const toolReturn = await Thread.run(toolThread, () => {
                 return Promise.resolve(tool.call(null, ...toolArgs));
               });
               const toolContent = JSON.stringify(toolReturn);

@@ -1,10 +1,14 @@
 import { AsyncContext } from "@toolcog/util/async";
+import type { Message } from "./message.ts";
 import type { Tool } from "./tool.ts";
+import type { Thread } from "./thread.ts";
 import type { UseToolOptions } from "./use-tool.ts";
 import type { GenerativeModel } from "./generative-model.ts";
 import type { EmbeddingModel } from "./embedding-model.ts";
 
 interface Toolcog {
+  createThread(messages?: Message[]): Thread;
+
   useTool(tool: Tool, options?: UseToolOptions): Tool;
 
   getGenerativeModel(modelId?: string): Promise<GenerativeModel>;

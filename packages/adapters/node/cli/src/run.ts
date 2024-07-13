@@ -38,7 +38,7 @@ const run = async (
   }
 
   // Evaluate all input in a contiguous conversation thread.
-  const thread = Thread.create();
+  const thread = await Thread.create();
   await Thread.run(thread, async () => {
     // Instantiate a REPL to evaluate code.
     const repl = new Repl();

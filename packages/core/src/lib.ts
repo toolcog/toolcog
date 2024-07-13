@@ -20,9 +20,9 @@ export type {
   EmbeddingSimilarity,
 } from "./embedding.ts";
 
-export { Thread } from "./thread.ts";
-
 export { Toolcog } from "./toolcog.ts";
+
+export { Thread } from "./thread.ts";
 
 export type { UseToolOptions } from "./use-tool.ts";
 export { useTool } from "./use-tool.ts";
