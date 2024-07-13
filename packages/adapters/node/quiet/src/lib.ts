@@ -1,14 +1,29 @@
 type WarningHandler = (warning: Error | undefined, ...rest: any[]) => unknown;
 
-const messageFilter = /(?:--(?:experimental-)?loader\b|\bCustom ESM Loaders\b)/;
-
-// Silence eye-gouging node warnings.
-function warningHandler(this: unknown, warning?: Error, ...rest: unknown[]) {
+// Silence experimental node warnings.
+function warningHandler(
+  this: unknown,
+  warning?: Error,
+  ...rest: unknown[]
+): unknown {
   if (
     warning?.name === "ExperimentalWarning" &&
-    messageFilter.test(warning.message)
+    /(?:--(?:experimental-)?loader\b)/.test(warning.message)
   ) {
     // Suppress --experimental-loader warning.
+    return;
+  }
+
+  if (
+    warning?.name === "ExperimentalWarning" &&
+    warning.message.includes("vm.USE_MAIN_CONTEXT_DEFAULT_LOADER")
+  ) {
+    // Suppress vm.USE_MAIN_CONTEXT_DEFAULT_LOADER warning.
+    return;
+  }
+
+  if (warning?.name === "DeprecationWarning") {
+    // Suppress unhelpfully REPL-disrupting deprecation warnings.
     return;
   }
 

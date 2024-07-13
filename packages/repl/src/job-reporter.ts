@@ -102,7 +102,7 @@ class JobReporter {
     let jobIndex = Math.max(0, this.#root.descendantCount - outputRows);
     let jobCount = 0;
     for (const job of this.#root.descendants(jobIndex)) {
-      output.write(this.#getStatusLine(job, outputCols));
+      output.write(this.#getStatusLine(job, outputCols - 1));
       output.clearLine(1);
       output.write(EOL);
 

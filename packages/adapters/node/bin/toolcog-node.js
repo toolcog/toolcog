@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import { program } from "#cli";
+import { cli } from "#cli";
 
-program.parse();
+await cli().parseAsync(process.argv);

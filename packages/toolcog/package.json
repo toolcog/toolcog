@@ -53,6 +53,7 @@
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
     "@toolcog/compiler": "workspace:*",
+    "@toolcog/node": "workspace:*",
     "commander": "catalog:default"
   },
   "optionalDependencies": {

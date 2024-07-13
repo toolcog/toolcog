@@ -1,1 +1,1 @@
-export { program } from "./program.ts";
+export { cli } from "./cli.ts";

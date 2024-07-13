@@ -4,13 +4,12 @@ import { EOL, homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import type { CompleterResult } from "node:readline";
 import { cursorTo } from "node:readline";
+import type { Interface } from "node:readline/promises";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { inspect } from "node:util";
-import type { Context } from "node:vm";
-import { constants, createContext, runInContext } from "node:vm";
+import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
-import { useTool, generate, prompt } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
 import { Tool, Toolcog } from "@toolcog/core";
@@ -19,8 +18,6 @@ import { transformTopLevelAwait } from "./transform-await.ts";
 import { JobReporter } from "./job-reporter.ts";
 
 interface ReplOptions {
-  context?: Context | undefined;
-
   input?: NodeJS.ReadableStream | undefined;
   output?: NodeJS.WritableStream | undefined;
   terminal?: boolean | undefined;
@@ -37,8 +34,6 @@ interface ReplOptions {
 }
 
 class Repl {
-  readonly #context: Context;
-
   readonly #input: NodeJS.ReadableStream;
   readonly #output: NodeJS.WritableStream;
   readonly #terminal: boolean | undefined;
@@ -68,17 +63,6 @@ class Repl {
   #pendingStatementCount: number;
 
   constructor(options?: ReplOptions) {
-    this.#context =
-      options?.context ??
-      createContext(
-        {
-          ...globalThis,
-        },
-        {
-          name: "Toolcog REPL",
-        },
-      );
-
     this.#input = options?.input ?? process.stdin;
     this.#output = options?.output ?? process.stdout;
     this.#terminal = options?.terminal;
@@ -209,14 +193,10 @@ class Repl {
 
     this.#executedStatementCount = 0;
     this.#pendingStatementCount = 0;
+  }
 
-    // Inject REPL prelude.
-    this.#context.useTool = useTool;
-    this.#context.generate = generate;
-    this.#context.prompt = prompt;
-    this.#cumulativeInput +=
-      'import { useTool, generate, prompt } from "@toolcog/core";\n';
-    this.#executedStatementCount += 1;
+  get version(): string {
+    return __version__;
   }
 
   get input(): NodeJS.ReadableStream {
@@ -235,7 +215,28 @@ class Repl {
     return "| ".padStart(turn.toString().length + 2, " ");
   }
 
-  async run(): Promise<void> {
+  printBanner(): void {
+    this.#output.write(`Welcome to Toolcog v${this.version}`);
+    this.#output.write(" (");
+    this.#output.write(`Node.js ${process.version}`);
+    this.#output.write(", ");
+    this.#output.write(`TypeScript v${ts.version}`);
+    this.#output.write(")\n");
+
+    this.#output.write('Type ".help" for more information.\n');
+    this.#output.write("\n");
+  }
+
+  async evalPrelude(): Promise<void> {
+    // Import toolcog intrinsics.
+    await this.evalCode(
+      'import { useTool, generate, prompt } from "@toolcog/core";\n',
+    );
+    // Un-increment the turn count.
+    this.#turnCount -= 1;
+  }
+
+  async #createInterface(): Promise<Interface> {
     // Load REPL history from file.
     let history: string[] | undefined;
     if (this.#historySize > 0 && existsSync(this.#historyFile)) {
@@ -243,7 +244,7 @@ class Repl {
       history = historyData.split(EOL).reverse();
     }
 
-    // Initialize the readline interface.
+    // Create the readline interface.
     const readline = createInterface({
       input: this.#input,
       output: this.#output,
@@ -253,28 +254,38 @@ class Repl {
       historySize: this.#historySize,
     });
 
+    // Handle history change events.
     readline.on("history", async (history: string[]): Promise<void> => {
-      // Save history to file.
-      if (this.#historySize > 0) {
-        const historyDir = dirname(this.#historyFile);
-        if (!existsSync(historyDir)) {
-          await mkdir(historyDir, { recursive: true });
-        }
-        const historyData = history.slice().reverse().join(EOL);
-        await writeFile(this.#historyFile, historyData, "utf-8");
+      if (this.#historySize === 0) {
+        return;
       }
+      const historyDir = dirname(this.#historyFile);
+      if (!existsSync(historyDir)) {
+        await mkdir(historyDir, { recursive: true });
+      }
+      const historyData = history.slice().reverse().join(EOL);
+      await writeFile(this.#historyFile, historyData, "utf-8");
     });
 
+    return readline;
+  }
+
+  async run(): Promise<void> {
+    // Initialize the readline interface.
+    const readline = await this.#createInterface();
+
+    // Handle Ctrl+C events.
     readline.on("SIGINT", async () => {
-      // Ctrl+C clears the currently buffered input.
+      // Clear the currently buffered input.
       this.#bufferedInput = "";
 
       // Move the cursor to the end of the line.
       cursorTo(this.#output, readline.line.length);
-      // Reset the line buffer.
+
+      // Reset the line buffer and print a newline.
       (readline as { line: string }).line = "";
-      // Print a newline.
       this.#output.write(EOL);
+
       // Issue a new prompt.
       readline.setPrompt(this.initialPrompt(this.#turnCount));
       readline.prompt();
@@ -284,80 +295,78 @@ class Repl {
     readline.setPrompt(this.initialPrompt(this.#turnCount));
     readline.prompt();
 
+    // Iterate over all input lines received by the REPL.
     for await (const line of readline) {
-      this.#bufferedInput += line + EOL;
+      // Check for non-continuation line special cases.
+      if (this.#bufferedInput.length === 0) {
+        const input = line.trim();
 
-      const trimmedInput = this.#bufferedInput.trim();
-      if (trimmedInput.length === 0) {
-        this.#bufferedInput = "";
-        readline.prompt();
-        continue;
-      } else if (trimmedInput === ".exit") {
-        readline.close();
-        break;
+        // Check for an empty input line.
+        if (input.length === 0) {
+          // Issue a new prompt and wait for the next line.
+          readline.prompt();
+          continue;
+        }
+
+        // Check for an explicit exit command.
+        if (input === ".exit") {
+          readline.close();
+          break;
+        }
       }
 
-      const inputType = this.#classifyInput(this.#bufferedInput);
-      if (inputType === "lang") {
-        const stackTraceLimit = Error.stackTraceLimit;
-        Error.stackTraceLimit = Infinity;
-        try {
-          await this.#runLang(this.#bufferedInput);
-          this.#output.write(EOL);
-        } catch (error) {
-          this.#output.write(String(error));
-          this.#output.write(EOL);
-          this.#output.write(EOL);
-        } finally {
-          Error.stackTraceLimit = stackTraceLimit;
+      // Append the new input line to the currently buffered input.
+      this.#bufferedInput += line + EOL;
 
-          // Reset the input buffer and increment the turn count.
-          this.#bufferedInput = "";
-          this.#turnCount += 1;
+      // Classify the currently buffered input as natural language,
+      // code, or as needing a continuation line.
+      const inputType = this.classifyInput(this.#bufferedInput);
 
-          readline.prompt();
-        }
-      } else if (inputType === "code") {
-        const stackTraceLimit = Error.stackTraceLimit;
-        Error.stackTraceLimit = Infinity;
-        try {
-          await this.#runCode(this.#bufferedInput);
-          this.#output.write(EOL);
-        } catch (error) {
-          this.#output.write(String(error));
-          this.#output.write(EOL);
-          this.#output.write(EOL);
-        } finally {
-          Error.stackTraceLimit = stackTraceLimit;
-
-          // Reset the input buffer and increment the turn count.
-          this.#bufferedInput = "";
-          this.#turnCount += 1;
-
-          readline.setPrompt(this.initialPrompt(this.#turnCount));
-          readline.prompt();
-        }
-      } else {
+      // Check if the input needs a continuation line.
+      if (inputType === "cont") {
+        // Issue a continuation prompt and wait for the next line.
         readline.setPrompt(this.continuationPrompt(this.#turnCount));
+        readline.prompt();
+        continue;
+      }
+
+      // Capture full stack traces on error.
+      const stackTraceLimit = Error.stackTraceLimit;
+      Error.stackTraceLimit = Infinity;
+      try {
+        if (inputType === "lang") {
+          // Evaluate natural language input.
+          await this.#runLang(this.#bufferedInput);
+        } else {
+          // Evaluate code input.
+          await this.#runCode(this.#bufferedInput);
+        }
+      } catch (error) {
+        // Write the error to the output and continue.
+        this.#output.write(String(error) + EOL);
+      } finally {
+        // Write a newline to provide visual separation.
+        this.#output.write(EOL);
+
+        // Reset stack trace limit.
+        Error.stackTraceLimit = stackTraceLimit;
+
+        // Reset the input buffer.
+        this.#bufferedInput = "";
+
+        // Issue the next prompt.
+        readline.setPrompt(this.initialPrompt(this.#turnCount));
         readline.prompt();
       }
     }
 
+    // Write a newline before exiting the REPL.
     this.#output.write(EOL);
   }
 
   async #runLang(input: string): Promise<void> {
-    // Collect all top-level tools in the VM context.
-    const tools: Tool[] = [];
-    for (const key in this.#context) {
-      const value = this.#context[key] as unknown;
-      if (value instanceof Tool) {
-        tools.push(value);
-      }
-    }
-
     await Job.run({ title: "Prompt" }, async (root) => {
-      // Create a job reporter to monitor the prompt.
+      // Create a job reporter to monitor the run.
       const reporter = new JobReporter(
         root,
         this.#input as NodeJS.ReadStream,
@@ -366,29 +375,45 @@ class Repl {
       // Start printing job status updates.
       const finished = reporter.start();
 
-      // Complete the prompt using the default generative model.
-      const toolcog = await Toolcog.current();
-      const model = await toolcog.getGenerativeModel();
-      const output = await model.prompt(input, undefined, {
-        tools,
-      });
+      // Evaluate the natural language prompt.
+      const output = await this.evalLang(input);
 
-      // Wait for the final job status update to complete.
+      // Wait for all job status updates to finish.
       root.finish();
       await finished;
 
-      // Print the completion to the output stream.
+      // Print the prompt completion to the output stream.
       this.#output.write(output);
       this.#output.write(EOL);
     });
   }
 
-  async #runCode(input: string): Promise<void> {
-    // Preprocess the currently buffered input.
-    const processedInput = this.#preprocess(input);
+  async evalLang(input: string): Promise<string> {
+    const context = globalThis as Record<string, unknown>;
+    // Collect all top-level tools in the VM context.
+    const tools: Tool[] = [];
+    for (const key in context) {
+      const value = context[key];
+      if (value instanceof Tool) {
+        tools.push(value);
+      }
+    }
 
-    await Job.run({ title: "Evaluate" }, async (root) => {
-      // Create a job reporter to monitor the evaluation.
+    // Complete the prompt using the default generative model.
+    const toolcog = await Toolcog.current();
+    const model = await toolcog.getGenerativeModel();
+    const output = await model.prompt(input, undefined, { tools });
+
+    // Increment the turn count.
+    this.#turnCount += 1;
+
+    // Return the prompt completion.
+    return output;
+  }
+
+  async #runCode(input: string): Promise<void> {
+    await Job.run(undefined, async (root) => {
+      // Create a job reporter to monitor the run.
       const reporter = new JobReporter(
         root,
         this.#input as NodeJS.ReadStream,
@@ -397,24 +422,38 @@ class Repl {
       // Start printing job status updates.
       const finished = reporter.start();
 
-      // Compile and evaluate the preprocessed input.
-      const bindings = await this.#evaluate(processedInput);
+      // Evaluate the input.
+      const bindings = await this.evalCode(input);
 
-      // Wait for the final job status update to complete.
+      // Wait for all job status updates to finish.
       root.finish();
       await finished;
 
-      // Assign all newly declared bindings to the VM context.
-      Object.assign(this.#context, bindings);
-
       // Print all newly declared bindings to the output stream.
-      this.#printOutput(bindings);
+      this.printBindings(bindings);
     });
+  }
+
+  async evalCode(input: string): Promise<Record<string, unknown>> {
+    // Preprocess the currently buffered input.
+    const processedInput = this.#preprocess(input);
+
+    // Compile and evaluate the preprocessed input.
+    const bindings = await this.#evaluate(processedInput);
+
+    // Assign all newly declared bindings to the VM context.
+    Object.assign(globalThis, bindings);
+
+    // Increment the turn count.
+    this.#turnCount += 1;
 
     // Commit the successfully evaluated code.
     this.#cumulativeInput += processedInput;
     this.#executedStatementCount += this.#pendingStatementCount;
     this.#pendingStatementCount = 0;
+
+    // Return all newly declared bindings.
+    return bindings;
   }
 
   #preprocess(input: string): string {
@@ -441,7 +480,7 @@ class Repl {
     const executableCode = this.#compile(processedInput);
 
     // Execute the transpiled javascript code.
-    const bindings = runInContext(executableCode, this.#context, {
+    const bindings = runInThisContext(executableCode, {
       importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER,
     }) as Record<string, unknown>;
 
@@ -496,17 +535,19 @@ class Repl {
     return transpiledCode;
   }
 
-  #printOutput(bindings: Record<string, unknown>): void {
+  printBindings(bindings: Record<string, unknown>): void {
     for (const key in bindings) {
       const value = bindings[key];
-      this.#output.write(
-        key + ": " + inspect(value, { colors: true, showProxy: true }) + "\n",
-      );
+      this.#output.write(key + ": " + this.formatValue(value) + "\n");
     }
   }
 
+  formatValue(value: unknown): string {
+    return inspect(value, { colors: true, showProxy: true });
+  }
+
   #completer = (line: string): CompleterResult => {
-    // Combine cumulative and buffered input.
+    // Combine cumulative and currently buffered input.
     const input = this.#cumulativeInput + this.#bufferedInput + line + EOL;
 
     // Update the script snapshot with the combined input.
@@ -535,7 +576,7 @@ class Repl {
     return [filteredCompletions, line];
   };
 
-  #classifyInput(source: string): "lang" | "code" | "cont" {
+  classifyInput(source: string): "lang" | "code" | "cont" {
     this.#scanner.setText(source);
 
     // Natural language heuristic.

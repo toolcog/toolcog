@@ -26,6 +26,7 @@
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
     "@toolcog/compiler": "workspace:*",
+    "@toolcog/node/cli": "workspace:*",
     "commander": "catalog:default"
   },
   "devDependencies": {

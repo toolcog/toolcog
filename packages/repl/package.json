@@ -40,6 +40,7 @@
     "@toolcog/util/tty": "workspace:*"
   },
   "devDependencies": {
+    "@rollup/plugin-replace": "catalog:build",
     "@toolcog/config": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",
