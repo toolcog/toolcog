@@ -23,6 +23,7 @@ packages:
   - sandbox
 
 catalog:
+  "@types/node": ">=20"
   commander: ^12.1
   typescript: ^5.5
 

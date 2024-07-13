@@ -124,6 +124,7 @@ const toolcogTransformer = (
       }
     }
 
+    // Bind tool declarations to tool scope.
     if (isFunctionCallStatement(ts, checker, node, useToolFunctionType)) {
       const toolStatement = transformUseToolStatement(
         ts,
@@ -140,6 +141,16 @@ const toolcogTransformer = (
       }
       return toolStatement;
     } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+      const variableType = checker.getTypeAtLocation(node.name);
+      if (checker.isTypeAssignableTo(variableType, toolType)) {
+        toolScope[node.name.escapedText as string] = node.name;
+      }
+    } else if (ts.isImportClause(node) && node.name !== undefined) {
+      const variableType = checker.getTypeAtLocation(node.name);
+      if (checker.isTypeAssignableTo(variableType, toolType)) {
+        toolScope[node.name.escapedText as string] = node.name;
+      }
+    } else if (ts.isImportSpecifier(node)) {
       const variableType = checker.getTypeAtLocation(node.name);
       if (checker.isTypeAssignableTo(variableType, toolType)) {
         toolScope[node.name.escapedText as string] = node.name;

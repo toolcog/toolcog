@@ -70,6 +70,7 @@
   "dependencies": {
     "@toolcog/compiler": "workspace:*",
     "@toolcog/repl": "workspace:*",
+    "@types/node": "catalog:default",
     "commander": "catalog:default"
   },
   "optionalDependencies": {

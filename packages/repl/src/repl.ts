@@ -71,7 +71,9 @@ class Repl {
     this.#context =
       options?.context ??
       createContext(
-        {},
+        {
+          ...globalThis,
+        },
         {
           name: "Toolcog REPL",
         },
