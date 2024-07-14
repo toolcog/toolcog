@@ -47,6 +47,10 @@ export default pluginTs.config(
       "@typescript-eslint/no-useless-constructor": "off",
       "@typescript-eslint/prefer-promise-reject-errors": "off",
       "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/restrict-plus-operands": [
+        "error",
+        { allowNumberAndString: true },
+      ],
       "@typescript-eslint/restrict-template-expressions": "off",
       "@typescript-eslint/unbound-method": "off",
     },

@@ -196,7 +196,6 @@ class OpenAIGenerativeModel implements GenerativeModel {
                 if (content === undefined) {
                   content = deltaContent;
                 } else {
-                  // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
                   content += deltaContent;
                 }
 

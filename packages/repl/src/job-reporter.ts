@@ -1,5 +1,6 @@
 import { EOL } from "node:os";
 import { throttle } from "@toolcog/util/timer";
+import type { Style } from "@toolcog/util/tty";
 import {
   getStringWidth,
   getLastNonEmptyLine,
@@ -14,6 +15,8 @@ class JobReporter {
   readonly #input: NodeJS.ReadableStream;
   readonly #output: NodeJS.WritableStream;
 
+  readonly #style: Style;
+
   #running: Promise<void> | null;
   #resolve: (() => void) | null;
   //#reject: ((reason?: unknown) => void) | null;
@@ -24,11 +27,14 @@ class JobReporter {
     root: Job,
     input: NodeJS.ReadableStream,
     output: NodeJS.WritableStream,
+    style: Style,
   ) {
     this.#root = root;
 
     this.#input = input;
     this.#output = output;
+
+    this.#style = style;
 
     this.#running = null;
     this.#resolve = null;
@@ -65,10 +71,8 @@ class JobReporter {
   readonly #update = throttle(async (job: Job) => {
     if (
       this.#root.childCount !== 0 &&
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
-      (this.#input as NodeJS.ReadStream).isTTY === true &&
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-boolean-literal-compare
-      (this.#output as NodeJS.WriteStream).isTTY === true
+      (this.#input as Partial<NodeJS.ReadStream>).isTTY === true &&
+      (this.#output as Partial<NodeJS.WriteStream>).isTTY === true
     ) {
       await this.#render(
         this.#input as NodeJS.ReadStream,
@@ -131,15 +135,12 @@ class JobReporter {
       appendPrefix(job.parent);
     }
 
-    if (job.nextSibling !== null) {
-      line += "├─";
-    } else {
-      line += "└─";
-    }
-    line += (job.icon ?? "─") + "─";
+    line += this.#style.blue(
+      (job.nextSibling !== null ? "├─" : "└─") + (job.icon ?? "─") + "─",
+    );
 
     if (job.title !== undefined) {
-      line += " " + job.title;
+      line += " " + this.#style.cyan(job.title);
     }
 
     if (job.status !== undefined) {

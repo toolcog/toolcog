@@ -10,9 +10,11 @@ import { fileURLToPath } from "node:url";
 import { inspect } from "node:util";
 import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
+import type { Style } from "@toolcog/util/tty";
+import { style, unstyle } from "@toolcog/util/tty";
+import { Tool, Toolcog } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
-import { Tool, Toolcog } from "@toolcog/core";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
 import { JobReporter } from "./job-reporter.ts";
@@ -20,6 +22,7 @@ import { JobReporter } from "./job-reporter.ts";
 interface ReplOptions {
   input?: NodeJS.ReadableStream | undefined;
   output?: NodeJS.WritableStream | undefined;
+
   terminal?: boolean | undefined;
 
   historyFile?: string | undefined;
@@ -36,7 +39,9 @@ interface ReplOptions {
 class Repl {
   readonly #input: NodeJS.ReadableStream;
   readonly #output: NodeJS.WritableStream;
+
   readonly #terminal: boolean | undefined;
+  readonly #style: Style;
 
   readonly #historyFile: string;
   readonly #historySize: number;
@@ -65,7 +70,15 @@ class Repl {
   constructor(options?: ReplOptions) {
     this.#input = options?.input ?? process.stdin;
     this.#output = options?.output ?? process.stdout;
+
     this.#terminal = options?.terminal;
+    this.#style =
+      (
+        this.#terminal === true ||
+        (this.#output as Partial<NodeJS.WriteStream>).isTTY === true
+      ) ?
+        style
+      : unstyle;
 
     this.#historyFile =
       options?.historyFile ?? resolve(homedir(), ".toolcog", "repl_history");
@@ -208,11 +221,11 @@ class Repl {
   }
 
   initialPrompt(turn: number): string {
-    return `${turn}> `;
+    return this.#style.blue(turn + "> ");
   }
 
   continuationPrompt(turn: number): string {
-    return "| ".padStart(turn.toString().length + 2, " ");
+    return this.#style.blue("| ".padStart(turn.toString().length + 2, " "));
   }
 
   printBanner(): void {
@@ -343,7 +356,7 @@ class Repl {
         }
       } catch (error) {
         // Write the error to the output and continue.
-        this.#output.write(String(error) + EOL);
+        this.#output.write(this.#style.red(String(error)) + EOL);
       } finally {
         // Write a newline to provide visual separation.
         this.#output.write(EOL);
@@ -371,6 +384,7 @@ class Repl {
         root,
         this.#input as NodeJS.ReadStream,
         this.#output as NodeJS.WriteStream,
+        this.#style,
       );
       // Start printing job status updates.
       const finished = reporter.start();
@@ -383,7 +397,7 @@ class Repl {
       await finished;
 
       // Print the prompt completion to the output stream.
-      this.#output.write(output);
+      this.#output.write(this.#style.green(output));
       this.#output.write(EOL);
     });
   }
@@ -418,6 +432,7 @@ class Repl {
         root,
         this.#input as NodeJS.ReadStream,
         this.#output as NodeJS.WriteStream,
+        this.#style,
       );
       // Start printing job status updates.
       const finished = reporter.start();
@@ -538,7 +553,10 @@ class Repl {
   printBindings(bindings: Record<string, unknown>): void {
     for (const key in bindings) {
       const value = bindings[key];
-      this.#output.write(key + ": " + this.formatValue(value) + "\n");
+      this.#output.write(this.#style.blue(key));
+      this.#output.write(": ");
+      this.#output.write(this.formatValue(value));
+      this.#output.write("\n");
     }
   }
 
