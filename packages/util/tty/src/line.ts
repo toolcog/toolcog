@@ -1,10 +1,10 @@
-const getLastNonEmptyLine = (string: string): string => {
+const getLastNonEmptyLine = (text: string): string => {
   // Start at the end of the string.
-  let index = string.length - 1;
+  let index = text.length - 1;
 
   // Traverse backwards to find the last non-whitespace character.
   while (index >= 0) {
-    switch (string.charCodeAt(index)) {
+    switch (text.charCodeAt(index)) {
       case 0x09: // '\t'
       case 0x0a: // '\n'
       case 0x0d: // '\r'
@@ -22,7 +22,7 @@ const getLastNonEmptyLine = (string: string): string => {
 
   // Traverse backwards to find the start of the last non-empty line.
   while (index >= 0) {
-    switch (string.charCodeAt(index)) {
+    switch (text.charCodeAt(index)) {
       case 0x0a: // '\n'
       case 0x0d: // '\r'
         break;
@@ -33,7 +33,7 @@ const getLastNonEmptyLine = (string: string): string => {
     break;
   }
 
-  return string.slice(index + 1, lastIndex + 1);
+  return text.slice(index + 1, lastIndex + 1);
 };
 
 export { getLastNonEmptyLine };

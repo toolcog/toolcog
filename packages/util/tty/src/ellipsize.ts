@@ -1,102 +1,92 @@
 import { getCharacterWidth } from "./width.ts";
 
-const ellipsizeStart = (string: string, maxWidth: number): string => {
-  if (string.length === 0) {
-    return string;
+const ellipsizeStart = (text: string, maxWidth: number): string => {
+  if (maxWidth <= 3) {
+    return text.length <= maxWidth ? text : "...".slice(0, maxWidth);
   }
 
-  let index = string.length - 1;
-  let stringWidth = 0;
-
-  while (true) {
-    let character: string;
+  let textWidth = 0;
+  let index = text.length - 1;
+  while (index >= 0) {
+    let codePoint: number;
     let prevIndex: number;
-
     if (
-      index > 0 &&
-      string.charCodeAt(index - 1) >= 0xd800 &&
-      string.charCodeAt(index - 1) <= 0xdbff &&
-      string.charCodeAt(index) >= 0xdc00 &&
-      string.charCodeAt(index) <= 0xdfff
+      text.charCodeAt(index) >= 0xdc00 &&
+      text.charCodeAt(index) <= 0xdfff &&
+      index - 1 >= 0 &&
+      text.charCodeAt(index - 1) >= 0xd800 &&
+      text.charCodeAt(index - 1) <= 0xdbff
     ) {
-      character = String.fromCodePoint(
-        ((string.charCodeAt(index - 1) - 0xd800) << 10) +
-          (string.charCodeAt(index) - 0xdc00) +
-          0x10000,
-      );
+      codePoint =
+        ((text.charCodeAt(index - 1) - 0xd800) << 10) +
+        (text.charCodeAt(index) - 0xdc00) +
+        0x10000;
       prevIndex = index - 2;
     } else {
-      character = string[index]!;
+      codePoint = text.charCodeAt(index);
       prevIndex = index - 1;
     }
-    if (prevIndex < 0) {
+
+    const characterWidth = getCharacterWidth(codePoint);
+    if (textWidth + characterWidth >= maxWidth - 3) {
       break;
     }
 
-    const characterWidth = getCharacterWidth(character);
-    if (stringWidth + characterWidth >= maxWidth - 3) {
-      break;
-    }
+    textWidth += characterWidth;
     index = prevIndex;
-    stringWidth += characterWidth;
   }
 
-  return index === 0 ? string : "..." + string.slice(index);
+  return index === -1 ? text : "..." + text.slice(index);
 };
 
-const ellipsizeEnd = (string: string, maxWidth: number): string => {
-  if (string.length === 0) {
-    return string;
+const ellipsizeEnd = (text: string, maxWidth: number): string => {
+  if (maxWidth <= 3) {
+    return text.length <= maxWidth ? text : "...".slice(0, maxWidth);
   }
 
+  let textWidth = 0;
   let index = 0;
-  let stringWidth = 0;
-
-  while (true) {
-    let character: string;
+  while (index < text.length) {
+    let codePoint: number;
     let nextIndex: number;
-
     if (
-      index < string.length - 1 &&
-      string.charCodeAt(index) >= 0xd800 &&
-      string.charCodeAt(index) <= 0xdbff &&
-      string.charCodeAt(index + 1) >= 0xdc00 &&
-      string.charCodeAt(index + 1) <= 0xdfff
+      text.charCodeAt(index) >= 0xd800 &&
+      text.charCodeAt(index) <= 0xdbff &&
+      index + 1 < text.length &&
+      text.charCodeAt(index + 1) >= 0xdc00 &&
+      text.charCodeAt(index + 1) <= 0xdfff
     ) {
-      character = String.fromCodePoint(
-        ((string.charCodeAt(index) - 0xd800) << 10) +
-          (string.charCodeAt(index + 1) - 0xdc00) +
-          0x10000,
-      );
+      codePoint =
+        ((text.charCodeAt(index) - 0xd800) << 10) +
+        (text.charCodeAt(index + 1) - 0xdc00) +
+        0x10000;
       nextIndex = index + 2;
     } else {
-      character = string[index]!;
+      codePoint = text.charCodeAt(index);
       nextIndex = index + 1;
     }
-    if (nextIndex > string.length) {
+
+    const characterWidth = getCharacterWidth(codePoint);
+    if (textWidth + characterWidth > maxWidth - 3) {
       break;
     }
 
-    const characterWidth = getCharacterWidth(character);
-    if (stringWidth + characterWidth >= maxWidth - 3) {
-      break;
-    }
+    textWidth += characterWidth;
     index = nextIndex;
-    stringWidth += characterWidth;
   }
 
-  return index === string.length ? string : string.slice(0, index) + "...";
+  return index === text.length ? text : text.slice(0, index) + "...";
 };
 
 const ellipsize = (
-  string: string,
+  text: string,
   maxWidth: number,
   direction?: number,
 ): string => {
   if (direction === undefined || direction >= 0) {
-    return ellipsizeEnd(string, maxWidth);
+    return ellipsizeEnd(text, maxWidth);
   } else {
-    return ellipsizeStart(string, maxWidth);
+    return ellipsizeStart(text, maxWidth);
   }
 };
 

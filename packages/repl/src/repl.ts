@@ -11,7 +11,7 @@ import { inspect } from "node:util";
 import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
 import type { Style } from "@toolcog/util/tty";
-import { style, unstyle } from "@toolcog/util/tty";
+import { style, unstyle, wrapText } from "@toolcog/util/tty";
 import { Tool, Toolcog } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
@@ -220,6 +220,18 @@ class Repl {
     return this.#output;
   }
 
+  get outputRows(): number | undefined {
+    return (this.#output as Partial<NodeJS.WriteStream>).isTTY === true ?
+        (this.#output as NodeJS.WriteStream).rows
+      : undefined;
+  }
+
+  get outputCols(): number | undefined {
+    return (this.#output as Partial<NodeJS.WriteStream>).isTTY === true ?
+        (this.#output as NodeJS.WriteStream).columns
+      : undefined;
+  }
+
   initialPrompt(turn: number): string {
     return this.#style.blue(turn + "> ");
   }
@@ -355,8 +367,8 @@ class Repl {
           await this.#runCode(this.#bufferedInput);
         }
       } catch (error) {
-        // Write the error to the output and continue.
-        this.#output.write(this.#style.red(String(error)) + EOL);
+        // Print the error to the output stream and continue.
+        this.printError(error);
       } finally {
         // Write a newline to provide visual separation.
         this.#output.write(EOL);
@@ -375,6 +387,10 @@ class Repl {
 
     // Write a newline before exiting the REPL.
     this.#output.write(EOL);
+  }
+
+  printError(error: unknown): void {
+    this.#output.write(this.#style.red(String(error)) + EOL);
   }
 
   async #runLang(input: string): Promise<void> {
@@ -397,9 +413,16 @@ class Repl {
       await finished;
 
       // Print the prompt completion to the output stream.
-      this.#output.write(this.#style.green(output));
-      this.#output.write(EOL);
+      this.printText(this.#style.green(output + EOL));
     });
+  }
+
+  printText(text: string): void {
+    const outputCols = this.outputCols;
+    if (outputCols !== undefined) {
+      text = wrapText(text, outputCols - 1);
+    }
+    this.#output.write(text);
   }
 
   async evalLang(input: string): Promise<string> {
@@ -447,6 +470,20 @@ class Repl {
       // Print all newly declared bindings to the output stream.
       this.printBindings(bindings);
     });
+  }
+
+  printBindings(bindings: Record<string, unknown>): void {
+    for (const key in bindings) {
+      const value = bindings[key];
+      this.#output.write(this.#style.blue(key));
+      this.#output.write(": ");
+      this.#output.write(this.formatValue(value));
+      this.#output.write("\n");
+    }
+  }
+
+  formatValue(value: unknown): string {
+    return inspect(value, { colors: true, showProxy: true });
   }
 
   async evalCode(input: string): Promise<Record<string, unknown>> {
@@ -548,20 +585,6 @@ class Repl {
     }
 
     return transpiledCode;
-  }
-
-  printBindings(bindings: Record<string, unknown>): void {
-    for (const key in bindings) {
-      const value = bindings[key];
-      this.#output.write(this.#style.blue(key));
-      this.#output.write(": ");
-      this.#output.write(this.formatValue(value));
-      this.#output.write("\n");
-    }
-  }
-
-  formatValue(value: unknown): string {
-    return inspect(value, { colors: true, showProxy: true });
   }
 
   #completer = (line: string): CompleterResult => {

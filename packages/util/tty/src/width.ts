@@ -1,8 +1,6 @@
 import { stripAnsi } from "./ansi.ts";
 
-const getCharacterWidth = (character: string): number => {
-  const codePoint = character.codePointAt(0)!;
-
+const getCharacterWidth = (codePoint: number, character?: string): number => {
   // Handle control characters.
   if (codePoint <= 0x1f || (codePoint >= 0x7f && codePoint <= 0x9f)) {
     return 0;
@@ -27,7 +25,7 @@ const getCharacterWidth = (character: string): number => {
     return 0;
   }
 
-  // Handle surrogate pairs.
+  // Handle unpaired surrogates.
   if (codePoint >= 0xd800 && codePoint <= 0xdfff) {
     return 0;
   }
@@ -35,16 +33,6 @@ const getCharacterWidth = (character: string): number => {
   // Handle variation selectors.
   if (codePoint >= 0xfe00 && codePoint <= 0xfe0f) {
     return 0;
-  }
-
-  // Handle default ignorable code points.
-  if (/^\p{Default_Ignorable_Code_Point}$/u.test(character)) {
-    return 0;
-  }
-
-  // Handle emoji code points.
-  if (/\p{RGI_Emoji}/v.test(character)) {
-    return 2;
   }
 
   if (
@@ -210,20 +198,34 @@ const getCharacterWidth = (character: string): number => {
     return 2;
   }
 
+  if (character === undefined) {
+    character = String.fromCodePoint(codePoint);
+  }
+
+  // Handle default ignorable code points.
+  if (/^\p{Default_Ignorable_Code_Point}$/u.test(character)) {
+    return 0;
+  }
+
+  // Handle emoji code points.
+  if (/\p{RGI_Emoji}/v.test(character)) {
+    return 2;
+  }
+
   return 1;
 };
 
 const getStringWidth = (() => {
   let segmenter: Intl.Segmenter | null = null;
 
-  return (string: string): number => {
-    if (string.length === 0) {
+  return (text: string): number => {
+    if (text.length === 0) {
       return 0;
     }
 
     // Strip ansi escape sequences.
-    string = stripAnsi(string);
-    if (string.length === 0) {
+    text = stripAnsi(text);
+    if (text.length === 0) {
       return 0;
     }
 
@@ -233,8 +235,8 @@ const getStringWidth = (() => {
     }
 
     let width = 0;
-    for (const { segment: character } of segmenter.segment(string)) {
-      width += getCharacterWidth(character);
+    for (const { segment } of segmenter.segment(text)) {
+      width += getCharacterWidth(segment.codePointAt(0)!, segment);
     }
     return width;
   };

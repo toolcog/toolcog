@@ -1,34 +1,59 @@
-type Stylize = (string: string) => string;
+interface Stylize {
+  // eslint-disable-next-line @typescript-eslint/prefer-function-type
+  (string: string): string;
+}
 
-const stylize = (open: number, close: number): Stylize => {
-  const openCode = `\x1B[${open}m`;
-  const closeCode = `\x1B[${close}m`;
+interface Styled extends Stylize {
+  readonly openCode: number;
+  readonly closeCode: number;
 
-  return (input: string): string => {
-    // Begin the new string with the open code for this style.
-    let string = openCode;
+  readonly open: string;
+  readonly close: string;
+}
 
-    // Replace all nested close codes with the open code for this style.
-    let position = 0;
-    let index: number;
-    while ((index = input.indexOf(closeCode, position)) !== -1) {
-      // Append the next input chunk up to but excluding the next close code.
-      string += input.slice(position, index);
-      // Append the replacement open code.
-      string += openCode;
-      // Start the next input chunk at the end of the last close code.
-      position = index + closeCode.length;
-    }
+const styled = (
+  openCode: number,
+  closeCode: number,
+  codes: Map<number, number>,
+): Styled => {
+  codes.set(openCode, closeCode);
 
-    // Append the final input chunk, which will be the entire input
-    // if no nested styles were found.
-    string += position === 0 ? input : input.slice(position);
+  const open = "\x1B[" + openCode + "m";
+  const close = "\x1B[" + closeCode + "m";
 
-    // End the new string with the close code for this style.
-    string += closeCode;
+  return Object.assign(
+    (input: string): string => {
+      // Begin the output string with the open sequence for this style.
+      let output = open;
 
-    return string;
-  };
+      // Replace all nested close codes with the open sequence for this style.
+      let position = 0;
+      let index: number;
+      while ((index = input.indexOf(close, position)) !== -1) {
+        // Append the next input chunk up to the escape sequence.
+        output += input.slice(position, index);
+        // Append the replacement escape sequence.
+        output += open;
+        // The next input chunk starts after the end of the escape sequence.
+        position = index + close.length;
+      }
+
+      // Append the final input chunk, which will be the entire input
+      // if no nested styles were found.
+      output += position === 0 ? input : input.slice(position);
+
+      // End the output string with the close sequence for this style.
+      output += close;
+
+      return output;
+    },
+    {
+      openCode,
+      closeCode,
+      open,
+      close,
+    },
+  );
 };
 
 interface Style {
@@ -52,6 +77,14 @@ interface Style {
   readonly white: Stylize;
   readonly gray: Stylize;
 
+  readonly redBright: Stylize;
+  readonly greenBright: Stylize;
+  readonly yellowBright: Stylize;
+  readonly blueBright: Stylize;
+  readonly magentaBright: Stylize;
+  readonly cyanBright: Stylize;
+  readonly whiteBright: Stylize;
+
   readonly bgBlack: Stylize;
   readonly bgRed: Stylize;
   readonly bgGreen: Stylize;
@@ -62,14 +95,6 @@ interface Style {
   readonly bgWhite: Stylize;
   readonly bgGray: Stylize;
 
-  readonly redBright: Stylize;
-  readonly greenBright: Stylize;
-  readonly yellowBright: Stylize;
-  readonly blueBright: Stylize;
-  readonly magentaBright: Stylize;
-  readonly cyanBright: Stylize;
-  readonly whiteBright: Stylize;
-
   readonly bgRedBright: Stylize;
   readonly bgGreenBright: Stylize;
   readonly bgYellowBright: Stylize;
@@ -79,57 +104,61 @@ interface Style {
   readonly bgWhiteBright: Stylize;
 }
 
-const style: Style = (() => {
-  return {
-    reset: stylize(0, 0),
-    bold: stylize(1, 22),
-    dim: stylize(2, 22),
-    italic: stylize(3, 23),
-    underline: stylize(4, 24),
-    overline: stylize(53, 55),
-    inverse: stylize(7, 27),
-    hidden: stylize(8, 28),
-    strikethrough: stylize(9, 29),
+const [styleCodes, style] = (() => {
+  const codes = new Map<number, number>();
 
-    black: stylize(30, 39),
-    red: stylize(31, 39),
-    green: stylize(32, 39),
-    yellow: stylize(33, 39),
-    blue: stylize(34, 39),
-    magenta: stylize(35, 39),
-    cyan: stylize(36, 39),
-    white: stylize(37, 39),
-    gray: stylize(90, 39),
+  const style = {
+    reset: styled(0, 0, codes),
+    bold: styled(1, 22, codes),
+    dim: styled(2, 22, codes),
+    italic: styled(3, 23, codes),
+    underline: styled(4, 24, codes),
+    overline: styled(53, 55, codes),
+    inverse: styled(7, 27, codes),
+    hidden: styled(8, 28, codes),
+    strikethrough: styled(9, 29, codes),
 
-    bgBlack: stylize(40, 49),
-    bgRed: stylize(41, 49),
-    bgGreen: stylize(42, 49),
-    bgYellow: stylize(43, 49),
-    bgBlue: stylize(44, 49),
-    bgMagenta: stylize(45, 49),
-    bgCyan: stylize(46, 49),
-    bgWhite: stylize(47, 49),
-    bgGray: stylize(100, 49),
+    black: styled(30, 39, codes),
+    red: styled(31, 39, codes),
+    green: styled(32, 39, codes),
+    yellow: styled(33, 39, codes),
+    blue: styled(34, 39, codes),
+    magenta: styled(35, 39, codes),
+    cyan: styled(36, 39, codes),
+    white: styled(37, 39, codes),
+    gray: styled(90, 39, codes),
 
-    redBright: stylize(91, 39),
-    greenBright: stylize(92, 39),
-    yellowBright: stylize(93, 39),
-    blueBright: stylize(94, 39),
-    magentaBright: stylize(95, 39),
-    cyanBright: stylize(96, 39),
-    whiteBright: stylize(97, 39),
+    redBright: styled(91, 39, codes),
+    greenBright: styled(92, 39, codes),
+    yellowBright: styled(93, 39, codes),
+    blueBright: styled(94, 39, codes),
+    magentaBright: styled(95, 39, codes),
+    cyanBright: styled(96, 39, codes),
+    whiteBright: styled(97, 39, codes),
 
-    bgRedBright: stylize(101, 49),
-    bgGreenBright: stylize(102, 49),
-    bgYellowBright: stylize(103, 49),
-    bgBlueBright: stylize(104, 49),
-    bgMagentaBright: stylize(105, 49),
-    bgCyanBright: stylize(106, 49),
-    bgWhiteBright: stylize(107, 49),
-  };
+    bgBlack: styled(40, 49, codes),
+    bgRed: styled(41, 49, codes),
+    bgGreen: styled(42, 49, codes),
+    bgYellow: styled(43, 49, codes),
+    bgBlue: styled(44, 49, codes),
+    bgMagenta: styled(45, 49, codes),
+    bgCyan: styled(46, 49, codes),
+    bgWhite: styled(47, 49, codes),
+    bgGray: styled(100, 49, codes),
+
+    bgRedBright: styled(101, 49, codes),
+    bgGreenBright: styled(102, 49, codes),
+    bgYellowBright: styled(103, 49, codes),
+    bgBlueBright: styled(104, 49, codes),
+    bgMagentaBright: styled(105, 49, codes),
+    bgCyanBright: styled(106, 49, codes),
+    bgWhiteBright: styled(107, 49, codes),
+  } as const satisfies Style;
+
+  return [codes as ReadonlyMap<number, number>, style];
 })();
 
-const unstyle: Style = (() => {
+const unstyle = (() => {
   const unstyled: Stylize = (input: string): string => input;
 
   return {
@@ -153,6 +182,14 @@ const unstyle: Style = (() => {
     white: unstyled,
     gray: unstyled,
 
+    redBright: unstyled,
+    greenBright: unstyled,
+    yellowBright: unstyled,
+    blueBright: unstyled,
+    magentaBright: unstyled,
+    cyanBright: unstyled,
+    whiteBright: unstyled,
+
     bgBlack: unstyled,
     bgRed: unstyled,
     bgGreen: unstyled,
@@ -163,14 +200,6 @@ const unstyle: Style = (() => {
     bgWhite: unstyled,
     bgGray: unstyled,
 
-    redBright: unstyled,
-    greenBright: unstyled,
-    yellowBright: unstyled,
-    blueBright: unstyled,
-    magentaBright: unstyled,
-    cyanBright: unstyled,
-    whiteBright: unstyled,
-
     bgRedBright: unstyled,
     bgGreenBright: unstyled,
     bgYellowBright: unstyled,
@@ -178,8 +207,8 @@ const unstyle: Style = (() => {
     bgMagentaBright: unstyled,
     bgCyanBright: unstyled,
     bgWhiteBright: unstyled,
-  };
+  } as const satisfies Style;
 })();
 
-export type { Stylize, Style };
-export { style, unstyle };
+export type { Stylize, Styled, Style };
+export { styleCodes, style, unstyle };
