@@ -12,6 +12,7 @@ packages:
   - packages/runtime
   - packages/compiler
   - packages/transformer
+  - packages/tui
   - packages/repl
   - packages/models/openai
   - packages/adapters/node
@@ -25,6 +26,7 @@ packages:
 catalog:
   "@types/node": ">=20"
   commander: ^12.1
+  defu: ^6.1
   typescript: ^5.5
 
 catalogs:
@@ -39,7 +41,7 @@ catalogs:
     eslint: ^9.6
     eslint-plugin-jsdoc: ^48
     prettier: ^3.3
-    rimraf: ^5.0
+    rimraf: ^6.0
     rollup: ^4.18
     rollup-plugin-dts: ^6.1
     rollup-plugin-node-externals: ^7.1
@@ -48,4 +50,4 @@ catalogs:
     turbo: ^2.0
     typescript: ^5.5
     typescript-eslint: ^7.15
-    vitest: ^1.6
+    vitest: ^2.0

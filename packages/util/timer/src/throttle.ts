@@ -1,3 +1,5 @@
+import { AsyncContext } from "@toolcog/util/async";
+
 /**
  * Returns a throttled wrapper function that invokes `func` at most once
  * every `interval` milliseconds. The throttled wrapper function returns
@@ -135,7 +137,7 @@ const throttle = <F extends (...args: any[]) => unknown>(
     rejectPending = undefined;
   };
 
-  return Object.assign(wrapper, {
+  return Object.assign(AsyncContext.Snapshot.wrap(wrapper), {
     bypass: func,
     force,
     cancel,

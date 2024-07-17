@@ -66,6 +66,13 @@ describe("wrapText", () => {
     expect(wrapText("hello 你好 world", 8)).toBe("hello\n你好\nworld");
   });
 
+  it("should preserve leading whitespace", () => {
+    expect(wrapText("  indented text", 10)).toBe("  indented\ntext");
+    expect(wrapText("    more indented text", 10)).toBe(
+      "    more\nindented\ntext",
+    );
+  });
+
   it("should preserve formatting that spans line wrap breaks", () => {
     expect(wrapText("\x1B[31mhello world", 5)).toBe(
       "\x1B[31mhello\x1B[39m\n\x1B[31mworld\x1B[39m",

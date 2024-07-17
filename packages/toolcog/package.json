@@ -50,10 +50,10 @@
     "typescript": "catalog:default"
   },
   "dependencies": {
-    "@toolcog/core": "workspace:*",
-    "@toolcog/runtime": "workspace:*",
     "@toolcog/compiler": "workspace:*",
+    "@toolcog/core": "workspace:*",
     "@toolcog/node": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
     "commander": "catalog:default"
   },
   "optionalDependencies": {

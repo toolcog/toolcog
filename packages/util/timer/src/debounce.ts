@@ -1,3 +1,5 @@
+import { AsyncContext } from "@toolcog/util/async";
+
 /**
  * Returns a debounced wrapper function that delays invoking `func` until
  * `interval` milliseconds have elapsed since the last time it was invoked.
@@ -107,7 +109,7 @@ const debounce = <F extends (...args: any[]) => unknown>(
     rejectPending = undefined;
   };
 
-  return Object.assign(wrapper, {
+  return Object.assign(AsyncContext.Snapshot.wrap(wrapper), {
     bypass: func,
     force,
     cancel,

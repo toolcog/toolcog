@@ -1,6 +1,6 @@
-import { EOL } from "node:os";
 import { styleCodes } from "./style.ts";
 import { stripAnsi } from "./ansi.ts";
+import { reduceLines, replaceLines } from "./lines.ts";
 import { getCharacterWidth, getStringWidth } from "./width.ts";
 
 const wrapWord = (lines: string[], word: string, maxWidth: number): void => {
@@ -106,15 +106,15 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
   }
 
   const lines = [""];
-
   const words = input.split(" ");
-  for (let charIndex = 0; charIndex < words.length; charIndex += 1) {
-    const word = words[charIndex]!;
+
+  for (let wordIndex = 0; wordIndex < words.length; wordIndex += 1) {
+    const word = words[wordIndex]!;
     const wordWidth = getStringWidth(word);
 
     let lineWidth = getStringWidth(lines[lines.length - 1]!);
 
-    if (charIndex !== 0 && lineWidth !== 0) {
+    if (wordIndex !== 0) {
       // Add a space to separate words.
       lines[lines.length - 1] += " ";
       lineWidth += 1;
@@ -232,42 +232,24 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
   return output;
 };
 
-const wrapText = (input: string, maxWidth: number): string => {
-  let output = "";
-  let eol = EOL;
-
-  // Iterate over all input lines.
-  let position = 0;
-  while (position < input.length) {
-    if (position !== 0) {
-      // Append the original end-of-line sequence.
-      output += eol;
-    }
-
-    let nextIndex: number;
-    let endIndex = input.indexOf("\n", position);
-
-    if (endIndex >= 0) {
-      nextIndex = endIndex + 1;
-      if (endIndex > 1 && input.charCodeAt(endIndex - 1) === 0x0d /*'\r'*/) {
-        endIndex -= 1;
-        eol = "\r\n";
-      } else {
-        eol = "\n";
-      }
-    } else {
-      nextIndex = input.length;
-      endIndex = input.length;
-    }
-
-    // Wrap the next input line..
-    output += wrapLine(input.slice(position, endIndex), maxWidth, eol);
-
-    // Advance to the start of the next line, or to the end of the input.
-    position = nextIndex;
-  }
-
-  return output;
+const wrapLines = (input: string, maxWidth: number): string[] => {
+  return reduceLines(
+    input,
+    (output: string[], line: string, lineno: number, eol: string): string[] => {
+      output.push(wrapLine(line, maxWidth, eol));
+      return output;
+    },
+    [],
+  );
 };
 
-export { wrapText };
+const wrapText = (input: string, maxWidth: number): string => {
+  return replaceLines(
+    input,
+    (line: string, lineno: number, eol: string): string => {
+      return wrapLine(line, maxWidth, eol);
+    },
+  );
+};
+
+export { wrapLine, wrapLines, wrapText };

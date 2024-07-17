@@ -33,9 +33,10 @@
     "typescript": "catalog:default"
   },
   "dependencies": {
+    "@toolcog/compiler": "workspace:*",
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "@toolcog/compiler": "workspace:*",
+    "@toolcog/tui": "workspace:*",
     "@toolcog/util/timer": "workspace:*",
     "@toolcog/util/tty": "workspace:*"
   },

@@ -1,5 +1,7 @@
 {
-  "name": "@toolcog/node/cli",
+  "name": "@toolcog/tui",
+  "version": "0.0.1",
+  "description": "Toolcog terminal UI toolkit",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
@@ -12,8 +14,13 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules"
+    "clean-all": "rimraf .turbo dist node_modules",
+    "prepack": "toolcog-config prepack",
+    "postpack": "toolcog-config postpack"
   },
+  "files": [
+    "dist/"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
@@ -23,13 +30,11 @@
     }
   },
   "dependencies": {
-    "@toolcog/node/loader": "workspace:*",
-    "@toolcog/node/quiet": "workspace:*",
-    "@toolcog/repl": "workspace:*",
-    "commander": "catalog:default"
+    "@toolcog/util/async": "workspace:*",
+    "@toolcog/util/tty": "workspace:*",
+    "defu": "catalog:default"
   },
   "devDependencies": {
-    "@rollup/plugin-replace": "catalog:build",
     "@toolcog/config": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",

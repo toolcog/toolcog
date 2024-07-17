@@ -43,7 +43,7 @@ const Thread = (() => {
     get,
     getOrCreate,
     run,
-  };
+  } as const;
 })();
 
 export { Thread };

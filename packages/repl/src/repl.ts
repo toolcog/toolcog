@@ -3,27 +3,27 @@ import { existsSync } from "node:fs";
 import { EOL, homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import type { CompleterResult } from "node:readline";
-import { cursorTo } from "node:readline";
-import type { Interface } from "node:readline/promises";
-import { createInterface } from "node:readline/promises";
+import type { Interface } from "node:readline";
+import { createInterface, cursorTo } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { inspect } from "node:util";
 import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
 import type { Style } from "@toolcog/util/tty";
-import { style, unstyle, wrapText } from "@toolcog/util/tty";
+import { stylize, splitLines, wrapText } from "@toolcog/util/tty";
 import { Tool, Toolcog } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
 import { toolcogTransformerFactory } from "@toolcog/compiler";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
-import { JobReporter } from "./job-reporter.ts";
+import { reportStatus } from "./report-status.ts";
 
 interface ReplOptions {
   input?: NodeJS.ReadableStream | undefined;
   output?: NodeJS.WritableStream | undefined;
 
   terminal?: boolean | undefined;
+  styled?: boolean | undefined;
 
   historyFile?: string | undefined;
   historySize?: number | undefined;
@@ -41,6 +41,7 @@ class Repl {
   readonly #output: NodeJS.WritableStream;
 
   readonly #terminal: boolean | undefined;
+  readonly #styled: boolean;
   readonly #style: Style;
 
   readonly #historyFile: string;
@@ -72,13 +73,11 @@ class Repl {
     this.#output = options?.output ?? process.stdout;
 
     this.#terminal = options?.terminal;
-    this.#style =
-      (
-        this.#terminal === true ||
-        (this.#output as Partial<NodeJS.WriteStream>).isTTY === true
-      ) ?
-        style
-      : unstyle;
+    this.#styled =
+      options?.styled ??
+      (this.#terminal === true ||
+        (this.#output as Partial<NodeJS.WriteStream>).isTTY === true);
+    this.#style = stylize(this.#styled);
 
     this.#historyFile =
       options?.historyFile ?? resolve(homedir(), ".toolcog", "repl_history");
@@ -232,12 +231,20 @@ class Repl {
       : undefined;
   }
 
+  get styled(): boolean {
+    return this.#styled;
+  }
+
+  get style(): Style {
+    return this.#style;
+  }
+
   initialPrompt(turn: number): string {
-    return this.#style.blue(turn + "> ");
+    return this.#style.green(turn + "> ");
   }
 
   continuationPrompt(turn: number): string {
-    return this.#style.blue("| ".padStart(turn.toString().length + 2, " "));
+    return this.#style.green("| ".padStart(turn.toString().length + 2, " "));
   }
 
   printBanner(): void {
@@ -246,10 +253,12 @@ class Repl {
     this.#output.write(`Node.js ${process.version}`);
     this.#output.write(", ");
     this.#output.write(`TypeScript v${ts.version}`);
-    this.#output.write(")\n");
+    this.#output.write(")");
+    this.#output.write(EOL);
 
-    this.#output.write('Type ".help" for more information.\n');
-    this.#output.write("\n");
+    this.#output.write('Type ".help" for more information.');
+    this.#output.write(EOL);
+    this.#output.write(EOL);
   }
 
   async evalPrelude(): Promise<void> {
@@ -266,7 +275,7 @@ class Repl {
     let history: string[] | undefined;
     if (this.#historySize > 0 && existsSync(this.#historyFile)) {
       const historyData = await readFile(this.#historyFile, "utf-8");
-      history = historyData.split(EOL).reverse();
+      history = splitLines(historyData).reverse();
     }
 
     // Create the readline interface.
@@ -361,10 +370,10 @@ class Repl {
       try {
         if (inputType === "lang") {
           // Evaluate natural language input.
-          await this.#runLang(this.#bufferedInput);
+          await this.#runLang(this.#bufferedInput, readline);
         } else {
           // Evaluate code input.
-          await this.#runCode(this.#bufferedInput);
+          await this.#runCode(this.#bufferedInput, readline);
         }
       } catch (error) {
         // Print the error to the output stream and continue.
@@ -393,17 +402,18 @@ class Repl {
     this.#output.write(this.#style.red(String(error)) + EOL);
   }
 
-  async #runLang(input: string): Promise<void> {
+  async #runLang(input: string, readline: Interface): Promise<void> {
     await Job.run({ title: "Prompt" }, async (root) => {
-      // Create a job reporter to monitor the run.
-      const reporter = new JobReporter(
-        root,
-        this.#input as NodeJS.ReadStream,
-        this.#output as NodeJS.WriteStream,
-        this.#style,
+      // Print job status updates.
+      const finished = reportStatus(
+        { root },
+        {
+          input: this.#input,
+          output: this.#output,
+          readline,
+          styled: this.#styled,
+        },
       );
-      // Start printing job status updates.
-      const finished = reporter.start();
 
       // Evaluate the natural language prompt.
       const output = await this.evalLang(input);
@@ -448,17 +458,18 @@ class Repl {
     return output;
   }
 
-  async #runCode(input: string): Promise<void> {
+  async #runCode(input: string, readline: Interface): Promise<void> {
     await Job.run(undefined, async (root) => {
-      // Create a job reporter to monitor the run.
-      const reporter = new JobReporter(
-        root,
-        this.#input as NodeJS.ReadStream,
-        this.#output as NodeJS.WriteStream,
-        this.#style,
+      // Print job status updates.
+      const finished = reportStatus(
+        { root },
+        {
+          input: this.#input,
+          output: this.#output,
+          readline,
+          styled: this.#styled,
+        },
       );
-      // Start printing job status updates.
-      const finished = reporter.start();
 
       // Evaluate the input.
       const bindings = await this.evalCode(input);
@@ -475,10 +486,10 @@ class Repl {
   printBindings(bindings: Record<string, unknown>): void {
     for (const key in bindings) {
       const value = bindings[key];
-      this.#output.write(this.#style.blue(key));
+      this.#output.write(this.#style.green(key));
       this.#output.write(": ");
       this.#output.write(this.formatValue(value));
-      this.#output.write("\n");
+      this.#output.write(EOL);
     }
   }
 
@@ -623,7 +634,7 @@ class Repl {
     // Natural language heuristic.
     let lastToken: ts.SyntaxKind | undefined;
     let tokenCount = 0;
-    let consecutiveIdentifiers = 0;
+    let identifiersInRun = 0;
 
     // Punctuation counters.
     let parenthesisCount = 0;
@@ -638,27 +649,117 @@ class Repl {
       // Scan the source code.
       while (this.#scanner.scan() !== ts.SyntaxKind.EndOfFileToken) {
         const token = this.#scanner.getToken();
-        if (token !== ts.SyntaxKind.NewLineTrivia) {
-          lastToken = token;
-        }
         tokenCount += 1;
+
+        switch (token) {
+          case ts.SyntaxKind.NewLineTrivia:
+          case ts.SyntaxKind.WhitespaceTrivia:
+            break;
+          default:
+            lastToken = token;
+        }
 
         if (braceCount === 0 && bracketCount === 0) {
           switch (token) {
             case ts.SyntaxKind.Unknown:
               return "lang";
             case ts.SyntaxKind.Identifier:
-              consecutiveIdentifiers += 1;
-              if (consecutiveIdentifiers >= 2) {
+              identifiersInRun += 1;
+              if (identifiersInRun === 2) {
                 return "lang";
               }
+              continue;
+            case ts.SyntaxKind.AbstractKeyword:
+            case ts.SyntaxKind.AccessorKeyword:
+            case ts.SyntaxKind.AnyKeyword:
+            case ts.SyntaxKind.AsKeyword:
+            case ts.SyntaxKind.AssertsKeyword:
+            case ts.SyntaxKind.AssertKeyword:
+            case ts.SyntaxKind.AsyncKeyword:
+            case ts.SyntaxKind.AwaitKeyword:
+            case ts.SyntaxKind.BigIntKeyword:
+            case ts.SyntaxKind.BooleanKeyword:
+            case ts.SyntaxKind.BreakKeyword:
+            case ts.SyntaxKind.CaseKeyword:
+            case ts.SyntaxKind.CatchKeyword:
+            case ts.SyntaxKind.ClassKeyword:
+            case ts.SyntaxKind.ConstKeyword:
+            case ts.SyntaxKind.ConstructorKeyword:
+            case ts.SyntaxKind.ContinueKeyword:
+            case ts.SyntaxKind.DebuggerKeyword:
+            case ts.SyntaxKind.DeclareKeyword:
+            case ts.SyntaxKind.DefaultKeyword:
+            case ts.SyntaxKind.DeleteKeyword:
+            case ts.SyntaxKind.DoKeyword:
+            case ts.SyntaxKind.ElseKeyword:
+            case ts.SyntaxKind.EnumKeyword:
+            case ts.SyntaxKind.ExportKeyword:
+            case ts.SyntaxKind.ExtendsKeyword:
+            case ts.SyntaxKind.FalseKeyword:
+            case ts.SyntaxKind.FinallyKeyword:
+            case ts.SyntaxKind.ForKeyword:
+            case ts.SyntaxKind.FromKeyword:
+            case ts.SyntaxKind.FunctionKeyword:
+            case ts.SyntaxKind.GetKeyword:
+            case ts.SyntaxKind.GlobalKeyword:
+            case ts.SyntaxKind.IfKeyword:
+            case ts.SyntaxKind.ImplementsKeyword:
+            case ts.SyntaxKind.ImportKeyword:
+            case ts.SyntaxKind.InferKeyword:
+            case ts.SyntaxKind.InKeyword:
+            case ts.SyntaxKind.InstanceOfKeyword:
+            case ts.SyntaxKind.InterfaceKeyword:
+            case ts.SyntaxKind.IntrinsicKeyword:
+            case ts.SyntaxKind.IsKeyword:
+            case ts.SyntaxKind.KeyOfKeyword:
+            case ts.SyntaxKind.LetKeyword:
+            case ts.SyntaxKind.ModuleKeyword:
+            case ts.SyntaxKind.NamespaceKeyword:
+            case ts.SyntaxKind.NeverKeyword:
+            case ts.SyntaxKind.NewKeyword:
+            case ts.SyntaxKind.NullKeyword:
+            case ts.SyntaxKind.NumberKeyword:
+            case ts.SyntaxKind.ObjectKeyword:
+            case ts.SyntaxKind.OfKeyword:
+            case ts.SyntaxKind.PackageKeyword:
+            case ts.SyntaxKind.PrivateKeyword:
+            case ts.SyntaxKind.ProtectedKeyword:
+            case ts.SyntaxKind.PublicKeyword:
+            case ts.SyntaxKind.ReadonlyKeyword:
+            case ts.SyntaxKind.OutKeyword:
+            case ts.SyntaxKind.OverrideKeyword:
+            case ts.SyntaxKind.RequireKeyword:
+            case ts.SyntaxKind.ReturnKeyword:
+            case ts.SyntaxKind.SatisfiesKeyword:
+            case ts.SyntaxKind.SetKeyword:
+            case ts.SyntaxKind.StaticKeyword:
+            case ts.SyntaxKind.StringKeyword:
+            case ts.SyntaxKind.SuperKeyword:
+            case ts.SyntaxKind.SwitchKeyword:
+            case ts.SyntaxKind.SymbolKeyword:
+            case ts.SyntaxKind.ThisKeyword:
+            case ts.SyntaxKind.ThrowKeyword:
+            case ts.SyntaxKind.TrueKeyword:
+            case ts.SyntaxKind.TryKeyword:
+            case ts.SyntaxKind.TypeKeyword:
+            case ts.SyntaxKind.TypeOfKeyword:
+            case ts.SyntaxKind.UndefinedKeyword:
+            case ts.SyntaxKind.UniqueKeyword:
+            case ts.SyntaxKind.UnknownKeyword:
+            case ts.SyntaxKind.UsingKeyword:
+            case ts.SyntaxKind.VarKeyword:
+            case ts.SyntaxKind.VoidKeyword:
+            case ts.SyntaxKind.WhileKeyword:
+            case ts.SyntaxKind.WithKeyword:
+            case ts.SyntaxKind.YieldKeyword:
+              // Keywords don't reset word runs.
               continue;
             case ts.SyntaxKind.NewLineTrivia:
             case ts.SyntaxKind.WhitespaceTrivia:
             case ts.SyntaxKind.CommaToken:
               break;
             default:
-              consecutiveIdentifiers = 0;
+              identifiersInRun = 0;
               break;
           }
         }
@@ -704,9 +805,14 @@ class Repl {
         }
       }
 
-      // Treat single word sentences ending with a period as language.
-      if (tokenCount <= 3 && lastToken === ts.SyntaxKind.DotToken) {
-        return "lang";
+      // Treat any input that ends with a dot or question mark as language.
+      switch (lastToken) {
+        case ts.SyntaxKind.DotToken:
+        case ts.SyntaxKind.DotDotDotToken:
+        case ts.SyntaxKind.QuestionDotToken:
+          return "lang";
+        default:
+          break;
       }
 
       // Verify that all punctuation is balanced,

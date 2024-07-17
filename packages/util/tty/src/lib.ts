@@ -1,14 +1,48 @@
-export type { Stylize, Styled, Style } from "./style.ts";
-export { style, unstyle } from "./style.ts";
+export type { Stylized, Styled, Style } from "./style.ts";
+export { style, unstyle, stylize } from "./style.ts";
 
-export { stripAnsi } from "./ansi.ts";
+export {
+  ansiRegex,
+  stripAnsi,
+  cursorTo,
+  cursorMove,
+  cursorUp,
+  cursorDown,
+  cursorForward,
+  cursorBackward,
+  cursorLeft,
+  cursorGetPosition,
+  cursorNextLine,
+  cursorPrevLine,
+  cursorHide,
+  cursorShow,
+  eraseLines,
+  eraseEndLine,
+  eraseStartLine,
+  eraseLine,
+  eraseDown,
+  eraseUp,
+  eraseScreen,
+  scrollUp,
+  scrollDown,
+  clearScreen,
+  beep,
+  link,
+} from "./ansi.ts";
 
-export { getStringWidth } from "./width.ts";
+export {
+  countLines,
+  reduceLines,
+  replaceLines,
+  splitLines,
+  getLastLine,
+  getLastNonEmptyLine,
+} from "./lines.ts";
 
-export { wrapText } from "./wrap.ts";
+export { getCharacterWidth, getStringWidth } from "./width.ts";
+
+export { wrapLine, wrapLines, wrapText } from "./wrap.ts";
 
 export { ellipsizeStart, ellipsizeEnd, ellipsize } from "./ellipsize.ts";
 
-export { getLastNonEmptyLine } from "./line.ts";
-
-export { queryCursorPosition } from "./cursor.ts";
+export { MuteStream } from "./mute.ts";

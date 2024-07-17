@@ -64,7 +64,7 @@ const Toolcog = (() => {
     current,
     get,
     run,
-  };
+  } as const;
 })();
 
 export { Toolcog };
