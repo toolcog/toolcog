@@ -109,13 +109,18 @@ class OpenAIEmbeddingModel implements EmbeddingModel {
     }
 
     const requests = batches.map((batch) => () => {
-      return this.#client.embeddings.create({
-        input: batch,
-        model: this.#modelName,
-        ...(this.#dimensions !== undefined ?
-          { dimensions: this.#dimensions }
-        : undefined),
-      });
+      return this.#client.embeddings.create(
+        {
+          input: batch,
+          model: this.#modelName,
+          ...(this.#dimensions !== undefined ?
+            { dimensions: this.#dimensions }
+          : undefined),
+        },
+        {
+          signal: options?.signal,
+        },
+      );
     });
     const responses = await this.#dispatcher.enqueueAll(requests);
 

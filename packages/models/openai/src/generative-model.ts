@@ -154,6 +154,13 @@ class OpenAIGenerativeModel implements GenerativeModel {
       let toolCalls: OpenAI.ChatCompletionMessageToolCall[] | undefined;
       let message: OpenAI.ChatCompletionMessageParam | undefined;
       let tokenCount = 0;
+      let finishReason = null as
+        | "stop"
+        | "length"
+        | "tool_calls"
+        | "content_filter"
+        | "function_call"
+        | null;
 
       const request = {
         model: this.#modelName,
@@ -161,6 +168,9 @@ class OpenAIGenerativeModel implements GenerativeModel {
         ...(tools !== undefined ? { tools } : undefined),
         response_format: { type: "json_object" },
       } satisfies OpenAI.ChatCompletionCreateParams;
+      const requestOptions = {
+        signal: options.signal,
+      } satisfies OpenAI.RequestOptions;
 
       await Job.run(
         {
@@ -171,73 +181,94 @@ class OpenAIGenerativeModel implements GenerativeModel {
         async (job) => {
           if (this.#streaming) {
             const stream = await this.#dispatcher.enqueue(() => {
-              return this.#client.chat.completions.create({
-                ...request,
-                stream: true,
-                stream_options: {
-                  include_usage: true,
+              return this.#client.chat.completions.create(
+                {
+                  ...request,
+                  stream: true,
+                  stream_options: {
+                    include_usage: true,
+                  },
                 },
-              });
+                requestOptions,
+              );
             });
 
-            for await (const chunk of stream) {
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-              if (chunk.usage !== undefined && chunk.usage !== null) {
-                tokenCount += chunk.usage.total_tokens;
-              }
+            let abortListener: (() => void) | undefined;
+            if (options.signal !== undefined) {
+              options.signal.throwIfAborted();
+              abortListener = () => stream.controller.abort();
+              options.signal.addEventListener("abort", abortListener, {
+                once: true,
+              });
+            }
 
-              const delta = chunk.choices[0]?.delta;
-              if (delta === undefined) {
-                continue;
-              }
-
-              const deltaContent = delta.content;
-              if (typeof deltaContent === "string") {
-                if (content === undefined) {
-                  content = deltaContent;
-                } else {
-                  content += deltaContent;
+            try {
+              for await (const chunk of stream) {
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                if (chunk.usage !== undefined && chunk.usage !== null) {
+                  tokenCount += chunk.usage.total_tokens;
                 }
 
-                job.update({
-                  status: content ?? "",
-                  ellipsize: -1,
-                });
-              }
-
-              if (delta.tool_calls !== undefined) {
-                if (toolCalls === undefined) {
-                  toolCalls = [];
+                const choice = chunk.choices[0];
+                if (choice !== undefined) {
+                  finishReason = choice.finish_reason;
                 }
-                for (const toolCallDelta of delta.tool_calls) {
-                  let toolCall = toolCalls[toolCallDelta.index];
-                  if (toolCall === undefined) {
-                    toolCall = {
-                      id: toolCallDelta.id ?? "",
-                      type: "function",
-                      function: {
-                        name: toolCallDelta.function?.name ?? "",
-                        arguments: toolCallDelta.function?.arguments ?? "",
-                      },
-                    };
-                    toolCalls[toolCallDelta.index] = toolCall;
-                    continue;
+
+                const delta = choice?.delta;
+                if (delta === undefined) {
+                  continue;
+                }
+
+                const deltaContent = delta.content;
+                if (typeof deltaContent === "string") {
+                  if (content === undefined) {
+                    content = deltaContent;
+                  } else {
+                    content += deltaContent;
                   }
 
-                  if (toolCallDelta.id !== undefined) {
-                    toolCall.id = toolCallDelta.id;
+                  job.update({
+                    status: content ?? "",
+                    ellipsize: -1,
+                  });
+                }
+
+                if (delta.tool_calls !== undefined) {
+                  if (toolCalls === undefined) {
+                    toolCalls = [];
                   }
-                  if (toolCallDelta.function !== undefined) {
-                    if (toolCallDelta.function.name !== undefined) {
-                      toolCall.function.name = toolCallDelta.function.name;
+                  for (const toolCallDelta of delta.tool_calls) {
+                    let toolCall = toolCalls[toolCallDelta.index];
+                    if (toolCall === undefined) {
+                      toolCall = {
+                        id: toolCallDelta.id ?? "",
+                        type: "function",
+                        function: {
+                          name: toolCallDelta.function?.name ?? "",
+                          arguments: toolCallDelta.function?.arguments ?? "",
+                        },
+                      };
+                      toolCalls[toolCallDelta.index] = toolCall;
+                      continue;
                     }
-                    if (toolCallDelta.function.arguments !== undefined) {
-                      toolCall.function.arguments +=
-                        toolCallDelta.function.arguments;
+
+                    if (toolCallDelta.id !== undefined) {
+                      toolCall.id = toolCallDelta.id;
+                    }
+                    if (toolCallDelta.function !== undefined) {
+                      if (toolCallDelta.function.name !== undefined) {
+                        toolCall.function.name = toolCallDelta.function.name;
+                      }
+                      if (toolCallDelta.function.arguments !== undefined) {
+                        toolCall.function.arguments +=
+                          toolCallDelta.function.arguments;
+                      }
                     }
                   }
                 }
               }
+            } finally {
+              options.signal?.removeEventListener("abort", abortListener!);
             }
 
             message = {
@@ -249,7 +280,10 @@ class OpenAIGenerativeModel implements GenerativeModel {
             };
           } else {
             const response = await this.#dispatcher.enqueue(() => {
-              return this.#client.chat.completions.create(request);
+              return this.#client.chat.completions.create(
+                request,
+                requestOptions,
+              );
             });
 
             // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -257,7 +291,12 @@ class OpenAIGenerativeModel implements GenerativeModel {
               tokenCount += response.usage.total_tokens;
             }
 
-            message = response.choices[0]!.message;
+            const choice = response.choices[0];
+            if (choice !== undefined) {
+              finishReason = choice.finish_reason;
+            }
+
+            message = choice!.message;
             content = message.content;
             toolCalls = message.tool_calls;
 
@@ -276,10 +315,15 @@ class OpenAIGenerativeModel implements GenerativeModel {
         },
       );
 
+      // Check if the request was aborted.
+      if (finishReason === null) {
+        throw new Error("interrupted");
+      }
+
       thread.addMessage(message as Message);
 
-      if (toolCalls !== undefined) {
-        const toolResults = toolCalls.map((toolCall) => {
+      if (finishReason === "tool_calls") {
+        const toolResults = toolCalls!.map((toolCall) => {
           const toolCallDescriptor = toolCall.function;
           const toolArguments = JSON.parse(
             toolCallDescriptor.arguments,

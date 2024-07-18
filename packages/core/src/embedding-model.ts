@@ -5,6 +5,8 @@ interface EmbedOptions {
   modelId?: string | undefined;
 
   cache?: readonly EmbeddingMap[] | EmbeddingMap | undefined;
+
+  signal?: AbortSignal | undefined;
 }
 
 interface EmbeddingModel {

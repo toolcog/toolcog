@@ -14,6 +14,8 @@ interface GenerateOptions {
   return?: Schema | undefined;
 
   tools?: ToolFunction[] | undefined;
+
+  signal?: AbortSignal | undefined;
 }
 
 interface GenerativeModel {

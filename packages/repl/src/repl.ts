@@ -68,6 +68,8 @@ class Repl {
   #executedStatementCount: number;
   #pendingStatementCount: number;
 
+  #abortController: AbortController | null;
+
   constructor(options?: ReplOptions) {
     this.#input = options?.input ?? process.stdin;
     this.#output = options?.output ?? process.stdout;
@@ -205,6 +207,8 @@ class Repl {
 
     this.#executedStatementCount = 0;
     this.#pendingStatementCount = 0;
+
+    this.#abortController = null;
   }
 
   get version(): string {
@@ -310,7 +314,10 @@ class Repl {
 
     // Handle Ctrl+C events.
     readline.on("SIGINT", async () => {
-      // Clear the currently buffered input.
+      // Abort any currently active run.
+      this.#abortController?.abort();
+
+      // Clear any currently buffered input.
       this.#bufferedInput = "";
 
       // Move the cursor to the end of the line.
@@ -415,12 +422,15 @@ class Repl {
         },
       );
 
-      // Evaluate the natural language prompt.
-      const output = await this.evalLang(input);
-
-      // Wait for all job status updates to finish.
-      root.finish();
-      await finished;
+      let output: string;
+      try {
+        // Evaluate the natural language prompt.
+        output = await this.evalLang(input);
+      } finally {
+        // Wait for all job status updates to finish.
+        root.finish();
+        await finished;
+      }
 
       // Print the prompt completion to the output stream.
       this.printText(this.#style.green(output + EOL));
@@ -446,16 +456,24 @@ class Repl {
       }
     }
 
-    // Complete the prompt using the default generative model.
-    const toolcog = await Toolcog.current();
-    const model = await toolcog.getGenerativeModel();
-    const output = await model.prompt(input, undefined, { tools });
+    this.#abortController = new AbortController();
+    try {
+      // Complete the prompt using the default generative model.
+      const toolcog = await Toolcog.current();
+      const model = await toolcog.getGenerativeModel();
+      const output = await model.prompt(input, undefined, {
+        tools,
+        signal: this.#abortController.signal,
+      });
 
-    // Increment the turn count.
-    this.#turnCount += 1;
+      // Increment the turn count.
+      this.#turnCount += 1;
 
-    // Return the prompt completion.
-    return output;
+      // Return the prompt completion.
+      return output;
+    } finally {
+      this.#abortController = null;
+    }
   }
 
   async #runCode(input: string, readline: Interface): Promise<void> {
@@ -471,12 +489,15 @@ class Repl {
         },
       );
 
-      // Evaluate the input.
-      const bindings = await this.evalCode(input);
-
-      // Wait for all job status updates to finish.
-      root.finish();
-      await finished;
+      let bindings: Record<string, unknown>;
+      try {
+        // Evaluate the input code.
+        bindings = await this.evalCode(input);
+      } finally {
+        // Wait for all job status updates to finish.
+        root.finish();
+        await finished;
+      }
 
       // Print all newly declared bindings to the output stream.
       this.printBindings(bindings);
@@ -544,6 +565,7 @@ class Repl {
 
     // Execute the transpiled javascript code.
     const bindings = runInThisContext(executableCode, {
+      breakOnSigint: true,
       importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER,
     }) as Record<string, unknown>;
 
