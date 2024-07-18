@@ -8,7 +8,7 @@ import { usePrefix } from "./use-prefix.ts";
 import type { PartialTheme, RootTheme } from "./theme.ts";
 import { useTheme } from "./use-theme.ts";
 
-interface InputProps {
+interface AskProps {
   message: string;
   default?: string | undefined;
   required?: boolean | undefined;
@@ -19,9 +19,9 @@ interface InputProps {
   theme?: PartialTheme<RootTheme> | undefined;
 }
 
-const promptInput = createComponent(
+const ask = createComponent(
   (
-    props: InputProps,
+    props: AskProps,
     finish: (answer: string) => void,
   ): [string, string | undefined] => {
     const required = props.required ?? false;
@@ -119,5 +119,5 @@ const promptInput = createComponent(
   },
 );
 
-export type { InputProps };
-export { promptInput };
+export type { AskProps };
+export { ask };

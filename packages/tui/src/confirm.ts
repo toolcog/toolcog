@@ -15,7 +15,7 @@ interface ConfirmProps {
   theme?: PartialTheme<RootTheme> | undefined;
 }
 
-const promptConfirm = createComponent(
+const confirm = createComponent(
   (props: ConfirmProps, finish: (value: boolean) => void): string => {
     const [status, setStatus] = useState<"pending" | "done">("pending");
 
@@ -67,4 +67,4 @@ const promptConfirm = createComponent(
 );
 
 export type { ConfirmProps };
-export { promptConfirm };
+export { confirm };

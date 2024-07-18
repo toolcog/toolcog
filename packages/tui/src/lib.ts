@@ -54,14 +54,14 @@ export { paginate } from "./paginate.ts";
 export type { UsePaginationOptions } from "./use-pagination.ts";
 export { usePagination } from "./use-pagination.ts";
 
-export type { InputProps } from "./prompt-input.ts";
-export { promptInput } from "./prompt-input.ts";
+export type { AskProps } from "./ask.ts";
+export { ask } from "./ask.ts";
 
-export type { PasswordProps } from "./prompt-password.ts";
-export { promptPassword } from "./prompt-password.ts";
+export type { SecureProps } from "./secure.ts";
+export { secure } from "./secure.ts";
 
-export type { ConfirmProps } from "./prompt-confirm.ts";
-export { promptConfirm } from "./prompt-confirm.ts";
+export type { ConfirmProps } from "./confirm.ts";
+export { confirm } from "./confirm.ts";
 
 export type {
   SelectTheme,
@@ -69,14 +69,14 @@ export type {
   SelectSeparator,
   SelectItem,
   SelectProps,
-} from "./prompt-select.ts";
-export { selectTheme, promptSelect } from "./prompt-select.ts";
+} from "./select.ts";
+export { selectTheme, select } from "./select.ts";
 
 export type {
-  MultiselectTheme,
-  MultiselectOption,
-  MultiselectSeparator,
-  MultiselectItem,
-  MultiselectProps,
-} from "./prompt-multiselect.ts";
-export { multiselectTheme, promptMultiselect } from "./prompt-multiselect.ts";
+  ChooseTheme,
+  ChooseOption,
+  ChooseSeparator,
+  ChooseItem,
+  ChooseProps,
+} from "./choose.ts";
+export { chooseTheme, choose } from "./choose.ts";

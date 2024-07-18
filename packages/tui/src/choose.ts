@@ -18,7 +18,7 @@ import type { PartialTheme, RootTheme } from "./theme.ts";
 import { style, makeTheme } from "./theme.ts";
 import { useTheme } from "./use-theme.ts";
 
-interface MultiselectTheme {
+interface ChooseTheme {
   readonly icon: {
     readonly cursor: string;
     readonly selected: string;
@@ -28,7 +28,7 @@ interface MultiselectTheme {
   readonly helpMode: "always" | "never" | "auto";
 }
 
-const multiselectTheme = makeTheme<MultiselectTheme>({
+const chooseTheme = makeTheme<ChooseTheme>({
   icon: {
     cursor: "❯",
     selected: "◉",
@@ -38,7 +38,7 @@ const multiselectTheme = makeTheme<MultiselectTheme>({
   helpMode: "auto",
 });
 
-interface MultiselectOption<T> {
+interface ChooseOption<T> {
   type?: undefined;
   name?: string | undefined;
   value: T;
@@ -46,52 +46,48 @@ interface MultiselectOption<T> {
   selected?: boolean | undefined;
 }
 
-interface MultiselectSeparator {
+interface ChooseSeparator {
   type: "separator";
   separator?: string | undefined;
 }
 
-interface MultiselectProps<T> {
+type ChooseItem<T> = ChooseOption<T> | ChooseSeparator;
+
+interface ChooseProps<T> {
   message: string;
-  options: readonly MultiselectItem<T>[];
+  options: readonly ChooseItem<T>[];
   required?: boolean | undefined;
   instructions?: string | boolean | undefined;
   pageSize?: number | undefined;
   loop?: boolean | undefined;
   validate?:
     | ((
-        validate: readonly MultiselectOption<T>[],
+        validate: readonly ChooseOption<T>[],
       ) => Promise<string | boolean> | string | boolean)
     | undefined;
   format?:
     | ((
-        selection: readonly MultiselectOption<T>[],
-        items: readonly MultiselectItem<T>[],
+        selection: readonly ChooseOption<T>[],
+        items: readonly ChooseItem<T>[],
       ) => string)
     | undefined;
-  theme?: PartialTheme<MultiselectTheme & RootTheme> | undefined;
+  theme?: PartialTheme<ChooseTheme & RootTheme> | undefined;
 }
 
-type MultiselectItem<T> = MultiselectOption<T> | MultiselectSeparator;
-
-const isSelectable = <T>(
-  item: MultiselectItem<T>,
-): item is MultiselectOption<T> => {
+const isSelectable = <T>(item: ChooseItem<T>): item is ChooseOption<T> => {
   return item.type !== "separator" && !item.disabled;
 };
 
-const isSelected = <T>(
-  item: MultiselectItem<T>,
-): item is MultiselectOption<T> => {
+const isSelected = <T>(item: ChooseItem<T>): item is ChooseOption<T> => {
   return isSelectable(item) && item.selected === true;
 };
 
-const toggle = <T>(item: MultiselectItem<T>): MultiselectItem<T> => {
+const toggle = <T>(item: ChooseItem<T>): ChooseItem<T> => {
   return isSelectable(item) ? { ...item, selected: !item.selected } : item;
 };
 
-const promptMultiselect = createComponent(
-  <T>(props: MultiselectProps<T>, finish: (value: T[]) => void): string => {
+const choose = createComponent(
+  <T>(props: ChooseProps<T>, finish: (value: T[]) => void): string => {
     const required = props.required ?? false;
     const instructions = props.instructions ?? true;
     const pageSize = props.pageSize ?? 7;
@@ -101,7 +97,7 @@ const promptMultiselect = createComponent(
       "pending",
     );
 
-    const [items, setItems] = useState<readonly MultiselectItem<T>[]>(() =>
+    const [items, setItems] = useState<readonly ChooseItem<T>[]>(() =>
       props.options.map((item) => ({ ...item })),
     );
 
@@ -122,7 +118,7 @@ const promptMultiselect = createComponent(
 
     const [selectionMade, setSelectionMade] = useState<boolean>(false);
 
-    const theme = useTheme(props.theme, multiselectTheme);
+    const theme = useTheme(props.theme, chooseTheme);
 
     const prefix = usePrefix({ theme });
 
@@ -187,12 +183,12 @@ const promptMultiselect = createComponent(
       }
     });
 
-    const page = usePagination<MultiselectItem<T>>({
+    const page = usePagination<ChooseItem<T>>({
       items,
       active,
       pageSize,
       loop,
-      renderItem(item: MultiselectItem<T>, active: boolean): string {
+      renderItem(item: ChooseItem<T>, active: boolean): string {
         let line = "";
         if (item.type === "separator") {
           line += " ";
@@ -279,10 +275,10 @@ const promptMultiselect = createComponent(
 );
 
 export type {
-  MultiselectTheme,
-  MultiselectOption,
-  MultiselectSeparator,
-  MultiselectItem,
-  MultiselectProps,
+  ChooseTheme,
+  ChooseOption,
+  ChooseSeparator,
+  ChooseItem,
+  ChooseProps,
 };
-export { multiselectTheme, promptMultiselect };
+export { chooseTheme, choose };

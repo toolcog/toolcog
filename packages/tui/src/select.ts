@@ -49,6 +49,8 @@ interface SelectSeparator {
   separator?: string | undefined;
 }
 
+type SelectItem<T> = SelectOption<T> | SelectSeparator;
+
 interface SelectProps<T> {
   message: string;
   options: readonly SelectItem<T>[];
@@ -58,13 +60,11 @@ interface SelectProps<T> {
   theme?: PartialTheme<SelectTheme & RootTheme> | undefined;
 }
 
-type SelectItem<T> = SelectOption<T> | SelectSeparator;
-
 const isSelectable = <T>(item: SelectItem<T>): item is SelectOption<T> => {
   return item.type !== "separator" && !item.disabled;
 };
 
-const promptSelect = createComponent(
+const select = createComponent(
   <T>(props: SelectProps<T>, finish: (value: T) => void): string => {
     const items = props.options;
     const pageSize = props.pageSize ?? 7;
@@ -238,4 +238,4 @@ export type {
   SelectItem,
   SelectProps,
 };
-export { selectTheme, promptSelect };
+export { selectTheme, select };

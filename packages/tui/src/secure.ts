@@ -9,7 +9,7 @@ import { usePrefix } from "./use-prefix.ts";
 import type { PartialTheme, RootTheme } from "./theme.ts";
 import { useTheme } from "./use-theme.ts";
 
-interface PasswordProps {
+interface SecureProps {
   message: string;
   mask?: boolean | string | undefined;
   validate?:
@@ -18,9 +18,9 @@ interface PasswordProps {
   theme?: PartialTheme<RootTheme> | undefined;
 }
 
-const promptPassword = createComponent(
+const secure = createComponent(
   (
-    props: PasswordProps,
+    props: SecureProps,
     finish: (value: string) => void,
   ): [string, string | undefined] => {
     const mask = props.mask ?? true;
@@ -96,5 +96,5 @@ const promptPassword = createComponent(
   },
 );
 
-export type { PasswordProps };
-export { promptPassword };
+export type { SecureProps };
+export { secure };
