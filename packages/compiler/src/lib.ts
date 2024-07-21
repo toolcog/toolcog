@@ -1,16 +1,16 @@
-export { typeToSchema } from "./schema.ts";
+export { typeToSchema } from "./type-to-schema.ts";
 
 export { getToolDescriptor } from "./tool-descriptor.ts";
 
 export {
   transformUseToolExpression,
   transformUseToolStatement,
-} from "./use-tool.ts";
+} from "./tool-expression.ts";
 
 export {
   transformGenerateExpression,
-  transformPromptExpression,
-} from "./generative.ts";
+  transformInstructExpression,
+} from "./generative-expression.ts";
 
 export type { ToolcogTransformerConfig } from "./transformer.ts";
 export {

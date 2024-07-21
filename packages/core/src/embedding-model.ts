@@ -4,7 +4,7 @@ import { Toolcog } from "./toolcog.ts";
 interface EmbedOptions {
   modelId?: string | undefined;
 
-  cache?: readonly EmbeddingMap[] | EmbeddingMap | undefined;
+  cache?: readonly EmbeddingMap[] | EmbeddingMap | null | undefined;
 
   signal?: AbortSignal | undefined;
 }

@@ -2,7 +2,7 @@ import type ts from "typescript";
 import type { Schema, SchemaDefinition } from "@toolcog/util/schema";
 import type { ToolDescriptor } from "@toolcog/core";
 import { Diagnostics } from "./diagnostics.ts";
-import { typeToSchema } from "./schema.ts";
+import { typeToSchema } from "./type-to-schema.ts";
 import { getDocComment } from "./doc-comment.ts";
 import { error, abort } from "./utils/errors.ts";
 import { isFunctionCallExpression } from "./utils/functions.ts";

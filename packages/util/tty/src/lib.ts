@@ -41,6 +41,7 @@ export {
 
 export { getCharacterWidth, getStringWidth } from "./width.ts";
 
+export type { WrapState } from "./wrap.ts";
 export { wrapLine, wrapLines, wrapText } from "./wrap.ts";
 
 export { ellipsizeStart, ellipsizeEnd, ellipsize } from "./ellipsize.ts";

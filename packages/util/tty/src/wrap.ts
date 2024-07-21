@@ -100,7 +100,18 @@ const trimEnd = (input: string): string => {
   return words.slice(0, last).join(" ") + words.slice(last).join("");
 };
 
-const wrapLine = (input: string, maxWidth: number, eol: string): string => {
+interface WrapState {
+  openCode?: number | undefined;
+  closeCode?: number | undefined;
+  url?: string | undefined;
+}
+
+const wrapLine = (
+  input: string,
+  maxWidth: number,
+  eol: string,
+  state: WrapState = {},
+): string => {
   if (input.length === 0) {
     return "";
   }
@@ -148,20 +159,16 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
 
   let output = "";
 
-  let openCode: number | undefined;
-  let closeCode: number | undefined;
-  let url: string | undefined;
-
   for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
     const line = trimEnd(lines[lineIndex]!);
 
     // Re-open any running escape sequences on the new line
     // to ensure that each line is independently formatted.
-    if (openCode !== undefined) {
-      output += "\x1B[" + openCode + "m";
+    if (state.openCode !== undefined) {
+      output += "\x1B[" + state.openCode + "m";
     }
-    if (url !== undefined) {
-      output += "\x1B]8;;" + url + "\x07";
+    if (state.url !== undefined) {
+      output += "\x1B]8;;" + state.url + "\x07";
     }
 
     // Append the line to the output.
@@ -189,8 +196,8 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
           codeIndex += 1;
         }
         if (codeChar === 0x6d /*'m'*/) {
-          closeCode = styleCodes.get(code);
-          openCode = closeCode !== undefined ? code : undefined;
+          state.closeCode = styleCodes.get(code);
+          state.openCode = state.closeCode !== undefined ? code : undefined;
         }
       }
 
@@ -206,7 +213,7 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
       ) {
         const bellIndex = line.indexOf("\x07", charIndex + 5);
         if (bellIndex >= 0) {
-          url =
+          state.url =
             bellIndex > charIndex + 5 ?
               line.slice(charIndex + 5, bellIndex)
             : undefined;
@@ -216,11 +223,11 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
 
     // Close any open escape sequences at the end of each line
     // to ensure that each line is independently formatted.
-    if (url !== undefined) {
+    if (state.url !== undefined) {
       output += "\x1B]8;;\x07";
     }
-    if (closeCode !== undefined) {
-      output += "\x1B[" + closeCode + "m";
+    if (state.closeCode !== undefined) {
+      output += "\x1B[" + state.closeCode + "m";
     }
 
     // Append an end-of-line sequence if this is not the last line.
@@ -233,10 +240,11 @@ const wrapLine = (input: string, maxWidth: number, eol: string): string => {
 };
 
 const wrapLines = (input: string, maxWidth: number): string[] => {
+  const state: WrapState = {};
   return reduceLines(
     input,
-    (output: string[], line: string, lineno: number, eol: string): string[] => {
-      output.push(wrapLine(line, maxWidth, eol));
+    (output: string[], line: string, eol: string): string[] => {
+      output.push(wrapLine(line, maxWidth, eol, state));
       return output;
     },
     [],
@@ -244,12 +252,11 @@ const wrapLines = (input: string, maxWidth: number): string[] => {
 };
 
 const wrapText = (input: string, maxWidth: number): string => {
-  return replaceLines(
-    input,
-    (line: string, lineno: number, eol: string): string => {
-      return wrapLine(line, maxWidth, eol);
-    },
-  );
+  const state: WrapState = {};
+  return replaceLines(input, (line: string, eol: string): string => {
+    return wrapLine(line, maxWidth, eol, state);
+  });
 };
 
+export type { WrapState };
 export { wrapLine, wrapLines, wrapText };

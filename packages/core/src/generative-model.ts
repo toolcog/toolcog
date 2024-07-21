@@ -9,13 +9,13 @@ interface GenerateOptions {
 
   instructions?: string | undefined;
 
-  parameters?: Schema | undefined;
+  parameters?: Schema | null | undefined;
 
-  return?: Schema | undefined;
+  return?: Schema | null | undefined;
 
-  tools?: ToolFunction[] | undefined;
+  tools?: ToolFunction[] | null | undefined;
 
-  signal?: AbortSignal | undefined;
+  signal?: AbortSignal | null | undefined;
 }
 
 interface GenerativeModel {
@@ -23,7 +23,7 @@ interface GenerativeModel {
 
   generate<T = string>(args?: unknown, options?: GenerateOptions): Promise<T>;
 
-  prompt<T = string>(
+  instruct<T = string>(
     instructions?: string,
     args?: unknown,
     options?: GenerateOptions,
@@ -46,7 +46,7 @@ const generate: {
   },
 ) as typeof generate;
 
-const prompt: {
+const instruct: {
   <T = string>(
     instructions: string,
     args?: unknown,
@@ -63,12 +63,12 @@ const prompt: {
   ): Promise<T> => {
     const toolcog = await Toolcog.current();
     const model = await toolcog.getGenerativeModel(options?.modelId);
-    return model.prompt(instructions, args, options);
+    return model.instruct(instructions, args, options);
   },
   {
-    brand: Symbol("toolcog.prompt"),
+    brand: Symbol("toolcog.instruct"),
   },
-) as typeof prompt;
+) as typeof instruct;
 
 export type { GenerateOptions, GenerativeModel };
-export { generate, prompt };
+export { generate, instruct };

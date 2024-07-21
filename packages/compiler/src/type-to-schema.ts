@@ -44,6 +44,13 @@ const typeToSchema = (
 
   type = checker.getBaseConstraintOfType(type) ?? type;
 
+  if ((type.flags & ts.TypeFlags.Void) !== 0) {
+    return {
+      type: "void",
+      ...typeDescription,
+    } as unknown as Schema;
+  }
+
   if ((type.flags & ts.TypeFlags.Undefined) !== 0) {
     return {
       type: "undefined",

@@ -4,12 +4,12 @@ import typescript from "typescript";
 import { Diagnostics } from "./diagnostics.ts";
 import {
   transformGenerateExpression,
-  transformPromptExpression,
-} from "./generative.ts";
+  transformInstructExpression,
+} from "./generative-expression.ts";
 import {
   transformUseToolExpression,
   transformUseToolStatement,
-} from "./use-tool.ts";
+} from "./tool-expression.ts";
 import { error } from "./utils/errors.ts";
 import {
   isFunctionCallExpression,
@@ -91,22 +91,22 @@ const toolcogTransformer = (
     );
   }
 
-  const promptFunctionType = getModuleExportType(
+  const instructFunctionType = getModuleExportType(
     ts,
     host,
     program,
     checker,
-    "prompt",
+    "instruct",
     "@toolcog/core",
     containingFile,
   );
-  if (promptFunctionType === undefined) {
+  if (instructFunctionType === undefined) {
     return transformerError(
       ts,
       addDiagnostic,
       undefined,
       Diagnostics.UnableToResolve,
-      "prompt",
+      "instruct",
       "@toolcog/core",
     );
   }
@@ -180,8 +180,8 @@ const toolcogTransformer = (
       );
     }
 
-    if (isFunctionCallExpression(ts, checker, node, promptFunctionType)) {
-      return transformPromptExpression(
+    if (isFunctionCallExpression(ts, checker, node, instructFunctionType)) {
+      return transformInstructExpression(
         ts,
         factory,
         checker,

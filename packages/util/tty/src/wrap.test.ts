@@ -73,7 +73,13 @@ describe("wrapText", () => {
     );
   });
 
-  it("should preserve formatting that spans line wrap breaks", () => {
+  it("should preserve formatting across existing line breaks", () => {
+    expect(wrapText("\x1B[31mhello\nworld", 5)).toBe(
+      "\x1B[31mhello\x1B[39m\n\x1B[31mworld\x1B[39m",
+    );
+  });
+
+  it("should preserve formatting across broken lines", () => {
     expect(wrapText("\x1B[31mhello world", 5)).toBe(
       "\x1B[31mhello\x1B[39m\n\x1B[31mworld\x1B[39m",
     );
@@ -82,7 +88,7 @@ describe("wrapText", () => {
     );
   });
 
-  it("should preserve hyperlinks that span line wrap breaks", () => {
+  it("should preserve hyperlinks across broken lines", () => {
     expect(
       wrapText("\x1B]8;;https://example.com\u0007link\x1B]8;;\u0007 text", 4),
     ).toBe("\x1B]8;;https://example.com\u0007link\x1B]8;;\u0007\ntext");

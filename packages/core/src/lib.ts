@@ -28,7 +28,7 @@ export type { UseToolOptions } from "./use-tool.ts";
 export { useTool } from "./use-tool.ts";
 
 export type { GenerateOptions, GenerativeModel } from "./generative-model.ts";
-export { generate, prompt } from "./generative-model.ts";
+export { generate, instruct } from "./generative-model.ts";
 
 export type { EmbedOptions, EmbeddingModel } from "./embedding-model.ts";
 export { embed } from "./embedding-model.ts";

@@ -12,6 +12,12 @@ export { EmbeddingLoader } from "./embedding-loader.ts";
 
 export { TemporaryThread } from "./thread.ts";
 
+export type {
+  GenerativeResultType,
+  GenerativeFunctionOptions,
+} from "./generative-function.ts";
+export { GenerativeFunction } from "./generative-function.ts";
+
 export type { RuntimeOptions } from "./runtime.ts";
 export { Runtime } from "./runtime.ts";
 

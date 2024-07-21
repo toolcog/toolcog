@@ -1,7 +1,7 @@
 import type ts from "typescript";
 import type { Schema } from "@toolcog/util/schema";
 import { parseDocCommentNode } from "./doc-comment.ts";
-import { typeToSchema } from "./schema.ts";
+import { typeToSchema } from "./type-to-schema.ts";
 import { valueToExpression } from "./utils/literals.ts";
 
 const compileGenerativeOptions = (
@@ -132,7 +132,7 @@ const transformGenerateExpression = (
   );
 };
 
-const transformPromptExpression = (
+const transformInstructExpression = (
   ts: typeof import("typescript"),
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
@@ -167,4 +167,4 @@ const transformPromptExpression = (
   );
 };
 
-export { transformGenerateExpression, transformPromptExpression };
+export { transformGenerateExpression, transformInstructExpression };

@@ -3,9 +3,9 @@ import type {
   Tool,
   Toolcog,
   Thread,
+  UseToolOptions,
   GenerativeModel,
   EmbeddingModel,
-  UseToolOptions,
 } from "@toolcog/core";
 import type { PluginLoaderOptions } from "./plugin-loader.ts";
 import { PluginLoader } from "./plugin-loader.ts";

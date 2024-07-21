@@ -20,8 +20,8 @@ const reduceLines = <T>(
   callback: (
     value: T,
     line: string,
-    lineno: number,
     eol: string,
+    lineno: number,
     text: string,
   ) => T,
   value: T,
@@ -47,7 +47,7 @@ const reduceLines = <T>(
     }
 
     const line = text.slice(position, endIndex);
-    value = callback(value, line, lineno, eol, text);
+    value = callback(value, line, eol, lineno, text);
 
     lineno += 1;
     position = nextIndex;
@@ -58,21 +58,21 @@ const reduceLines = <T>(
 
 const replaceLines = (
   text: string,
-  callback: (line: string, lineno: number, eol: string, text: string) => string,
+  callback: (line: string, eol: string, lineno: number, text: string) => string,
 ): string => {
   return reduceLines(
     text,
     (
       output: string,
       line: string,
-      lineno: number,
       eol: string,
+      lineno: number,
       text: string,
     ): string => {
       if (lineno !== 0) {
         output += eol;
       }
-      output += callback(line, lineno, eol, text);
+      output += callback(line, eol, lineno, text);
       return output;
     },
     "",
