@@ -2,6 +2,8 @@ import type { Schema } from "@toolcog/util/schema";
 import type { ToolFunction } from "./tool.ts";
 import { Toolcog } from "./toolcog.ts";
 
+type GenerateParameters = Record<string, unknown>;
+
 interface GenerateOptions {
   modelId?: string | undefined;
 
@@ -21,35 +23,25 @@ interface GenerateOptions {
 interface GenerativeModel {
   readonly modelId: string;
 
-  generate<T = string>(args?: unknown, options?: GenerateOptions): Promise<T>;
-
-  instruct<T = string>(
-    instructions?: string,
-    args?: unknown,
+  generate<T = string>(
+    instructions: string | undefined,
+    args?: GenerateParameters,
+    options?: GenerateOptions,
+  ): Promise<T>;
+  generate<T = string>(
+    args?: GenerateParameters,
     options?: GenerateOptions,
   ): Promise<T>;
 }
 
 const generate: {
-  <T = string>(args?: unknown, options?: GenerateOptions): Promise<T>;
-
-  /** @internal */
-  readonly brand: unique symbol;
-} = Object.assign(
-  async <T>(args?: unknown, options?: GenerateOptions): Promise<T> => {
-    const toolcog = await Toolcog.current();
-    const model = await toolcog.getGenerativeModel(options?.modelId);
-    return model.generate(args, options);
-  },
-  {
-    brand: Symbol("toolcog.generate"),
-  },
-) as typeof generate;
-
-const instruct: {
   <T = string>(
-    instructions: string,
-    args?: unknown,
+    instructions: string | undefined,
+    args?: GenerateParameters,
+    options?: GenerateOptions,
+  ): Promise<T>;
+  <T = string>(
+    args?: GenerateParameters,
     options?: GenerateOptions,
   ): Promise<T>;
 
@@ -57,18 +49,28 @@ const instruct: {
   readonly brand: unique symbol;
 } = Object.assign(
   async <T>(
-    instructions?: string,
-    args?: unknown,
+    instructionsOrArgs?: string | GenerateParameters,
+    argsOrOptions?: GenerateParameters | GenerateOptions,
     options?: GenerateOptions,
   ): Promise<T> => {
+    let instructions: string | undefined;
+    let args: GenerateParameters | undefined;
+    if (typeof instructionsOrArgs !== "object") {
+      instructions = instructionsOrArgs;
+      args = argsOrOptions as GenerateParameters | undefined;
+    } else {
+      args = instructionsOrArgs;
+      options = argsOrOptions as GenerateOptions | undefined;
+    }
+
     const toolcog = await Toolcog.current();
     const model = await toolcog.getGenerativeModel(options?.modelId);
-    return model.instruct(instructions, args, options);
+    return model.generate(instructions, args, options);
   },
   {
-    brand: Symbol("toolcog.instruct"),
+    brand: Symbol("toolcog.generate"),
   },
-) as typeof instruct;
+) as typeof generate;
 
-export type { GenerateOptions, GenerativeModel };
-export { generate, instruct };
+export type { GenerateParameters, GenerateOptions, GenerativeModel };
+export { generate };

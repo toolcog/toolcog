@@ -268,9 +268,7 @@ class Repl {
 
   async evalPrelude(): Promise<void> {
     // Import toolcog intrinsics.
-    await this.evalCode(
-      'import { useTool, generate, instruct } from "@toolcog/core";\n',
-    );
+    await this.evalCode('import { useTool, generate } from "@toolcog/core";\n');
     // Un-increment the turn count.
     this.#turnCount -= 1;
   }
@@ -466,7 +464,7 @@ class Repl {
       // Complete the natural language using the default generative model.
       const toolcog = await Toolcog.current();
       const model = await toolcog.getGenerativeModel();
-      const output = await model.instruct(input, undefined, {
+      const output = await model.generate(input, undefined, {
         tools,
         signal: this.#abortController.signal,
       });

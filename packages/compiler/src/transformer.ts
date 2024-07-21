@@ -2,10 +2,7 @@ import { fileURLToPath } from "node:url";
 import type ts from "typescript";
 import typescript from "typescript";
 import { Diagnostics } from "./diagnostics.ts";
-import {
-  transformGenerateExpression,
-  transformInstructExpression,
-} from "./generative-expression.ts";
+import { transformGenerateExpression } from "./generate-expression.ts";
 import {
   transformUseToolExpression,
   transformUseToolStatement,
@@ -91,26 +88,6 @@ const toolcogTransformer = (
     );
   }
 
-  const instructFunctionType = getModuleExportType(
-    ts,
-    host,
-    program,
-    checker,
-    "instruct",
-    "@toolcog/core",
-    containingFile,
-  );
-  if (instructFunctionType === undefined) {
-    return transformerError(
-      ts,
-      addDiagnostic,
-      undefined,
-      Diagnostics.UnableToResolve,
-      "instruct",
-      "@toolcog/core",
-    );
-  }
-
   type ToolScope = Record<string, ts.Identifier>;
   let toolScope = Object.create(null) as ToolScope;
 
@@ -171,17 +148,6 @@ const toolcogTransformer = (
 
     if (isFunctionCallExpression(ts, checker, node, generateFunctionType)) {
       return transformGenerateExpression(
-        ts,
-        factory,
-        checker,
-        addDiagnostic,
-        node,
-        toolScope,
-      );
-    }
-
-    if (isFunctionCallExpression(ts, checker, node, instructFunctionType)) {
-      return transformInstructExpression(
         ts,
         factory,
         checker,

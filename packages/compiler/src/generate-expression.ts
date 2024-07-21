@@ -4,16 +4,29 @@ import { parseDocCommentNode } from "./doc-comment.ts";
 import { typeToSchema } from "./type-to-schema.ts";
 import { valueToExpression } from "./utils/literals.ts";
 
-const compileGenerativeOptions = (
+const transformGenerateExpression = (
   ts: typeof import("typescript"),
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   callExpression: ts.CallExpression,
-  argsExpression: ts.Expression | undefined,
-  optionsExpression: ts.Expression | undefined,
   toolScope: Record<string, ts.Identifier>,
-): ts.ObjectLiteralExpression => {
+): ts.Expression => {
+  const callSignature = checker.getResolvedSignature(callExpression);
+  ts.Debug.assert(callSignature !== undefined);
+
+  let instructionsExpression: ts.Expression | undefined;
+  let argsExpression: ts.Expression | undefined;
+  let optionsExpression: ts.Expression | undefined;
+  if (callSignature.parameters.length === 3) {
+    instructionsExpression = callExpression.arguments[0];
+    argsExpression = callExpression.arguments[1];
+    optionsExpression = callExpression.arguments[2];
+  } else {
+    argsExpression = callExpression.arguments[0];
+    optionsExpression = callExpression.arguments[1];
+  }
+
   const docComment = parseDocCommentNode(ts, callExpression);
 
   let parametersSchema: Schema | undefined;
@@ -93,78 +106,24 @@ const compileGenerativeOptions = (
     optionsLiterals.push(factory.createSpreadAssignment(optionsExpression));
   }
 
-  return ts.setOriginalNode(
+  const optionsLiteral = ts.setOriginalNode(
     factory.createObjectLiteralExpression(optionsLiterals, true),
     optionsExpression,
   );
-};
 
-const transformGenerateExpression = (
-  ts: typeof import("typescript"),
-  factory: ts.NodeFactory,
-  checker: ts.TypeChecker,
-  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  callExpression: ts.CallExpression,
-  toolScope: Record<string, ts.Identifier>,
-): ts.Expression => {
-  const argsExpression = callExpression.arguments[0];
-  const optionsExpression = callExpression.arguments[1];
-
-  const optionsLiteral = compileGenerativeOptions(
-    ts,
-    factory,
-    checker,
-    addDiagnostic,
-    callExpression,
-    argsExpression,
-    optionsExpression,
-    toolScope,
-  );
+  const argumentsArray: ts.Expression[] = [];
+  if (instructionsExpression !== undefined) {
+    argumentsArray.push(instructionsExpression);
+  }
+  argumentsArray.push(argsExpression ?? factory.createIdentifier("undefined"));
+  argumentsArray.push(optionsLiteral);
 
   return factory.updateCallExpression(
     callExpression,
     callExpression.expression,
     callExpression.typeArguments,
-    factory.createNodeArray([
-      argsExpression ?? factory.createIdentifier("undefined"),
-      optionsLiteral,
-    ]),
+    factory.createNodeArray(argumentsArray),
   );
 };
 
-const transformInstructExpression = (
-  ts: typeof import("typescript"),
-  factory: ts.NodeFactory,
-  checker: ts.TypeChecker,
-  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  callExpression: ts.CallExpression,
-  toolScope: Record<string, ts.Identifier>,
-): ts.Expression => {
-  const messageExpression = callExpression.arguments[0];
-  const argsExpression = callExpression.arguments[1];
-  const optionsExpression = callExpression.arguments[2];
-
-  const optionsLiteral = compileGenerativeOptions(
-    ts,
-    factory,
-    checker,
-    addDiagnostic,
-    callExpression,
-    argsExpression,
-    optionsExpression,
-    toolScope,
-  );
-
-  return factory.updateCallExpression(
-    callExpression,
-    callExpression.expression,
-    callExpression.typeArguments,
-    factory.createNodeArray([
-      messageExpression ?? factory.createIdentifier("undefined"),
-      argsExpression ?? factory.createIdentifier("undefined"),
-      optionsLiteral,
-    ]),
-  );
-};
-
-export { transformGenerateExpression, transformInstructExpression };
+export { transformGenerateExpression };

@@ -246,22 +246,22 @@ class GenerativeFunction {
   }
 
   parseResult(result: string): unknown {
-    const resultType = this.resultType;
-    const resultSchema = this.resultSchema;
-
-    if (resultSchema === null) {
+    const returnSchema = this.return;
+    if (returnSchema === null) {
       return result;
     }
 
-    if (resultSchema.type === "void") {
+    const resultType = this.resultType;
+    if (returnSchema.type === "void") {
       return undefined;
     }
 
-    if (resultType === "object" && resultSchema.type !== "object") {
-      return (JSON.parse(result) as { return: unknown }).return;
+    let resultValue = JSON.parse(result) as unknown;
+    if (resultType === "object" && returnSchema.type !== "object") {
+      resultValue = (resultValue as { result: unknown }).result;
     }
 
-    return JSON.parse(result);
+    return resultValue;
   }
 
   getTool(name: string): ToolFunction | undefined {

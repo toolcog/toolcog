@@ -1,7 +1,11 @@
 import { OpenAI } from "openai";
 import type { DispatcherOptions } from "@toolcog/util/task";
 import { Dispatcher } from "@toolcog/util/task";
-import type { GenerateOptions, GenerativeModel } from "@toolcog/core";
+import type {
+  GenerateParameters,
+  GenerateOptions,
+  GenerativeModel,
+} from "@toolcog/core";
 import { Tool, Thread } from "@toolcog/core";
 import { GenerativeFunction, Job } from "@toolcog/runtime";
 import type { ChatCompletion } from "./chat-completion.ts";
@@ -76,23 +80,30 @@ class OpenAIGenerativeModel implements GenerativeModel {
     return this.#dispatcher;
   }
 
-  generate<T = string>(args?: unknown, options?: GenerateOptions): Promise<T> {
-    return this.prompt<T>(undefined, args, options);
-  }
-
-  instruct<T = string>(
-    instructions?: string,
-    args?: unknown,
+  generate<T = string>(
+    instructions: string | undefined,
+    args?: GenerateParameters,
+    options?: GenerateOptions,
+  ): Promise<T>;
+  generate<T = string>(
+    args?: GenerateParameters,
+    options?: GenerateOptions,
+  ): Promise<T>;
+  async generate<T>(
+    instructionsOrArgs?: string | GenerateParameters,
+    argsOrOptions?: GenerateParameters | GenerateOptions,
     options?: GenerateOptions,
   ): Promise<T> {
-    return this.prompt<T>(instructions, args, options);
-  }
+    let instructions: string | undefined;
+    let args: GenerateParameters | undefined;
+    if (typeof instructionsOrArgs !== "object") {
+      instructions = instructionsOrArgs;
+      args = argsOrOptions as GenerateParameters | undefined;
+    } else {
+      args = instructionsOrArgs;
+      options = argsOrOptions as GenerateOptions | undefined;
+    }
 
-  async prompt<T>(
-    instructions?: string,
-    args?: unknown,
-    options?: GenerateOptions,
-  ): Promise<T> {
     if (options === undefined) {
       throw new Error("Uncompiled prompt");
     }

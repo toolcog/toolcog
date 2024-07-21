@@ -7,10 +7,7 @@ export {
   transformUseToolStatement,
 } from "./tool-expression.ts";
 
-export {
-  transformGenerateExpression,
-  transformInstructExpression,
-} from "./generative-expression.ts";
+export { transformGenerateExpression } from "./generate-expression.ts";
 
 export type { ToolcogTransformerConfig } from "./transformer.ts";
 export {
