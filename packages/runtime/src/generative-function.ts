@@ -1,5 +1,4 @@
 import type { Schema } from "@toolcog/util/schema";
-import type { ToolFunction } from "@toolcog/core";
 import { Tool } from "@toolcog/core";
 
 type GenerativeResultType = "any" | "object";
@@ -11,7 +10,7 @@ interface GenerativeFunctionOptions {
 
   return?: Schema | null | undefined;
 
-  tools?: ToolFunction[] | null | undefined;
+  tools?: Tool[] | null | undefined;
 
   resultType?: GenerativeResultType | undefined;
 }
@@ -23,7 +22,7 @@ class GenerativeFunction {
 
   readonly #return: Schema | null;
 
-  readonly #tools: readonly ToolFunction[] | null;
+  readonly #tools: readonly Tool[] | null;
 
   readonly #resultType: GenerativeResultType;
 
@@ -50,7 +49,7 @@ class GenerativeFunction {
     return this.#return;
   }
 
-  get tools(): readonly ToolFunction[] | null {
+  get tools(): readonly Tool[] | null {
     return this.#tools;
   }
 
@@ -264,13 +263,13 @@ class GenerativeFunction {
     return resultValue;
   }
 
-  getTool(name: string): ToolFunction | undefined {
-    return this.tools?.find((tool) => tool[Tool.descriptor]?.name === name);
+  getTool(name: string): Tool | undefined {
+    return this.tools?.find((tool) => tool[Tool.descriptor].name === name);
   }
 
-  parseToolArguments(tool: ToolFunction, args: string): unknown[] {
+  parseToolArguments(tool: Tool, args: string): unknown[] {
     const toolDescriptor = tool[Tool.descriptor];
-    const parametersSchema = toolDescriptor?.parameters;
+    const parametersSchema = toolDescriptor.parameters;
     const parameters = parametersSchema?.properties;
     if (parameters === undefined) {
       return [];
@@ -284,7 +283,7 @@ class GenerativeFunction {
         "Malformed arguments " +
           JSON.stringify(args) +
           " for tool " +
-          JSON.stringify(toolDescriptor?.name),
+          JSON.stringify(toolDescriptor.name),
         { cause },
       );
     }
@@ -293,7 +292,7 @@ class GenerativeFunction {
         "Invalid arguments " +
           JSON.stringify(parsedArgs) +
           " for tool " +
-          JSON.stringify(toolDescriptor?.name),
+          JSON.stringify(toolDescriptor.name),
       );
     }
 
@@ -306,12 +305,12 @@ class GenerativeFunction {
     );
   }
 
-  formatToolResult(tool: ToolFunction, result: unknown): string {
+  formatToolResult(tool: Tool, result: unknown): string {
     return JSON.stringify(result);
   }
 
-  async callTool(name: ToolFunction | string, args: string): Promise<string> {
-    let tool: ToolFunction | undefined;
+  async callTool(name: Tool | string, args: string): Promise<string> {
+    let tool: Tool | undefined;
     if (typeof name === "string") {
       tool = this.getTool(name);
       if (tool === undefined) {

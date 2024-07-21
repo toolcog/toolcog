@@ -1,5 +1,5 @@
 import type { Schema } from "@toolcog/util/schema";
-import type { ToolFunction } from "./tool.ts";
+import type { Tool } from "./tool.ts";
 import { Toolcog } from "./toolcog.ts";
 
 type GenerateParameters = Record<string, unknown>;
@@ -15,7 +15,7 @@ interface GenerateOptions {
 
   return?: Schema | null | undefined;
 
-  tools?: ToolFunction[] | null | undefined;
+  tools?: Tool[] | null | undefined;
 
   signal?: AbortSignal | null | undefined;
 }
