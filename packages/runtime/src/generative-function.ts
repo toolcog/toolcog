@@ -1,5 +1,5 @@
 import type { Schema } from "@toolcog/util/schema";
-import { Tool } from "@toolcog/core";
+import type { Tool } from "@toolcog/core";
 
 type GenerativeResultType = "any" | "object";
 
@@ -264,11 +264,11 @@ class GenerativeFunction {
   }
 
   getTool(name: string): Tool | undefined {
-    return this.tools?.find((tool) => tool[Tool.descriptor].name === name);
+    return this.tools?.find((tool) => tool.descriptor.name === name);
   }
 
   parseToolArguments(tool: Tool, args: string): unknown[] {
-    const toolDescriptor = tool[Tool.descriptor];
+    const toolDescriptor = tool.descriptor;
     const parametersSchema = toolDescriptor.parameters;
     const parameters = parametersSchema?.properties;
     if (parameters === undefined) {

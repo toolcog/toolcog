@@ -10,7 +10,7 @@ const transformGenerateExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   callExpression: ts.CallExpression,
-  toolScope: Record<string, ts.Identifier>,
+  toolScope: Record<string, ts.Identifier | undefined>,
 ): ts.Expression => {
   const callSignature = checker.getResolvedSignature(callExpression);
   ts.Debug.assert(callSignature !== undefined);
@@ -57,7 +57,10 @@ const transformGenerateExpression = (
 
   const toolExpressions: ts.Expression[] = [];
   for (const toolName in toolScope) {
-    toolExpressions.push(toolScope[toolName]!);
+    const toolExpression = toolScope[toolName];
+    if (toolExpression !== undefined) {
+      toolExpressions.push(toolExpression);
+    }
   }
 
   const optionsLiterals: ts.ObjectLiteralElementLike[] = [];

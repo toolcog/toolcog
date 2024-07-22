@@ -1,5 +1,10 @@
-import type { Embedding, EmbeddingMap } from "./embedding.ts";
 import { Toolcog } from "./toolcog.ts";
+
+type Embedding = readonly number[];
+
+type EmbeddingMap = Record<string, Embedding>;
+
+type EmbeddingSimilarity = (a: Embedding, b: Embedding) => number;
 
 interface EmbedOptions {
   modelId?: string | undefined;
@@ -47,8 +52,14 @@ const embed: {
   }) as unknown as typeof embed,
   {
     brand: Symbol("toolcog.embed"),
-  },
+  } as const,
 ) as typeof embed;
 
-export type { EmbedOptions, EmbeddingModel };
+export type {
+  Embedding,
+  EmbeddingMap,
+  EmbeddingSimilarity,
+  EmbedOptions,
+  EmbeddingModel,
+};
 export { embed };

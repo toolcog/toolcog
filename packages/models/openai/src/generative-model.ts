@@ -6,7 +6,7 @@ import type {
   GenerateOptions,
   GenerativeModel,
 } from "@toolcog/core";
-import { Tool, Thread } from "@toolcog/core";
+import { Thread } from "@toolcog/core";
 import { GenerativeFunction, Job } from "@toolcog/runtime";
 import type { ChatCompletion } from "./chat-completion.ts";
 import { createChatCompletion } from "./chat-completion.ts";
@@ -125,7 +125,7 @@ class OpenAIGenerativeModel implements GenerativeModel {
       tools = options.tools.map((tool) => {
         return {
           type: "function",
-          function: tool[Tool.descriptor] as OpenAI.FunctionDefinition,
+          function: tool.descriptor as OpenAI.FunctionDefinition,
         } satisfies OpenAI.ChatCompletionTool;
       });
     }

@@ -1,3 +1,5 @@
+export { Toolcog } from "./toolcog.ts";
+
 export type {
   MessageRole,
   MessageContent,
@@ -11,21 +13,22 @@ export type {
   ToolCall,
 } from "./message.ts";
 
-export type { ToolDescriptor, ToolFunction } from "./tool.ts";
-export { Tool } from "./tool.ts";
-
-export type {
-  Embedding,
-  EmbeddingMap,
-  EmbeddingSimilarity,
-} from "./embedding.ts";
-
-export { Toolcog } from "./toolcog.ts";
-
 export { Thread } from "./thread.ts";
 
-export type { UseToolOptions } from "./use-tool.ts";
-export { useTool } from "./use-tool.ts";
+export type {
+  ToolDescriptor,
+  ToolFunction,
+  ToolFunctions,
+  Tool,
+  Tools,
+  UseTool,
+  UseTools,
+  AnyTool,
+  AnyTools,
+  UseAnyTool,
+  UseAnyTools,
+} from "./tool.ts";
+export { isTool, defineTool, useTool } from "./tool.ts";
 
 export type {
   GenerateParameters,
@@ -34,5 +37,11 @@ export type {
 } from "./generative-model.ts";
 export { generate } from "./generative-model.ts";
 
-export type { EmbedOptions, EmbeddingModel } from "./embedding-model.ts";
+export type {
+  Embedding,
+  EmbeddingMap,
+  EmbeddingSimilarity,
+  EmbedOptions,
+  EmbeddingModel,
+} from "./embedding-model.ts";
 export { embed } from "./embedding-model.ts";

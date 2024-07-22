@@ -131,7 +131,12 @@ const classifyInput = (
             continue;
           case ts.SyntaxKind.NewLineTrivia:
           case ts.SyntaxKind.WhitespaceTrivia:
+            break;
           case ts.SyntaxKind.CommaToken:
+            // Commas reset word runs when not parenthesized.
+            if (parenthesisCount !== 0) {
+              identifiersInRun = 0;
+            }
             break;
           default:
             identifiersInRun = 0;
@@ -184,7 +189,7 @@ const classifyInput = (
     switch (lastToken) {
       case ts.SyntaxKind.DotToken:
       case ts.SyntaxKind.DotDotDotToken:
-      case ts.SyntaxKind.QuestionDotToken:
+      case ts.SyntaxKind.QuestionToken:
         return "lang";
       default:
         break;

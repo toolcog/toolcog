@@ -1,53 +1,21 @@
 import ts from "typescript";
 
-const findTopLevelBindings = (node: ts.Node, bindings: string[]): void => {
-  const visitVariableBinding = (node: ts.BindingName): void => {
-    if (ts.isIdentifier(node)) {
-      bindings.push(node.text);
-    } else if (ts.isArrayBindingPattern(node)) {
-      for (const element of node.elements) {
-        if (ts.isBindingElement(element)) {
-          visitVariableBinding(element.name);
-        }
-      }
-    } else if (ts.isObjectBindingPattern(node)) {
-      for (const element of node.elements) {
-        visitVariableBinding(element.name);
-      }
-    }
-  };
-
+const findTopLevelBindings = (
+  checker: ts.TypeChecker,
+  node: ts.Node,
+  bindings: Record<string, ts.Type>,
+): void => {
   const visit = (node: ts.Node): void => {
-    if (ts.isImportDeclaration(node) && node.importClause !== undefined) {
-      // Collect import bindings.
-      if (node.importClause.name !== undefined) {
-        // Add default import binding.
-        bindings.push(node.importClause.name.text);
-      }
-      if (node.importClause.namedBindings !== undefined) {
-        if (ts.isNamespaceImport(node.importClause.namedBindings)) {
-          // Add namespace import binding.
-          bindings.push(node.importClause.namedBindings.name.text);
-        } else if (ts.isNamedImports(node.importClause.namedBindings)) {
-          for (const element of node.importClause.namedBindings.elements) {
-            // Add named import binding.
-            bindings.push(element.name.text);
-          }
-        }
-      }
-      return;
-    }
-
-    if (ts.isVariableDeclaration(node)) {
-      // Collect variable bindings.
-      visitVariableBinding(node.name);
-      return;
-    }
-
-    if (ts.isFunctionDeclaration(node) && node.name !== undefined) {
-      // Add function binding.
-      bindings.push(node.name.text);
-      return;
+    if (
+      (ts.isImportClause(node) ||
+        ts.isImportSpecifier(node) ||
+        ts.isVariableDeclaration(node) ||
+        ts.isBindingElement(node) ||
+        ts.isFunctionDeclaration(node)) &&
+      node.name !== undefined &&
+      ts.isIdentifier(node.name)
+    ) {
+      bindings[node.name.text] = checker.getTypeAtLocation(node.name);
     }
 
     // Don't descend into nested block scopes.
@@ -64,13 +32,13 @@ const findTopLevelBindings = (node: ts.Node, bindings: string[]): void => {
 
 const transformTopLevelAwait = (
   factory: ts.NodeFactory,
+  checker: ts.TypeChecker,
   statements: readonly ts.Statement[],
+  bindings: Record<string, ts.Type> = {},
 ): ts.Statement => {
-  const bindings: string[] = [];
-
   // Find all top-level bindings.
   for (const statement of statements) {
-    findTopLevelBindings(statement, bindings);
+    findTopLevelBindings(checker, statement, bindings);
   }
 
   // Wrap in an async IIFE that executes all statements and returns
@@ -89,9 +57,9 @@ const transformTopLevelAwait = (
             ...statements,
             factory.createReturnStatement(
               factory.createObjectLiteralExpression(
-                bindings.map((binding: string): ts.ObjectLiteralElementLike => {
-                  return factory.createShorthandPropertyAssignment(binding);
-                }),
+                Object.keys(bindings).map((binding) =>
+                  factory.createShorthandPropertyAssignment(binding),
+                ),
                 true,
               ),
             ),

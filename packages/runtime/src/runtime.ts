@@ -1,9 +1,7 @@
 import type {
   Message,
-  Tool,
-  Toolcog,
   Thread,
-  UseToolOptions,
+  Toolcog,
   GenerativeModel,
   EmbeddingModel,
 } from "@toolcog/core";
@@ -54,10 +52,6 @@ class Runtime implements Toolcog {
 
   createThread(messages?: Message[]): Thread {
     return new TemporaryThread(messages);
-  }
-
-  useTool(tool: Tool, options?: UseToolOptions): Tool {
-    return tool;
   }
 
   async getGenerativeModel(modelId?: string): Promise<GenerativeModel> {

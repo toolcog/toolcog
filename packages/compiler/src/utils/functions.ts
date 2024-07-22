@@ -51,8 +51,63 @@ const isMethodCallExpression = (
   return checker.isTypeAssignableTo(expressionType, receiverType);
 };
 
+const createForwardFunctionExpression = (
+  ts: typeof import("typescript"),
+  factory: ts.NodeFactory,
+  callableExpression: ts.Expression,
+): ts.FunctionExpression => {
+  // Create an anonymous wrapper function to avoid mutating the original.
+  const argsIdentifier = factory.createUniqueName(
+    "args",
+    ts.GeneratedIdentifierFlags.ReservedInNestedScopes |
+      ts.GeneratedIdentifierFlags.Optimistic |
+      ts.GeneratedIdentifierFlags.AllowNameSubstitution,
+  );
+  return factory.createFunctionExpression(
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    [
+      factory.createParameterDeclaration(
+        undefined,
+        undefined,
+        factory.createIdentifier("this"),
+        undefined,
+        factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
+        undefined,
+      ),
+      factory.createParameterDeclaration(
+        undefined,
+        factory.createToken(ts.SyntaxKind.DotDotDotToken),
+        argsIdentifier,
+        undefined,
+        factory.createKeywordTypeNode(ts.SyntaxKind.AnyKeyword),
+        undefined,
+      ),
+    ],
+    factory.createKeywordTypeNode(ts.SyntaxKind.UnknownKeyword),
+    factory.createBlock(
+      [
+        factory.createReturnStatement(
+          factory.createCallExpression(
+            factory.createPropertyAccessExpression(
+              callableExpression,
+              factory.createIdentifier("call"),
+            ),
+            undefined,
+            [factory.createThis(), factory.createSpreadElement(argsIdentifier)],
+          ),
+        ),
+      ],
+      true,
+    ),
+  );
+};
+
 export {
   isFunctionCallExpression,
   isFunctionCallStatement,
   isMethodCallExpression,
+  createForwardFunctionExpression,
 };

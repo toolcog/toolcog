@@ -4,23 +4,27 @@ import typescript from "typescript";
 import { Diagnostics } from "./diagnostics.ts";
 import { transformGenerateExpression } from "./generate-expression.ts";
 import {
-  transformUseToolExpression,
-  transformUseToolStatement,
+  transformToolsExpression,
+  transformToolsDeclarations,
 } from "./tool-expression.ts";
 import { error } from "./utils/errors.ts";
+import { removeImportsOfType } from "./utils/imports.ts";
 import {
   isFunctionCallExpression,
   isFunctionCallStatement,
 } from "./utils/functions.ts";
 import { getModuleExportType } from "./utils/modules.ts";
 
-interface ToolcogTransformerConfig {}
+interface ToolcogTransformerConfig {
+  keepIntrinsicImports?: boolean | undefined;
+}
 
 const toolcogTransformer = (
   ts: typeof import("typescript"),
   context: ts.TransformationContext,
   host: ts.ModuleResolutionHost,
   program: ts.Program,
+  config: ToolcogTransformerConfig | undefined,
 ): ts.Transformer<ts.SourceFile> => {
   const factory = context.factory;
   const checker = program.getTypeChecker();
@@ -28,12 +32,32 @@ const toolcogTransformer = (
 
   const containingFile = fileURLToPath(import.meta.url);
 
+  const funcType = getModuleExportType(
+    ts,
+    host,
+    program,
+    checker,
+    "ToolFunction",
+    "@toolcog/core",
+    containingFile,
+  );
+  if (funcType === undefined) {
+    return transformerError(
+      ts,
+      addDiagnostic,
+      undefined,
+      Diagnostics.UnableToResolveType,
+      "ToolFunction",
+      "@toolcog/core",
+    );
+  }
+
   const toolType = getModuleExportType(
     ts,
     host,
     program,
     checker,
-    "Tool",
+    "AnyTool",
     "@toolcog/core",
     containingFile,
   );
@@ -43,7 +67,67 @@ const toolcogTransformer = (
       addDiagnostic,
       undefined,
       Diagnostics.UnableToResolveType,
-      "Tool",
+      "AnyTool",
+      "@toolcog/core",
+    );
+  }
+
+  const toolsType = getModuleExportType(
+    ts,
+    host,
+    program,
+    checker,
+    "AnyTools",
+    "@toolcog/core",
+    containingFile,
+  );
+  if (toolsType === undefined) {
+    return transformerError(
+      ts,
+      addDiagnostic,
+      undefined,
+      Diagnostics.UnableToResolveType,
+      "AnyTools",
+      "@toolcog/core",
+    );
+  }
+
+  const useToolType = getModuleExportType(
+    ts,
+    host,
+    program,
+    checker,
+    "UseTool",
+    "@toolcog/core",
+    containingFile,
+  );
+  if (useToolType === undefined) {
+    return transformerError(
+      ts,
+      addDiagnostic,
+      undefined,
+      Diagnostics.UnableToResolveType,
+      "UseTool",
+      "@toolcog/core",
+    );
+  }
+
+  const defineToolFunctionType = getModuleExportType(
+    ts,
+    host,
+    program,
+    checker,
+    "defineTool",
+    "@toolcog/core",
+    containingFile,
+  );
+  if (defineToolFunctionType === undefined) {
+    return transformerError(
+      ts,
+      addDiagnostic,
+      undefined,
+      Diagnostics.UnableToResolve,
+      "defineTool",
       "@toolcog/core",
     );
   }
@@ -88,10 +172,11 @@ const toolcogTransformer = (
     );
   }
 
-  type ToolScope = Record<string, ts.Identifier>;
+  type ToolScope = Record<string, ts.Identifier | undefined>;
   let toolScope = Object.create(null) as ToolScope;
 
-  const visit = (node: ts.Node): ts.Node | undefined => {
+  const visit = (node: ts.Node): ts.Node | ts.Node[] | undefined => {
+    // Manage the tool scope stack when entering/exiting a block.
     if (ts.isBlockScope(node, node.parent)) {
       toolScope = Object.create(toolScope) as ToolScope;
       try {
@@ -101,53 +186,116 @@ const toolcogTransformer = (
       }
     }
 
-    // Bind tool declarations to tool scope.
-    if (isFunctionCallStatement(ts, checker, node, useToolFunctionType)) {
-      const toolStatement = transformUseToolStatement(
+    // Remove imports of compile-time-only intrinsics.
+    if (ts.isImportDeclaration(node) && config?.keepIntrinsicImports !== true) {
+      const importDeclaration = removeImportsOfType(
+        ts,
+        factory,
+        checker,
+        node,
+        [defineToolFunctionType, useToolFunctionType],
+      );
+      if (importDeclaration === undefined) {
+        return undefined;
+      }
+      node = importDeclaration;
+    }
+
+    // Manage implicit tool bindings.
+    if (
+      (ts.isImportClause(node) || ts.isImportSpecifier(node)) &&
+      node.name !== undefined
+    ) {
+      // Check if the import binding declares an implicit tool.
+      const importType = checker.getTypeAtLocation(node.name);
+      if (
+        // Check if the type of the import conforms to `UseTool`.
+        checker.isTypeAssignableTo(importType, useToolType)
+      ) {
+        toolScope[node.name.text] = node.name;
+      } else {
+        toolScope[node.name.text] = undefined;
+      }
+    } else if (
+      (ts.isVariableDeclaration(node) || ts.isBindingElement(node)) &&
+      ts.isIdentifier(node.name)
+    ) {
+      let bindingName = node.name.text;
+      if (ts.isGeneratedIdentifier(node.name)) {
+        bindingName += "_" + node.name.emitNode.autoGenerate.id;
+      }
+      // Check if the variable binding declares an implicit tool.
+      const bindingType = checker.getTypeAtLocation(node.name);
+      if (checker.isTypeAssignableTo(bindingType, useToolType)) {
+        toolScope[bindingName] = node.name;
+      } else {
+        toolScope[bindingName] = undefined;
+      }
+    } else if (ts.isFunctionDeclaration(node) && node.name !== undefined) {
+      // A function declaration can never declare an implicit tool.
+      toolScope[node.name.text] = undefined;
+    }
+
+    if (isFunctionCallExpression(ts, checker, node, defineToolFunctionType)) {
+      let bindingName: ts.BindingName | ts.PropertyName | undefined;
+      if (
+        ts.isVariableDeclaration(node.parent) ||
+        ts.isPropertyAssignment(node.parent)
+      ) {
+        bindingName = node.parent.name;
+      }
+      node = transformToolsExpression(
         ts,
         factory,
         checker,
         addDiagnostic,
-        useToolFunctionType,
-        node,
-      );
-      const toolDeclaration = toolStatement.declarationList.declarations[0]!;
-      const toolName = ts.getNameOfDeclaration(toolDeclaration);
-      if (toolName !== undefined && ts.isIdentifier(toolName)) {
-        toolScope[toolName.escapedText as string] = toolName;
-      }
-      return toolStatement;
-    } else if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
-      const variableType = checker.getTypeAtLocation(node.name);
-      if (checker.isTypeAssignableTo(variableType, toolType)) {
-        toolScope[node.name.escapedText as string] = node.name;
-      }
-    } else if (ts.isImportClause(node) && node.name !== undefined) {
-      const variableType = checker.getTypeAtLocation(node.name);
-      if (checker.isTypeAssignableTo(variableType, toolType)) {
-        toolScope[node.name.escapedText as string] = node.name;
-      }
-    } else if (ts.isImportSpecifier(node)) {
-      const variableType = checker.getTypeAtLocation(node.name);
-      if (checker.isTypeAssignableTo(variableType, toolType)) {
-        toolScope[node.name.escapedText as string] = node.name;
-      }
+        node.arguments[0]!,
+        funcType,
+        toolType,
+        toolsType,
+        bindingName,
+      )[0];
     }
 
     if (isFunctionCallExpression(ts, checker, node, useToolFunctionType)) {
-      const toolExpression = transformUseToolExpression(
+      let bindingName: ts.BindingName | ts.PropertyName | undefined;
+      if (
+        ts.isVariableDeclaration(node.parent) ||
+        ts.isPropertyAssignment(node.parent)
+      ) {
+        bindingName = node.parent.name;
+      }
+      node = transformToolsExpression(
         ts,
         factory,
         checker,
         addDiagnostic,
-        useToolFunctionType,
-        node,
+        node.arguments[0]!,
+        funcType,
+        toolType,
+        toolsType,
+        bindingName,
+      )[0];
+    }
+
+    if (isFunctionCallStatement(ts, checker, node, useToolFunctionType)) {
+      const toolDeclarations = transformToolsDeclarations(
+        ts,
+        factory,
+        checker,
+        addDiagnostic,
+        node.expression.arguments[0]!,
+        funcType,
+        toolType,
+        toolsType,
       );
-      return ts.visitEachChild(toolExpression, visit, context);
+      return toolDeclarations.map((toolDeclaration) =>
+        ts.visitEachChild(toolDeclaration, visit, context),
+      );
     }
 
     if (isFunctionCallExpression(ts, checker, node, generateFunctionType)) {
-      return transformGenerateExpression(
+      node = transformGenerateExpression(
         ts,
         factory,
         checker,
@@ -187,7 +335,7 @@ const toolcogTransformerFactory = (
     ) {
       context.addDiagnostic = extras.addDiagnostic;
     }
-    return toolcogTransformer(ts, context, host, program);
+    return toolcogTransformer(ts, context, host, program, config);
   };
 };
 

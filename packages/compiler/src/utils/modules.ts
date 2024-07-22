@@ -40,8 +40,8 @@ const getModuleExportType = (
   }
 
   const originalSymbol = checker.getAliasedSymbol(exportSymbol);
-  const originalDeclaration = originalSymbol.declarations?.[0];
-  const exportType = checker.getTypeAtLocation(originalDeclaration!);
+  const originalDeclaration = originalSymbol.declarations![0]!;
+  const exportType = checker.getTypeAtLocation(originalDeclaration);
 
   return exportType;
 };

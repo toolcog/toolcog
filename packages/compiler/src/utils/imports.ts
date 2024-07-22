@@ -1,62 +1,83 @@
 import type ts from "typescript";
 
-const isImportDeclarationFromModule = (
-  ts: typeof import("typescript"),
-  node: ts.Node,
-  moduleName: string,
-): node is ts.ImportDeclaration => {
-  return (
-    ts.isImportDeclaration(node) &&
-    ts.isStringLiteral(node.moduleSpecifier) &&
-    node.moduleSpecifier.text === moduleName
-  );
-};
-
-const filterNamedImportDeclaration = (
+const removeImportsOfType = (
   ts: typeof import("typescript"),
   factory: ts.NodeFactory,
+  checker: ts.TypeChecker,
   node: ts.ImportDeclaration,
-  predicate: (element: ts.ImportSpecifier) => boolean,
+  importTypes: readonly ts.Type[],
 ): ts.ImportDeclaration | undefined => {
-  if (
-    !ts.isImportDeclaration(node) ||
-    node.importClause?.namedBindings === undefined ||
-    !ts.isNamedImports(node.importClause.namedBindings)
-  ) {
+  let importClause = node.importClause;
+  if (importClause === undefined || importClause.isTypeOnly) {
     return node;
   }
 
-  let changed = false;
-  const newImportSpecifiers: ts.ImportSpecifier[] = [];
-  for (const element of node.importClause.namedBindings.elements) {
-    if (predicate(element)) {
-      newImportSpecifiers.push(element);
-    } else {
-      changed = true;
+  if (importClause.name !== undefined) {
+    const nameType = checker.getTypeAtLocation(importClause.name);
+    if (
+      (nameType.flags & ts.TypeFlags.Any) === 0 &&
+      importTypes.some((importType) =>
+        checker.isTypeAssignableTo(nameType, importType),
+      )
+    ) {
+      importClause = factory.updateImportClause(
+        importClause,
+        importClause.isTypeOnly,
+        undefined,
+        importClause.namedBindings,
+      );
     }
   }
 
-  if (!changed) {
+  if (
+    importClause.namedBindings !== undefined &&
+    ts.isNamedImports(importClause.namedBindings)
+  ) {
+    let elements: ts.ImportSpecifier[] | undefined;
+    for (let i = 0; i < importClause.namedBindings.elements.length; i += 1) {
+      const element = importClause.namedBindings.elements[i]!;
+      const elementType = checker.getTypeAtLocation(element);
+      if (
+        (elementType.flags & ts.TypeFlags.Any) === 0 &&
+        importTypes.some((importType) =>
+          checker.isTypeAssignableTo(elementType, importType),
+        )
+      ) {
+        if (elements === undefined) {
+          elements = importClause.namedBindings.elements.slice(0, i);
+        }
+      } else if (elements !== undefined) {
+        elements.push(element);
+      }
+    }
+    if (elements !== undefined) {
+      importClause = factory.updateImportClause(
+        importClause,
+        importClause.isTypeOnly,
+        importClause.name,
+        elements.length !== 0 ?
+          factory.createNamedImports(elements)
+        : undefined,
+      );
+    }
+  }
+
+  if (importClause === node.importClause) {
     return node;
-  } else if (newImportSpecifiers.length === 0) {
+  } else if (
+    importClause.name === undefined &&
+    importClause.namedBindings === undefined
+  ) {
     return undefined;
   }
 
   return factory.updateImportDeclaration(
     node,
     node.modifiers,
-    factory.updateImportClause(
-      node.importClause,
-      node.importClause.isTypeOnly,
-      node.importClause.name,
-      factory.updateNamedImports(
-        node.importClause.namedBindings,
-        newImportSpecifiers,
-      ),
-    ),
+    importClause,
     node.moduleSpecifier,
     node.attributes,
   );
 };
 
-export { isImportDeclarationFromModule, filterNamedImportDeclaration };
+export { removeImportsOfType };

@@ -1,6 +1,21 @@
 import type ts from "typescript";
 
 declare module "typescript" {
+  interface AutoGenerateInfo {
+    flags: ts.GeneratedIdentifierFlags;
+    readonly id: number;
+    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+    readonly prefix?: string | ts.GeneratedNamePart;
+    readonly suffix?: string;
+  }
+
+  interface GeneratedIdentifier extends ts.Identifier {
+    readonly emitNode: { autoGenerate: ts.AutoGenerateInfo };
+    //readonly emitNode: ts.EmitNode & { autoGenerate: ts.AutoGenerateInfo };
+  }
+
+  function isGeneratedIdentifier(node: ts.Node): node is ts.GeneratedIdentifier;
+
   function isBlockScope(
     node: ts.Node,
     parentNode: ts.Node | undefined,

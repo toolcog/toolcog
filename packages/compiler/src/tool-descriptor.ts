@@ -5,100 +5,57 @@ import { Diagnostics } from "./diagnostics.ts";
 import { typeToSchema } from "./type-to-schema.ts";
 import { getDocComment } from "./doc-comment.ts";
 import { error, abort } from "./utils/errors.ts";
-import { isFunctionCallExpression } from "./utils/functions.ts";
 
 const getToolDescriptor = (
   ts: typeof import("typescript"),
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  useToolFunctionType: ts.Type | undefined,
   node: ts.Node,
+  toolName?: ts.DeclarationName | ts.PropertyName,
 ): ToolDescriptor => {
   const docComment = getDocComment(ts, checker, node);
   if (docComment === undefined) {
     error(ts, addDiagnostic, node, Diagnostics.MissingToolComment);
   }
 
-  let toolName: string;
   let toolDeclaration: ts.Declaration | undefined;
   if (ts.isIdentifier(node)) {
     const symbol = checker.getSymbolAtLocation(node);
     ts.Debug.assert(symbol !== undefined);
     const declaration = symbol.declarations?.[0];
     ts.Debug.assert(declaration !== undefined);
-    toolName = node.text;
+    if (toolName === undefined) {
+      toolName = node;
+    }
     toolDeclaration = declaration;
-  } else if (ts.isDeclarationStatement(node)) {
-    const declarationName = ts.getNameOfDeclaration(node);
-    if (
-      declarationName === undefined ||
-      (!ts.isIdentifier(declarationName) &&
-        !ts.isPrivateIdentifier(declarationName))
-    ) {
-      return abort(
-        ts,
-        addDiagnostic,
-        node,
-        Diagnostics.UnableToDetermineToolName,
-      );
+  } else if (
+    ts.isDeclarationStatement(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node)
+  ) {
+    if (toolName === undefined) {
+      toolName = ts.getNameOfDeclaration(node);
     }
-    toolName = ts.idText(declarationName);
-    toolDeclaration = node;
-  } else if (ts.isFunctionExpression(node)) {
-    let declarationName = ts.getNameOfDeclaration(node);
-    if (
-      declarationName === undefined &&
-      useToolFunctionType !== undefined &&
-      isFunctionCallExpression(ts, checker, node.parent, useToolFunctionType) &&
-      ts.isVariableDeclaration(node.parent.parent)
-    ) {
-      declarationName = node.parent.parent.name;
-    }
-    if (
-      declarationName === undefined ||
-      (!ts.isIdentifier(declarationName) &&
-        !ts.isPrivateIdentifier(declarationName))
-    ) {
-      return abort(
-        ts,
-        addDiagnostic,
-        node,
-        Diagnostics.UnableToDetermineToolName,
-      );
-    }
-    toolName = ts.idText(declarationName);
-    toolDeclaration = node;
-  } else if (ts.isArrowFunction(node)) {
-    let declarationName: ts.DeclarationName | undefined;
-    if (
-      declarationName === undefined &&
-      useToolFunctionType !== undefined &&
-      isFunctionCallExpression(ts, checker, node.parent, useToolFunctionType) &&
-      ts.isVariableDeclaration(node.parent.parent)
-    ) {
-      declarationName = node.parent.parent.name;
-    }
-    if (
-      declarationName === undefined ||
-      (!ts.isIdentifier(declarationName) &&
-        !ts.isPrivateIdentifier(declarationName))
-    ) {
-      return abort(
-        ts,
-        addDiagnostic,
-        node,
-        Diagnostics.UnableToDetermineToolName,
-      );
-    }
-    toolName = ts.idText(declarationName);
     toolDeclaration = node;
   } else {
     return abort(
       ts,
       addDiagnostic,
       node,
-      Diagnostics.UnableToExtractTool,
+      Diagnostics.UnableToStaticallyAnalyzeSyntax,
       ts.SyntaxKind[node.kind],
+    );
+  }
+
+  if (
+    toolName === undefined ||
+    (!ts.isIdentifier(toolName) && !ts.isPrivateIdentifier(toolName))
+  ) {
+    return abort(
+      ts,
+      addDiagnostic,
+      node,
+      Diagnostics.UnableToDetermineToolName,
     );
   }
 
@@ -168,7 +125,7 @@ const getToolDescriptor = (
   }
 
   return {
-    name: toolName,
+    name: toolName.text,
     ...(docComment?.description !== undefined ?
       { description: docComment.description }
     : undefined),

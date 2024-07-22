@@ -69,7 +69,7 @@ const generate: {
   },
   {
     brand: Symbol("toolcog.generate"),
-  },
+  } as const,
 ) as typeof generate;
 
 export type { GenerateParameters, GenerateOptions, GenerativeModel };

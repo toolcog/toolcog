@@ -31,7 +31,7 @@ catalog:
 
 catalogs:
   models:
-    openai: ^4.52
+    openai: ^4.53
   build:
     "@eslint/js": ^9.7
     "@rollup/plugin-node-resolve": ^15.2
@@ -49,5 +49,5 @@ catalogs:
     tslib: ^2.6
     turbo: ^2.0
     typescript: ^5.5
-    typescript-eslint: ^7.16
+    typescript-eslint: ^7.17
     vitest: ^2.0

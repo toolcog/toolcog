@@ -23,15 +23,18 @@ const getCommentText = (
     return undefined;
   }
 
+  let prevCommentRange: ts.CommentRange | undefined;
   let commentText: string | undefined;
-  let commentKind: ts.CommentKind | undefined;
   for (const commentRange of commentRanges) {
-    if (commentRange.kind !== commentKind) {
+    if (
+      commentRange.kind === ts.SyntaxKind.MultiLineCommentTrivia ||
+      prevCommentRange?.kind === ts.SyntaxKind.MultiLineCommentTrivia
+    ) {
       commentText = undefined;
-      if (commentRange.kind === ts.SyntaxKind.SingleLineCommentTrivia) {
-        commentKind = commentRange.kind;
-      } else {
-        commentKind = undefined;
+    } else if (prevCommentRange !== undefined) {
+      const newlineIndex = sourceText.indexOf("\n", prevCommentRange.end + 1);
+      if (newlineIndex >= 0 && newlineIndex < commentRange.pos) {
+        commentText = undefined;
       }
     }
 
@@ -49,6 +52,8 @@ const getCommentText = (
     }
 
     commentText += comment;
+
+    prevCommentRange = commentRange;
   }
   return commentText;
 };

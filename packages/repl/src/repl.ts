@@ -11,9 +11,13 @@ import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
 import type { Style } from "@toolcog/util/tty";
 import { stylize, splitLines, wrapText } from "@toolcog/util/tty";
-import { Tool, Toolcog } from "@toolcog/core";
+import type { Tool } from "@toolcog/core";
+import { Toolcog } from "@toolcog/core";
 import { Job } from "@toolcog/runtime";
-import { toolcogTransformerFactory } from "@toolcog/compiler";
+import {
+  getModuleExportType,
+  toolcogTransformerFactory,
+} from "@toolcog/compiler";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
@@ -68,6 +72,10 @@ class Repl {
 
   #executedStatementCount: number;
   #pendingStatementCount: number;
+
+  #pendingBindingTypes: Record<string, ts.Type>;
+
+  #tools: Tool[];
 
   #abortController: AbortController | null;
 
@@ -143,11 +151,13 @@ class Repl {
           before: [
             toolcogTransformerFactory(
               this.#languageService.getProgram()!,
-              undefined,
+              {
+                keepIntrinsicImports: true,
+              },
               undefined,
               languageServiceHost,
             ),
-            this.#postprocessor,
+            this.#postprocessor(this.#languageService.getProgram()!),
           ],
         };
       },
@@ -209,6 +219,10 @@ class Repl {
     this.#executedStatementCount = 0;
     this.#pendingStatementCount = 0;
 
+    this.#pendingBindingTypes = {};
+
+    this.#tools = [];
+
     this.#abortController = null;
   }
 
@@ -268,7 +282,9 @@ class Repl {
 
   async evalPrelude(): Promise<void> {
     // Import toolcog intrinsics.
-    await this.evalCode('import { useTool, generate } from "@toolcog/core";\n');
+    await this.evalCode(
+      'import { defineTool, useTool, generate } from "@toolcog/core";\n',
+    );
     // Un-increment the turn count.
     this.#turnCount -= 1;
   }
@@ -449,23 +465,13 @@ class Repl {
   }
 
   async evalLang(input: string): Promise<string> {
-    const context = globalThis as Record<string, unknown>;
-    // Collect all top-level tools in the VM context.
-    const tools: Tool[] = [];
-    for (const key in context) {
-      const value = context[key];
-      if (value instanceof Tool) {
-        tools.push(value);
-      }
-    }
-
     this.#abortController = new AbortController();
     try {
       // Complete the natural language using the default generative model.
       const toolcog = await Toolcog.current();
       const model = await toolcog.getGenerativeModel();
       const output = await model.generate(input, undefined, {
-        tools,
+        tools: this.#tools,
         signal: this.#abortController.signal,
       });
 
@@ -531,8 +537,8 @@ class Repl {
     // Compile and evaluate the preprocessed input.
     const bindings = await this.#evaluate(processedInput);
 
-    // Assign all newly declared bindings to the VM context.
-    Object.assign(globalThis, bindings);
+    // Incorporate all newly declared bindings into the REPL's state.
+    this.#updateBindings(bindings, this.#pendingBindingTypes);
 
     // Increment the turn count.
     this.#turnCount += 1;
@@ -541,9 +547,47 @@ class Repl {
     this.#cumulativeInput += processedInput;
     this.#executedStatementCount += this.#pendingStatementCount;
     this.#pendingStatementCount = 0;
+    this.#pendingBindingTypes = {};
 
-    // Return all newly declared bindings.
+    // Return the newly declared bindings.
     return bindings;
+  }
+
+  #updateBindings(
+    bindings: Record<string, unknown>,
+    bindingTypes: Record<string, ts.Type>,
+  ): void {
+    // Assign all newly declared bindings to the VM context.
+    Object.assign(globalThis, bindings);
+
+    const program = this.#languageService.getProgram()!;
+    const checker = program.getTypeChecker();
+    const useToolType = getModuleExportType(
+      ts,
+      ts.sys,
+      program,
+      checker,
+      "UseAnyTool",
+      "@toolcog/core",
+      "",
+    );
+
+    if (useToolType !== undefined) {
+      for (const bindingName in bindingTypes) {
+        const bindingType = bindingTypes[bindingName]!;
+        if (checker.isTypeAssignableTo(bindingType, useToolType)) {
+          this.addTool(bindingName, bindings[bindingName]! as Tool);
+        }
+      }
+    }
+  }
+
+  get tools(): readonly Tool[] {
+    return this.#tools;
+  }
+
+  addTool(toolName: string, tool: Tool): void {
+    this.#tools.push(tool);
   }
 
   #preprocess(input: string): string {
@@ -696,45 +740,53 @@ class Repl {
     };
   };
 
-  readonly #postprocessor = (
-    context: ts.TransformationContext,
-  ): ts.Transformer<ts.SourceFile> => {
-    const visitNext = (node: ts.Node): ts.Node | undefined => {
-      if (ts.isImportDeclaration(node) && node.importClause !== undefined) {
-        // Transform import declaration to awaited dynamic import statement.
-        return transformImportDeclaration(context.factory, node);
-      }
+  readonly #postprocessor =
+    (program: ts.Program) =>
+    (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
+      const factory = context.factory;
+      const checker = program.getTypeChecker();
 
-      if (ts.isBlockScope(node, node.parent)) {
-        // Don't descend into nested block scopes.
-        return node;
-      }
+      const visitNext = (node: ts.Node): ts.Node | undefined => {
+        if (ts.isImportDeclaration(node) && node.importClause !== undefined) {
+          // Transform import declaration to awaited dynamic import statement.
+          return transformImportDeclaration(factory, node);
+        }
 
-      return ts.visitEachChild(node, visitNext, context);
+        if (ts.isBlockScope(node, node.parent)) {
+          // Don't descend into nested block scopes.
+          return node;
+        }
+
+        return ts.visitEachChild(node, visitNext, context);
+      };
+
+      return (sourceFile: ts.SourceFile): ts.SourceFile => {
+        if (sourceFile.fileName !== this.#scriptName) {
+          return sourceFile;
+        }
+
+        const statements = ts.visitNodes(
+          sourceFile.statements,
+          visitNext,
+          undefined,
+          this.#executedStatementCount,
+          undefined,
+        ) as ts.NodeArray<ts.Statement>;
+
+        this.#pendingStatementCount = statements.length;
+
+        return factory.updateSourceFile(sourceFile, [
+          // Wrap all statements in an async IIFE that returns an object
+          // containing all declared bindings.
+          transformTopLevelAwait(
+            factory,
+            checker,
+            statements,
+            this.#pendingBindingTypes,
+          ),
+        ]);
+      };
     };
-
-    return (sourceFile: ts.SourceFile): ts.SourceFile => {
-      if (sourceFile.fileName !== this.#scriptName) {
-        return sourceFile;
-      }
-
-      const statements = ts.visitNodes(
-        sourceFile.statements,
-        visitNext,
-        undefined,
-        this.#executedStatementCount,
-        undefined,
-      ) as ts.NodeArray<ts.Statement>;
-
-      this.#pendingStatementCount = statements.length;
-
-      return context.factory.updateSourceFile(sourceFile, [
-        // Wrap all statements in an async IIFE that returns an object
-        // containing all declared bindings.
-        transformTopLevelAwait(context.factory, statements),
-      ]);
-    };
-  };
 }
 
 export type { ReplOptions };
