@@ -708,6 +708,16 @@ class Repl {
         return statement;
       }
 
+      // Don't assign intrinsic tool statements to result variables.
+      if (
+        ts.isCallExpression(statement.expression) &&
+        ts.isIdentifier(statement.expression.expression) &&
+        (statement.expression.expression.text === "defineTool" ||
+          statement.expression.expression.text === "useTool")
+      ) {
+        return statement;
+      }
+
       // Assign the last expression to a result variable.
       const resultVariableName = ts.factory.createUniqueName(
         `_${this.#turnCount}`,

@@ -288,7 +288,7 @@ const toolcogTransformer = (
         funcType,
         toolType,
         toolsType,
-      );
+      )[1];
       return toolDeclarations.map((toolDeclaration) =>
         ts.visitEachChild(toolDeclaration, visit, context),
       );

@@ -81,20 +81,7 @@ const transformToolsExpression = (
 
   const expressionType = checker.getTypeAtLocation(expression);
 
-  if (checker.isArrayLikeType(expressionType)) {
-    if (!ts.isArrayLiteralExpression(expression)) {
-      if (checker.isTypeAssignableTo(expressionType, toolsType)) {
-        return [expression, toolDeclarations];
-      }
-      return abort(
-        ts,
-        addDiagnostic,
-        expression,
-        Diagnostics.UnableToStaticallyAnalyzeSyntax,
-        ts.SyntaxKind[expression.kind],
-      );
-    }
-
+  if (ts.isArrayLiteralExpression(expression)) {
     const toolExpressions: ts.Expression[] = [];
     for (let index = 0; index < expression.elements.length; index += 1) {
       const element = expression.elements[index]!;
@@ -143,11 +130,8 @@ const transformToolsExpression = (
     ];
   }
 
-  if (expressionType.getCallSignatures().length === 0) {
-    if (!ts.isObjectLiteralExpression(expression)) {
-      if (checker.isTypeAssignableTo(expressionType, toolsType)) {
-        return [expression, toolDeclarations];
-      }
+  if (checker.isArrayLikeType(expressionType)) {
+    if (!checker.isTypeAssignableTo(expressionType, toolsType)) {
       return abort(
         ts,
         addDiagnostic,
@@ -157,6 +141,25 @@ const transformToolsExpression = (
       );
     }
 
+    for (const propertySymbol of checker.getPropertiesOfType(expressionType)) {
+      const index = parseInt(propertySymbol.name);
+      if (!isFinite(index)) {
+        continue;
+      }
+
+      const propertyType = checker.getTypeOfSymbol(propertySymbol);
+      if (checker.isTypeAssignableTo(propertyType, toolType)) {
+        toolDeclarations.push([
+          factory.createElementAccessExpression(expression, index),
+          undefined,
+        ]);
+      }
+    }
+
+    return [expression, toolDeclarations];
+  }
+
+  if (ts.isObjectLiteralExpression(expression)) {
     const toolProperties: ts.ObjectLiteralElementLike[] = [];
     for (const property of expression.properties) {
       let propertyName: ts.PropertyName;
@@ -210,6 +213,33 @@ const transformToolsExpression = (
     ];
   }
 
+  if (expressionType.getCallSignatures().length === 0) {
+    if (!checker.isTypeAssignableTo(expressionType, toolsType)) {
+      return abort(
+        ts,
+        addDiagnostic,
+        expression,
+        Diagnostics.UnableToStaticallyAnalyzeSyntax,
+        ts.SyntaxKind[expression.kind],
+      );
+    }
+
+    for (const propertySymbol of checker.getPropertiesOfType(expressionType)) {
+      const propertyType = checker.getTypeOfSymbol(propertySymbol);
+      if (checker.isTypeAssignableTo(propertyType, toolType)) {
+        toolDeclarations.push([
+          factory.createPropertyAccessExpression(
+            expression,
+            propertySymbol.name,
+          ),
+          factory.createIdentifier(propertySymbol.name),
+        ]);
+      }
+    }
+
+    return [expression, toolDeclarations];
+  }
+
   if (checker.isTypeAssignableTo(expressionType, toolType)) {
     let expressionName: ts.DeclarationName | undefined = bindingName;
     if (expressionName === undefined) {
@@ -242,8 +272,8 @@ const transformToolsDeclarations = (
   funcType: ts.Type,
   toolType: ts.Type,
   toolsType: ts.Type,
-): ts.VariableStatement[] => {
-  const toolDeclarations = transformToolsExpression(
+): [ts.Expression, ts.VariableStatement[]] => {
+  const [toolExpression, toolDeclarations] = transformToolsExpression(
     ts,
     factory,
     checker,
@@ -253,7 +283,7 @@ const transformToolsDeclarations = (
     toolType,
     toolsType,
     undefined,
-  )[1];
+  );
 
   const variableStatements: ts.VariableStatement[] = [];
   for (const [toolExpression, declarationName] of toolDeclarations) {
@@ -286,7 +316,7 @@ const transformToolsDeclarations = (
     );
     variableStatements.push(variableStatement);
   }
-  return variableStatements;
+  return [toolExpression, variableStatements];
 };
 
 export type { ToolDeclaration };
