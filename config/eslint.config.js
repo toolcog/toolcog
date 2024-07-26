@@ -10,7 +10,7 @@ export default pluginTs.config(
   {
     rules: {
       "jsdoc/check-line-alignment": "error",
-      "jsdoc/check-tag-names": ["error", { definedTags: ["tool"] }],
+      "jsdoc/check-tag-names": ["error", { definedTags: ["instructions"] }],
       "jsdoc/no-bad-blocks": "error",
       "jsdoc/require-jsdoc": "off",
       "jsdoc/require-param": "off",
@@ -46,6 +46,7 @@ export default pluginTs.config(
       "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-useless-constructor": "off",
+      "@typescript-eslint/prefer-function-type": "off",
       "@typescript-eslint/prefer-promise-reject-errors": "off",
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/restrict-plus-operands": [

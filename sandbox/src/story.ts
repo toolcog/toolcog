@@ -1,4 +1,4 @@
-import { generate, useTool } from "toolcog";
+import { implement } from "toolcog";
 import type { Character } from "./characters.js";
 import { createCharacters } from "./characters.js";
 
@@ -40,14 +40,13 @@ interface Story {
   chapters: Chapter[];
 }
 
-export async function writeStory(genre: string): Promise<Story> {
-  useTool(createCharacters);
-
-  // Write an outline for a story in the given genre.
-  return await generate({
-    // The genre of the story.
-    genre,
-  });
-}
+/**
+ * Write an outline for a story in the given genre.
+ *
+ * @param genre - The genre of the story.
+ */
+export const writeStory = implement<(genre: string) => Story>({
+  tools: [createCharacters],
+});
 
 //console.log(await writeStory("campy indie film"));

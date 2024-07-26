@@ -1,26 +1,26 @@
 packages:
   - config
-  - packages/util
-  - packages/util/queue
-  - packages/util/emit
-  - packages/util/task
-  - packages/util/async
-  - packages/util/timer
-  - packages/util/tty
-  - packages/util/schema
-  - packages/core
-  - packages/runtime
-  - packages/compiler
-  - packages/transformer
-  - packages/tui
-  - packages/repl
-  - packages/models/openai
-  - packages/adapters/node
-  - packages/adapters/node/loader
-  - packages/adapters/node/quiet
-  - packages/adapters/node/cli
-  - packages/toolcog
-  - packages/toolcog/cli
+  - framework/util
+  - framework/util/queue
+  - framework/util/emit
+  - framework/util/task
+  - framework/util/async
+  - framework/util/timer
+  - framework/util/tty
+  - framework/util/schema
+  - framework/core
+  - framework/compiler
+  - framework/transformer
+  - framework/runtime
+  - framework/tui
+  - framework/repl
+  - models/openai
+  - adapters/node
+  - adapters/node/loader
+  - adapters/node/quiet
+  - adapters/node/cli
+  - toolcog
+  - toolcog/cli
   - sandbox
 
 catalog:
@@ -33,12 +33,12 @@ catalogs:
   models:
     openai: ^4.53
   build:
-    "@eslint/js": ^9.7
+    "@eslint/js": ^9.8
     "@rollup/plugin-node-resolve": ^15.2
     "@rollup/plugin-replace": ^5.0
     "@rollup/plugin-typescript": ^11.1
     "@types/node": ^20
-    eslint: ^9.7
+    eslint: ^9.8
     eslint-plugin-jsdoc: ^48.8
     prettier: ^3.3
     rimraf: ^6.0

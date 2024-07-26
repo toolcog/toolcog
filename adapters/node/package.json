@@ -1,0 +1,88 @@
+{
+  "name": "@toolcog/node",
+  "version": "0.0.1",
+  "description": "Toolcog Node.js adapter",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "bin": {
+    "toolcog-node": "./bin/toolcog-node.js"
+  },
+  "scripts": {
+    "dev": "rollup --config --watch --no-watch.clearScreen",
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules",
+    "prepack": "toolcog-config prepack",
+    "postpack": "toolcog-config postpack"
+  },
+  "files": [
+    "bin/",
+    "dist/",
+    "loader/dist/",
+    "quiet/dist/",
+    "cli/dist/"
+  ],
+  "sideEffects": false,
+  "imports": {
+    "#cli": {
+      "types": "./cli/dist/lib.d.ts",
+      "import": "./cli/dist/lib.js",
+      "require": "./cli/dist/lib.cjs"
+    }
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    },
+    "./loader": {
+      "types": "./loader/dist/lib.d.ts",
+      "import": "./loader/dist/lib.js",
+      "require": "./loader/dist/lib.cjs"
+    },
+    "./quiet": {
+      "types": "./quiet/dist/lib.d.ts",
+      "import": "./quiet/dist/lib.js",
+      "require": "./quiet/dist/lib.cjs"
+    },
+    "./cli": {
+      "types": "./cli/dist/lib.d.ts",
+      "import": "./cli/dist/lib.js",
+      "require": "./cli/dist/lib.cjs"
+    }
+  },
+  "peerDependencies": {
+    "toolcog": "workspace:*",
+    "typescript": "catalog:default"
+  },
+  "peerDependenciesMeta": {
+    "toolcog": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@toolcog/repl": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
+    "@types/node": "catalog:default",
+    "commander": "catalog:default"
+  },
+  "optionalDependencies": {
+    "@toolcog/openai": "workspace:*"
+  },
+  "devDependencies": {
+    "@toolcog/config": "workspace:*",
+    "eslint": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "tslib": "catalog:build",
+    "typescript": "catalog:build"
+  }
+}

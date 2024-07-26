@@ -1,0 +1,44 @@
+{
+  "name": "@toolcog/core",
+  "version": "0.0.1",
+  "description": "Toolcog core",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "dev": "rollup --config --watch --no-watch.clearScreen",
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules",
+    "prepack": "toolcog-config prepack",
+    "postpack": "toolcog-config postpack"
+  },
+  "files": [
+    "dist/"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    }
+  },
+  "dependencies": {
+    "@toolcog/util/schema": "workspace:*"
+  },
+  "devDependencies": {
+    "@toolcog/config": "workspace:*",
+    "eslint": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "tslib": "catalog:build",
+    "typescript": "catalog:build"
+  }
+}

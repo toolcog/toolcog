@@ -13,12 +13,7 @@ const { rewriteDeps } = require("./config/deps.cjs");
 const readPackage = (pkg) => {
   pkg = rewriteDeps(pkg);
 
-  if (pkg.name === "@toolcog/core") {
-    // Filter out soft cyclic dependency between
-    // "@toolcog/core" and "@toolcog/runtime".
-    delete pkg.peerDependencies;
-    delete pkg.peerDependenciesMeta;
-  } else if (pkg.name === "@toolcog/node") {
+  if (pkg.name === "@toolcog/node") {
     // Filter out soft cyclic dependency between
     // "@toolcog/node" and "toolcog".
     delete pkg.peerDependencies;

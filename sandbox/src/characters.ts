@@ -1,4 +1,4 @@
-import { generate } from "toolcog";
+import { implement } from "toolcog";
 
 /**
  * A fictional character with a backstory.
@@ -21,20 +21,15 @@ export interface Character {
 
 /**
  * Creates a cast of characters for a story.
- * @param count the number of characters to create.
- * @param genre the genre of the story in which the characters exist
+ *
+ * @param genre - The genre of the story in which the characters exist.
+ * @param count - The number of characters to create.
+ * @returns The generated cast of characters.
  */
-export async function createCharacters(
-  count: number,
-  genre: string,
-): Promise<Character[]> {
-  // Come up with a cast of characters.
-  return await generate({
-    // The number of characters to create.
-    count,
-    // The genre of the story in which the characters should fit in.
-    genre,
-  });
-}
+export const createCharacters = implement<
+  (genre: string, count?: number) => Character[]
+>({
+  defaults: { count: 5 },
+});
 
-//console.log(await createCharacters(5, "fantasy"));
+//console.log(await createCharacters("fantasy"));
