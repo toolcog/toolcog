@@ -4,9 +4,9 @@ import { getLeadingComment } from "./utils/comments.ts";
 
 interface ToolComment {
   description: string | undefined;
-  params: Map<string, string>;
+  params: Record<string, string>;
   returns: string | undefined;
-  tags: Map<string, string>;
+  tags: Record<string, string>;
 }
 
 const parseTypedValue: {
@@ -97,7 +97,7 @@ const parseTag = (
 ): void => {
   if (tag === "param") {
     const [, name, description] = parseTypedValue(ts, value, { named: true });
-    toolComment.params.set(name, description);
+    toolComment.params[name] = description;
     return;
   }
 
@@ -107,7 +107,7 @@ const parseTag = (
     return;
   }
 
-  toolComment.tags.set(tag, value);
+  toolComment.tags[tag] = value;
 };
 
 const parseToolComment = (
@@ -116,9 +116,9 @@ const parseToolComment = (
 ): ToolComment => {
   const toolComment: ToolComment = {
     description: undefined,
-    params: new Map<string, string>(),
+    params: Object.create(null) as Record<string, string>,
     returns: undefined,
-    tags: new Map<string, string>(),
+    tags: Object.create(null) as Record<string, string>,
   };
 
   let tag: string | undefined;
@@ -188,9 +188,9 @@ const mergeToolComments: {
   ...toolComments: (ToolComment | undefined)[]
 ): ToolComment | undefined => {
   let description: string | undefined;
-  const params = new Map<string, string>();
+  const params = Object.create(null) as Record<string, string>;
   let returns: string | undefined;
-  const tags = new Map<string, string>();
+  const tags = Object.create(null) as Record<string, string>;
   let defined = false;
 
   for (const toolComment of toolComments) {
@@ -202,14 +202,14 @@ const mergeToolComments: {
     if (toolComment.description !== undefined) {
       description = toolComment.description;
     }
-    for (const [key, value] of toolComment.params) {
-      params.set(key, value);
+    for (const key in toolComment.params) {
+      params[key] = toolComment.params[key]!;
     }
     if (toolComment.returns !== undefined) {
       returns = toolComment.returns;
     }
-    for (const [tag, value] of toolComment.tags) {
-      tags.set(tag, value);
+    for (const tag in toolComment.tags) {
+      tags[tag] = toolComment.tags[tag]!;
     }
   }
 

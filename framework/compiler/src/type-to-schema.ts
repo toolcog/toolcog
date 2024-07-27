@@ -10,7 +10,7 @@ const typeToSchema = (
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   type: ts.Type,
   description?: string | null,
-  propertyDescriptions?: Map<string, string>,
+  propertyDescriptions?: Record<string, string>,
   errorNode?: ts.Node,
 ): Schema => {
   if (description === undefined) {
@@ -168,7 +168,7 @@ const typeToSchema = (
           parseToolCommentForNode(ts, propertyDeclaration)
         : undefined;
       const propertyDescription =
-        propertyComment?.description ?? propertyDescriptions?.get(propertyName);
+        propertyComment?.description ?? propertyDescriptions?.[propertyName];
 
       const propertySchema = typeToSchema(
         ts,

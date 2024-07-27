@@ -85,12 +85,12 @@ const getToolDescriptorForSignature = (
       checker,
       addDiagnostic,
       parameterType,
-      toolComment?.params.get(parameter.name),
+      toolComment?.params[parameter.name],
       undefined,
       parameterDeclaration,
     );
     if (parameterSchema.description === undefined) {
-      const description = toolComment?.params.get(parameter.name);
+      const description = toolComment?.params[parameter.name];
       if (description !== undefined) {
         parameterSchema = { ...parameterSchema, description };
       }

@@ -35,7 +35,7 @@ const transformGenerateExpression = (
   // Define `options` argument assignments.
 
   if (instructionsExpression === undefined) {
-    const instructions = toolComment?.tags.get("instructions");
+    const instructions = toolComment?.tags.instructions;
     if (instructions !== undefined) {
       instructionsExpression = factory.createStringLiteral(instructions);
     }

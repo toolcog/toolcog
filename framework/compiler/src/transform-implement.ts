@@ -242,7 +242,7 @@ const transformImplementExpression = (
 
   // Define the `instructions` property.
 
-  const instructions = toolComment?.tags.get("instructions");
+  const instructions = toolComment?.tags.instructions;
 
   const instructionsAssignment = factory.createExpressionStatement(
     factory.createBinaryExpression(
