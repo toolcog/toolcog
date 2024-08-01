@@ -34,6 +34,7 @@
     "prettier": "catalog:build",
     "rimraf": "catalog:build",
     "rollup": "catalog:build",
+    "ts-expose-internals": "catalog:build",
     "tslib": "catalog:build",
     "typescript": "catalog:build"
   }

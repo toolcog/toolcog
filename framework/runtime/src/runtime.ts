@@ -1,6 +1,6 @@
 import { AsyncContext } from "@toolcog/util/async";
 import type {
-  Embeddings,
+  EmbeddingVectors,
   GenerativeModelOptions,
   GenerativeModel,
   EmbeddingModelOptions,
@@ -11,11 +11,12 @@ import type { Thread } from "./thread.ts";
 import { TemporaryThread } from "./thread.ts";
 import type { PluginLoaderOptions } from "./plugin-loader.ts";
 import { PluginLoader } from "./plugin-loader.ts";
-import type { ModelLoaderOptions } from "./model-loader.ts";
-import type { GenerativeModelPlugin } from "./generative-model.ts";
-import { GenerativeModelLoader } from "./generative-model.ts";
-import type { EmbeddingModelPlugin } from "./embedding-model.ts";
-import { EmbeddingModelLoader } from "./embedding-model.ts";
+import type {
+  ModelLoaderOptions,
+  GenerativeModelPlugin,
+  EmbeddingModelPlugin,
+} from "./model-loader.ts";
+import { GenerativeModelLoader, EmbeddingModelLoader } from "./model-loader.ts";
 
 interface RuntimeOptions {
   pluginLoader?: PluginLoaderOptions | undefined;
@@ -54,14 +55,14 @@ class Runtime {
     return new TemporaryThread(messages);
   }
 
-  async getGenerativeModel(modelId?: string): Promise<GenerativeModel> {
+  async getGenerativeModel(model?: string): Promise<GenerativeModel> {
     await this.#pluginLoader.initialize();
-    return this.#generativeModelLoader.getModel(modelId);
+    return this.#generativeModelLoader.getModel(model);
   }
 
-  async getEmbeddingModel(modelId?: string): Promise<EmbeddingModel> {
+  async getEmbeddingModel(model?: string): Promise<EmbeddingModel> {
     await this.#pluginLoader.initialize();
-    return this.#embeddingModelLoader.getModel(modelId);
+    return this.#embeddingModelLoader.getModel(model);
   }
 
   /** @internal */
@@ -109,17 +110,17 @@ const generativeModel = (async (
   options?: GenerativeModelOptions,
 ): Promise<unknown> => {
   const runtime = Runtime.current();
-  const model = await runtime.getGenerativeModel(options?.modelId);
-  return model(args, options);
+  const generativeModel = await runtime.getGenerativeModel(options?.model);
+  return generativeModel(args, options);
 }) satisfies GenerativeModel;
 
-const embeddingModel = (async <Content extends string | readonly string[]>(
-  content: Content,
+const embeddingModel = (async <T extends string | readonly string[]>(
+  content: T,
   options?: EmbeddingModelOptions,
-): Promise<Embeddings<Content>> => {
+): Promise<EmbeddingVectors<T>> => {
   const runtime = Runtime.current();
-  const model = await runtime.getEmbeddingModel(options?.modelId);
-  return model(content, options);
+  const embeddingModel = await runtime.getEmbeddingModel(options?.model);
+  return embeddingModel(content, options);
 }) satisfies EmbeddingModel;
 
 export type { RuntimeOptions };

@@ -1,5 +1,5 @@
 import { Bindings } from "./bindings.ts";
-import { scope } from "#scope";
+import { current, run } from "#scope";
 
 interface VariableOptions<T> {
   name?: string | undefined;
@@ -20,7 +20,7 @@ class Variable<T> {
   }
 
   get(): T | undefined {
-    const frame = scope.current();
+    const frame = current();
     if (frame?.has(this) === true) {
       return frame.get(this);
     } else {
@@ -33,14 +33,14 @@ class Variable<T> {
     func: F,
     ...args: Parameters<F>
   ): ReturnType<F> {
-    let frame = scope.current();
+    let frame = current();
     if (frame !== undefined) {
       frame = frame.branch();
     } else {
       frame = new Bindings();
     }
     frame.set(this, value);
-    return scope.run(frame, func, ...args);
+    return run(frame, func, ...args);
   }
 }
 

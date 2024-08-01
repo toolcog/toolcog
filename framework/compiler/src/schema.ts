@@ -1,27 +1,28 @@
 import type ts from "typescript";
-import type { Schema, SchemaDefinition } from "@toolcog/util/schema";
-import { parseToolCommentForNode } from "./tool-comment.ts";
-import { Diagnostics } from "./diagnostics.ts";
+import type { SchemaDefinition, Schema, FunctionSchema } from "@toolcog/core";
 import { abort } from "./utils/errors.ts";
+import { Diagnostics } from "./diagnostics.ts";
+import type { Comment } from "./comment.ts";
+import { getCommentForNode } from "./comment.ts";
 
 const typeToSchema = (
   ts: typeof import("typescript"),
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   type: ts.Type,
-  description?: string | null,
-  propertyDescriptions?: Record<string, string>,
-  errorNode?: ts.Node,
+  description: string | null | undefined,
+  propertyDescriptions: Record<string, string> | undefined,
+  errorNode: ts.Node | undefined,
 ): Schema => {
   if (description === undefined) {
     let typeDeclaration = type.getSymbol()?.declarations?.[0];
     if (typeDeclaration !== undefined) {
-      description = parseToolCommentForNode(ts, typeDeclaration)?.description;
+      description = getCommentForNode(ts, typeDeclaration)?.description;
     }
     if (description === undefined) {
       typeDeclaration = type.getConstraint()?.getSymbol()?.declarations?.[0];
       if (typeDeclaration !== undefined) {
-        description = parseToolCommentForNode(ts, typeDeclaration)?.description;
+        description = getCommentForNode(ts, typeDeclaration)?.description;
       }
     }
   } else if (description === null) {
@@ -165,7 +166,7 @@ const typeToSchema = (
       const propertyDeclaration = propertySymbol.declarations?.[0];
       const propertyComment =
         propertyDeclaration !== undefined ?
-          parseToolCommentForNode(ts, propertyDeclaration)
+          getCommentForNode(ts, propertyDeclaration)
         : undefined;
       const propertyDescription =
         propertyComment?.description ?? propertyDescriptions?.[propertyName];
@@ -257,9 +258,144 @@ const typeToSchema = (
     ts,
     addDiagnostic,
     errorNode,
-    Diagnostics.UnableToConstructSchemaForType,
+    Diagnostics.CannotDeriveSchemaForType,
     checker.typeToString(type),
   );
 };
 
-export { typeToSchema };
+const signatureToSchema = (
+  ts: typeof import("typescript"),
+  checker: ts.TypeChecker,
+  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  signature: ts.Signature,
+  name: string | undefined,
+  comment: Comment | undefined,
+  errorNode: ts.Node | undefined,
+): FunctionSchema => {
+  const parameterSchemas: { [key: string]: SchemaDefinition } = {};
+  const requiredParameters: string[] = [];
+
+  for (const parameter of signature.parameters) {
+    const parameterDeclaration = parameter.valueDeclaration!;
+    const parameterType = checker.getTypeOfSymbolAtLocation(
+      parameter,
+      parameterDeclaration,
+    );
+    let parameterSchema = typeToSchema(
+      ts,
+      checker,
+      addDiagnostic,
+      parameterType,
+      comment?.params[parameter.name],
+      undefined,
+      parameterDeclaration,
+    );
+    if (parameterSchema.description === undefined) {
+      const description = comment?.params[parameter.name];
+      if (description !== undefined) {
+        parameterSchema = { ...parameterSchema, description };
+      }
+    }
+
+    parameterSchemas[parameter.name] = parameterSchema;
+    if (
+      !ts.isParameter(parameterDeclaration) ||
+      (parameterDeclaration.questionToken === undefined &&
+        parameterDeclaration.initializer === undefined)
+    ) {
+      requiredParameters.push(parameter.name);
+    }
+  }
+
+  let parametersSchema: Schema | undefined;
+  if (signature.parameters.length !== 0) {
+    parametersSchema = {
+      type: "object",
+      properties: parameterSchemas,
+      ...(requiredParameters.length !== 0 ?
+        { required: requiredParameters }
+      : undefined),
+    };
+  }
+
+  const returnType = checker.getAwaitedType(signature.getReturnType());
+  ts.Debug.assert(returnType !== undefined);
+
+  let returnSchema = typeToSchema(
+    ts,
+    checker,
+    addDiagnostic,
+    returnType,
+    comment?.returns,
+    undefined,
+    errorNode,
+  );
+  if (returnSchema.description === undefined) {
+    const description = comment?.returns;
+    if (description !== undefined) {
+      returnSchema = { ...returnSchema, description };
+    }
+  }
+
+  return {
+    ...(name !== undefined ? { name } : undefined),
+    ...(comment?.description !== undefined ?
+      { description: comment.description }
+    : undefined),
+    ...(parametersSchema !== undefined ?
+      { parameters: parametersSchema }
+    : undefined),
+    return: returnSchema,
+  };
+};
+
+const callSiteToSchema = (
+  ts: typeof import("typescript"),
+  checker: ts.TypeChecker,
+  addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  argumentsExpression: ts.Expression | undefined,
+  returnType: ts.Type | undefined,
+  name: string | undefined,
+  comment: Comment | undefined,
+  errorNode: ts.Node | undefined,
+): FunctionSchema => {
+  let parametersSchema: Schema | undefined;
+  if (argumentsExpression !== undefined) {
+    const argumentsType = checker.getTypeAtLocation(argumentsExpression);
+    parametersSchema = typeToSchema(
+      ts,
+      checker,
+      addDiagnostic,
+      argumentsType,
+      null,
+      comment?.params,
+      argumentsExpression,
+    );
+  }
+
+  let returnSchema: Schema | undefined;
+  if (returnType !== undefined) {
+    returnSchema = typeToSchema(
+      ts,
+      checker,
+      addDiagnostic,
+      returnType,
+      comment?.returns,
+      undefined,
+      errorNode,
+    );
+  }
+
+  return {
+    ...(name !== undefined ? { name } : undefined),
+    ...(comment?.description !== undefined ?
+      { description: comment.description }
+    : undefined),
+    ...(parametersSchema !== undefined ?
+      { parameters: parametersSchema }
+    : undefined),
+    ...(returnSchema !== undefined ? { return: returnSchema } : undefined),
+  };
+};
+
+export { typeToSchema, signatureToSchema, callSiteToSchema };

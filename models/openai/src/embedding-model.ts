@@ -2,8 +2,8 @@ import { OpenAI } from "openai";
 import type { DispatcherOptions } from "@toolcog/util/task";
 import { Dispatcher } from "@toolcog/util/task";
 import type {
-  Embedding,
-  Embeddings,
+  EmbeddingVector,
+  EmbeddingVectors,
   EmbeddingModelOptions,
   EmbeddingModel,
 } from "@toolcog/core";
@@ -12,7 +12,6 @@ type EmbeddingModelName =
   | "text-embedding-ada-002"
   | "text-embedding-3-small"
   | "text-embedding-3-large"
-  // eslint-disable-next-line @typescript-eslint/ban-types
   | (string & {});
 
 interface EmbeddingModelConfig {
@@ -38,11 +37,11 @@ const supportsEmbeddingModel = (modelName: string): boolean => {
   );
 };
 
-const embeddingModel = (async <Content extends string | readonly string[]>(
-  content: Content,
+const embeddingModel = (async <T extends string | readonly string[]>(
+  content: T,
   options?: EmbeddingModelOptions,
   config?: EmbeddingModelConfig,
-): Promise<Embeddings<Content>> => {
+): Promise<EmbeddingVectors<T>> => {
   const client = config?.client ?? new OpenAI();
 
   const modelName = config?.modelName ?? defaultEmbeddingModel;
@@ -79,7 +78,7 @@ const embeddingModel = (async <Content extends string | readonly string[]>(
   });
   const responses = await dispatcher.enqueueAll(requests);
 
-  const embeddings: Embedding[] = [];
+  const embeddings: EmbeddingVector[] = [];
   for (const response of responses) {
     for (const datum of response.data) {
       embeddings.push(datum.embedding);
@@ -89,7 +88,7 @@ const embeddingModel = (async <Content extends string | readonly string[]>(
   return (
     typeof content === "string" ?
       embeddings[0]!
-    : embeddings) as Embeddings<Content>;
+    : embeddings) as EmbeddingVectors<T>;
 }) satisfies EmbeddingModel;
 
 export type { EmbeddingModelName, EmbeddingModelConfig };

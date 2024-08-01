@@ -1,6 +1,6 @@
 import { resolve } from "node:path";
 import { Command, Option } from "commander";
-import { Thread } from "@toolcog/runtime";
+import { Thread, withTools } from "@toolcog/runtime";
 import { Repl } from "@toolcog/repl";
 import { spawnLoader } from "./spawn.ts";
 
@@ -40,30 +40,33 @@ const run = async (
   // Evaluate all input in a contiguous conversation thread.
   const thread = await Thread.create();
   await Thread.run(thread, async () => {
-    // Instantiate a REPL to evaluate code.
-    const repl = new Repl();
+    // Evaluate input in a tools scope.
+    await withTools([], async () => {
+      // Instantiate a REPL to evaluate code.
+      const repl = new Repl();
 
-    // Evaluate the builtin prelude.
-    await repl.evalPrelude();
+      // Evaluate the builtin prelude.
+      await repl.evalPrelude();
 
-    // Check if a code argument was provided.
-    if (code !== undefined) {
-      // Evaluate the code argument.
-      const bindings = await repl.evalCode(code);
-      // Check if the result should be printed.
-      if (print) {
-        // Print the result variable.
-        repl.output.write(repl.formatValue(bindings._1) + "\n");
+      // Check if a code argument was provided.
+      if (code !== undefined) {
+        // Evaluate the code argument.
+        const bindings = await repl.evalCode(code);
+        // Check if the result should be printed.
+        if (print) {
+          // Print the result variable.
+          repl.output.write(repl.formatValue(bindings._1) + "\n");
+        }
       }
-    }
 
-    // Check if the REPL should be run.
-    if (interactive || (code === undefined && process.stdin.isTTY)) {
-      // Print the REPL banner.
-      repl.printBanner();
-      // Run the REPL session.
-      await repl.run();
-    }
+      // Check if the REPL should be run.
+      if (interactive || (code === undefined && process.stdin.isTTY)) {
+        // Print the REPL banner.
+        repl.printBanner();
+        // Run the REPL session.
+        await repl.run();
+      }
+    });
   });
 };
 

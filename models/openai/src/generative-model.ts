@@ -14,7 +14,6 @@ type GenerativeModelName =
   | "gpt-4-turbo"
   | "gpt-4o"
   | "gpt-4o-mini"
-  // eslint-disable-next-line @typescript-eslint/ban-types
   | (string & {});
 
 interface GenerativeModelConfig {
@@ -58,20 +57,16 @@ const generativeModel = (async (
   const generativeCall = new GenerativeCall({
     instructions: instructions ?? options?.instructions,
     tools: options?.tools,
-    descriptor: options?.descriptor,
+    function: options?.function,
     resultType: "object",
   });
 
   let tools: OpenAI.ChatCompletionTool[] | undefined;
-  if (
-    options?.tools !== undefined &&
-    options.tools !== null &&
-    options.tools.length !== 0
-  ) {
+  if (options?.tools !== undefined && options.tools !== null) {
     tools = mapTools(options.tools, (tool) => {
       return {
         type: "function",
-        function: tool.descriptor as OpenAI.FunctionDefinition,
+        function: tool.function as OpenAI.FunctionDefinition,
       } satisfies OpenAI.ChatCompletionTool;
     });
   }
@@ -87,7 +82,7 @@ const generativeModel = (async (
     const request = {
       model: modelName,
       messages: thread.messages as OpenAI.ChatCompletionMessageParam[],
-      ...(tools !== undefined ? { tools } : undefined),
+      ...(tools !== undefined && tools.length !== 0 ? { tools } : undefined),
       ...(generativeCall.resultSchema !== null ?
         { response_format: { type: "json_object" } }
       : undefined),
@@ -106,7 +101,7 @@ const generativeModel = (async (
     await Job.run(
       {
         icon: "≡",
-        title: options?.title ?? modelName,
+        title: modelName,
         status: "...",
       },
       async (job) => {
@@ -156,16 +151,17 @@ const generativeModel = (async (
     if (choice.finish_reason === "tool_calls") {
       const toolResults = message.tool_calls?.map((toolCall) => {
         const toolFunction = toolCall.function;
+        const tool = generativeCall.findTool(toolFunction.name)!;
         return Job.run(
           {
             icon: "⚙",
-            title: toolFunction.name,
+            title: tool.id ?? toolFunction.name,
           },
           async (toolJob) => {
             const toolThread = await Thread.create();
             return Thread.run(toolThread, async () => {
               const result = await generativeCall.callTool(
-                toolFunction.name,
+                tool,
                 toolFunction.arguments,
               );
               toolJob.finish(result);

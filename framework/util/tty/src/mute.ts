@@ -111,7 +111,7 @@ class MuteStream extends Duplex {
       }
 
       if (typeof chunk === "string") {
-        if (chunk.match(/^\x1b/)) {
+        if (/^\x1b/.exec(chunk) !== null) {
           if (this.#prompt !== undefined && chunk.startsWith(this.#prompt)) {
             chunk = chunk.slice(this.#prompt.length);
             chunk = (chunk as string).replace(/./g, this.#replace);

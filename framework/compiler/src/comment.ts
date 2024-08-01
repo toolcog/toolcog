@@ -2,10 +2,11 @@ import type ts from "typescript";
 import { splitLines } from "@toolcog/util";
 import { getLeadingComment } from "./utils/comments.ts";
 
-interface ToolComment {
+interface Comment {
   description: string | undefined;
   params: Record<string, string>;
   returns: string | undefined;
+  intents: string[];
   tags: Record<string, string>;
 }
 
@@ -91,43 +92,49 @@ const parseTypedValue: {
 
 const parseTag = (
   ts: typeof import("typescript"),
-  toolComment: ToolComment,
+  comment: Comment,
   tag: string,
   value: string,
 ): void => {
   if (tag === "param") {
     const [, name, description] = parseTypedValue(ts, value, { named: true });
-    toolComment.params[name] = description;
+    comment.params[name] = description;
     return;
   }
 
   if (tag === "returns") {
     const [, , description] = parseTypedValue(ts, value);
-    toolComment.returns = description;
+    comment.returns = description;
     return;
   }
 
-  toolComment.tags[tag] = value;
+  if (tag === "intent") {
+    comment.intents.push(value);
+    return;
+  }
+
+  comment.tags[tag] = value;
 };
 
-const parseToolComment = (
+const parseComment = (
   ts: typeof import("typescript"),
-  comment: string,
-): ToolComment => {
-  const toolComment: ToolComment = {
+  commentText: string,
+): Comment => {
+  const comment: Comment = {
     description: undefined,
     params: Object.create(null) as Record<string, string>,
     returns: undefined,
+    intents: [],
     tags: Object.create(null) as Record<string, string>,
   };
 
   let tag: string | undefined;
   let value: string | undefined;
-  for (const line of splitLines(comment)) {
-    const match = line.match(/^\s*@(\w+)/);
+  for (const line of splitLines(commentText)) {
+    const match = /^\s*@(\w+)/.exec(line);
     if (match !== null) {
       if (tag !== undefined) {
-        parseTag(ts, toolComment, tag, value!.trim());
+        parseTag(ts, comment, tag, value!.trim());
       }
       tag = match[1];
       value = line.substring(match[0].length);
@@ -135,81 +142,56 @@ const parseToolComment = (
     }
 
     if (tag === undefined) {
-      if (toolComment.description === undefined) {
-        toolComment.description = "";
+      if (comment.description === undefined) {
+        comment.description = "";
       } else {
-        toolComment.description += "\n";
+        comment.description += "\n";
       }
-      toolComment.description += line;
+      comment.description += line;
     } else {
       value! += "\n" + line;
     }
   }
 
   if (tag !== undefined) {
-    parseTag(ts, toolComment, tag, value!.trim());
-  }
-
-  return toolComment;
-};
-
-const parseToolCommentForNode = (
-  ts: typeof import("typescript"),
-  node: ts.Node,
-): ToolComment | undefined => {
-  const comment = getLeadingComment(ts, node);
-  return comment !== undefined ? parseToolComment(ts, comment) : undefined;
-};
-
-const getToolComment = (
-  ts: typeof import("typescript"),
-  checker: ts.TypeChecker,
-  node: ts.Node,
-): ToolComment | undefined => {
-  let comment = parseToolCommentForNode(ts, node);
-
-  const type = checker.getTypeAtLocation(node);
-  const typeSymbol = type.getSymbol();
-  if (typeSymbol !== undefined) {
-    const typeDeclaration = typeSymbol.declarations?.[0];
-    if (typeDeclaration !== undefined) {
-      const typeComment = parseToolCommentForNode(ts, typeDeclaration);
-      comment = mergeToolComments(typeComment, comment);
-    }
+    parseTag(ts, comment, tag, value!.trim());
   }
 
   return comment;
 };
 
-const mergeToolComments: {
-  (...toolComments: ToolComment[]): ToolComment;
-  (...toolComments: (ToolComment | undefined)[]): ToolComment | undefined;
-} = ((
-  ...toolComments: (ToolComment | undefined)[]
-): ToolComment | undefined => {
+const mergeComments: {
+  (...comments: Comment[]): Comment;
+  (...comments: (Comment | undefined)[]): Comment | undefined;
+} = ((...comments: (Comment | undefined)[]): Comment | undefined => {
+  let defined = false;
+
   let description: string | undefined;
   const params = Object.create(null) as Record<string, string>;
   let returns: string | undefined;
+  const intents = new Set<string>();
   const tags = Object.create(null) as Record<string, string>;
-  let defined = false;
 
-  for (const toolComment of toolComments) {
-    if (toolComment === undefined) {
+  for (const comment of comments) {
+    if (comment === undefined) {
       continue;
     }
     defined = true;
 
-    if (toolComment.description !== undefined) {
-      description = toolComment.description;
+    if (comment.description !== undefined) {
+      description = comment.description;
     }
-    for (const key in toolComment.params) {
-      params[key] = toolComment.params[key]!;
+    for (const key in comment.params) {
+      params[key] = comment.params[key]!;
     }
-    if (toolComment.returns !== undefined) {
-      returns = toolComment.returns;
+    if (comment.returns !== undefined) {
+      returns = comment.returns;
     }
-    for (const tag in toolComment.tags) {
-      tags[tag] = toolComment.tags[tag]!;
+    for (const intent of comment.intents) {
+      intents.add(intent);
+    }
+    for (const tag in comment.tags) {
+      tags[tag] = comment.tags[tag]!;
     }
   }
 
@@ -217,13 +199,57 @@ const mergeToolComments: {
     return undefined;
   }
 
-  return { description, params, returns, tags };
-}) as typeof mergeToolComments;
+  return {
+    description,
+    params,
+    returns,
+    intents: [...intents],
+    tags,
+  };
+}) as typeof mergeComments;
 
-export type { ToolComment };
+const getCommentForNode = (
+  ts: typeof import("typescript"),
+  node: ts.Node,
+): Comment | undefined => {
+  const commentText = getLeadingComment(ts, node);
+  return commentText !== undefined ? parseComment(ts, commentText) : undefined;
+};
+
+const getCommentForType = (
+  ts: typeof import("typescript"),
+  type: ts.Type,
+): Comment | undefined => {
+  const typeSymbol = type.getSymbol();
+  if (typeSymbol !== undefined) {
+    const typeDeclaration = typeSymbol.declarations?.[0];
+    if (typeDeclaration !== undefined) {
+      return getCommentForNode(ts, typeDeclaration);
+    }
+  }
+  return undefined;
+};
+
+const getComment = (
+  ts: typeof import("typescript"),
+  checker: ts.TypeChecker | undefined,
+  node: ts.Node,
+  type?: ts.Type,
+): Comment | undefined => {
+  if (type === undefined) {
+    type = checker?.getTypeAtLocation(node);
+  }
+  return mergeComments(
+    getCommentForNode(ts, node),
+    type !== undefined ? getCommentForType(ts, type) : undefined,
+  );
+};
+
+export type { Comment };
 export {
-  parseToolComment,
-  parseToolCommentForNode,
-  getToolComment,
-  mergeToolComments,
+  parseComment,
+  mergeComments,
+  getCommentForNode,
+  getCommentForType,
+  getComment,
 };

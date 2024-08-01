@@ -38,8 +38,9 @@ const createForwardFunctionExpression = (
   // Create an anonymous wrapper function to avoid mutating the original.
   const argsIdentifier = factory.createUniqueName(
     "args",
+    // Avoid shadowing identifiers in the call expression.
     ts.GeneratedIdentifierFlags.Optimistic |
-      ts.GeneratedIdentifierFlags.AllowNameSubstitution,
+      ts.GeneratedIdentifierFlags.ReservedInNestedScopes,
   );
   return factory.createFunctionExpression(
     undefined, // modifiers

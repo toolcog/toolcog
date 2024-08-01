@@ -39,6 +39,7 @@ const transformImportDeclaration = (
         undefined, // dotDotDotToken
         factory.createIdentifier("default"),
         importClause.name,
+        undefined, // initializer
       ),
     );
   }
@@ -57,6 +58,7 @@ const transformImportDeclaration = (
             undefined, // dotDotDotToken
             element.propertyName,
             element.name,
+            undefined, // initializer
           ),
         );
       }

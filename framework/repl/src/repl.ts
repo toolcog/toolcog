@@ -12,12 +12,8 @@ import ts from "typescript";
 import { splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
 import { stylize, wrapText } from "@toolcog/util/tty";
-import type { Tool } from "@toolcog/core";
-import {
-  getModuleExportType,
-  toolcogTransformerFactory,
-} from "@toolcog/compiler";
-import { Job, generativeModel } from "@toolcog/runtime";
+import { toolcogTransformer } from "@toolcog/compiler";
+import { Job, currentTools, generativeModel } from "@toolcog/runtime";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
@@ -39,6 +35,8 @@ interface ReplOptions {
   compilerOptions?: ts.CompilerOptions | undefined;
 
   documentRegistry?: ts.DocumentRegistry | undefined;
+
+  defaultEmbeddingModel?: string | undefined;
 }
 
 class Repl {
@@ -57,6 +55,8 @@ class Repl {
 
   readonly #compilerOptions: ts.CompilerOptions;
 
+  readonly #defaultEmbeddingModel: string;
+
   readonly #scanner: ts.Scanner;
   readonly #printer: ts.Printer;
 
@@ -72,10 +72,6 @@ class Repl {
 
   #executedStatementCount: number;
   #pendingStatementCount: number;
-
-  #pendingBindingTypes: Record<string, ts.Type>;
-
-  #tools: Tool[];
 
   #abortController: AbortController | null;
 
@@ -106,6 +102,9 @@ class Repl {
       strict: true,
       target: ts.ScriptTarget.ESNext,
     };
+
+    this.#defaultEmbeddingModel =
+      options?.defaultEmbeddingModel ?? "text-embedding-3-small";
 
     this.#scanner = ts.createScanner(
       this.#languageVersion,
@@ -149,15 +148,18 @@ class Repl {
       getCustomTransformers: (): ts.CustomTransformers | undefined => {
         return {
           before: [
-            toolcogTransformerFactory(
+            toolcogTransformer(
               this.#languageService.getProgram()!,
               {
+                contextToolsImportName: "currentTools",
+                contextToolsImportSpecifier: "@toolcog/runtime",
+                embeddingCacheGlobalName: "embeddingCache",
                 keepIntrinsicImports: true,
               },
               undefined,
               languageServiceHost,
             ),
-            this.#postprocessor(this.#languageService.getProgram()!),
+            this.#postprocessor,
           ],
         };
       },
@@ -219,10 +221,6 @@ class Repl {
     this.#executedStatementCount = 0;
     this.#pendingStatementCount = 0;
 
-    this.#pendingBindingTypes = {};
-
-    this.#tools = [];
-
     this.#abortController = null;
   }
 
@@ -283,8 +281,9 @@ class Repl {
   async evalPrelude(): Promise<void> {
     // Import toolcog intrinsics.
     await this.evalCode(
-      'import { defineTool, useTool, implement, generate } from "@toolcog/core";\n' +
-        'import { generativeModel } from "@toolcog/runtime";\n',
+      'import { tooling, generate, generative, embedding } from "@toolcog/core";\n' +
+        'import { currentTools, withTools, useTool, generativeModel, embeddingModel, embeddingStore } from "@toolcog/runtime";\n' +
+        `const embeddingCache = { defaultModel: ${JSON.stringify(this.#defaultEmbeddingModel)} };\n`,
     );
     // Un-increment the turn count.
     this.#turnCount -= 1;
@@ -329,7 +328,7 @@ class Repl {
     const readline = await this.#createInterface();
 
     // Handle Ctrl+C events.
-    readline.on("SIGINT", async () => {
+    readline.on("SIGINT", () => {
       // Abort any currently active run.
       this.#abortController?.abort();
 
@@ -468,9 +467,9 @@ class Repl {
   async evalLang(input: string): Promise<unknown> {
     this.#abortController = new AbortController();
     try {
-      // Complete the natural language using the default generative model.
+      // Complete the natural language using the default generative runtime.
       const output = generativeModel(input, {
-        tools: this.#tools,
+        tools: currentTools(),
         signal: this.#abortController.signal,
       });
 
@@ -478,7 +477,7 @@ class Repl {
       this.#turnCount += 1;
 
       // Return the natural language prompt completion.
-      return output;
+      return await output;
     } finally {
       this.#abortController = null;
     }
@@ -536,8 +535,8 @@ class Repl {
     // Compile and evaluate the preprocessed input.
     const bindings = await this.#evaluate(processedInput);
 
-    // Incorporate all newly declared bindings into the REPL's state.
-    this.#updateBindings(bindings, this.#pendingBindingTypes);
+    // Assign all newly declared bindings to the VM context.
+    Object.assign(globalThis, bindings);
 
     // Increment the turn count.
     this.#turnCount += 1;
@@ -546,47 +545,9 @@ class Repl {
     this.#cumulativeInput += processedInput;
     this.#executedStatementCount += this.#pendingStatementCount;
     this.#pendingStatementCount = 0;
-    this.#pendingBindingTypes = {};
 
     // Return the newly declared bindings.
     return bindings;
-  }
-
-  #updateBindings(
-    bindings: Record<string, unknown>,
-    bindingTypes: Record<string, ts.Type>,
-  ): void {
-    // Assign all newly declared bindings to the VM context.
-    Object.assign(globalThis, bindings);
-
-    const program = this.#languageService.getProgram()!;
-    const checker = program.getTypeChecker();
-    const useToolType = getModuleExportType(
-      ts,
-      ts.sys,
-      program,
-      checker,
-      "UseAnyTool",
-      "@toolcog/compiler",
-      "",
-    );
-
-    if (useToolType !== undefined) {
-      for (const bindingName in bindingTypes) {
-        const bindingType = bindingTypes[bindingName]!;
-        if (checker.isTypeAssignableTo(bindingType, useToolType)) {
-          this.addTool(bindingName, bindings[bindingName]! as Tool);
-        }
-      }
-    }
-  }
-
-  get tools(): readonly Tool[] {
-    return this.#tools;
-  }
-
-  addTool(toolName: string, tool: Tool): void {
-    this.#tools.push(tool);
   }
 
   #preprocess(input: string): string {
@@ -707,21 +668,11 @@ class Repl {
         return statement;
       }
 
-      // Don't assign intrinsic tool statements to result variables.
-      if (
-        ts.isCallExpression(statement.expression) &&
-        ts.isIdentifier(statement.expression.expression) &&
-        (statement.expression.expression.text === "defineTool" ||
-          statement.expression.expression.text === "useTool")
-      ) {
-        return statement;
-      }
-
       // Assign the last expression to a result variable.
       const resultVariableName = ts.factory.createUniqueName(
         `_${this.#turnCount}`,
         ts.GeneratedIdentifierFlags.Optimistic |
-          ts.GeneratedIdentifierFlags.AllowNameSubstitution,
+          ts.GeneratedIdentifierFlags.ReservedInNestedScopes,
       );
       return ts.factory.createVariableStatement(
         undefined, // modifiers
@@ -740,6 +691,8 @@ class Repl {
     };
 
     return (sourceFile: ts.SourceFile): ts.SourceFile => {
+      this.#pendingStatementCount = sourceFile.statements.length;
+
       return context.factory.updateSourceFile(sourceFile, [
         // Passthrough all but the last statement.
         ...sourceFile.statements.slice(0, -1),
@@ -749,53 +702,45 @@ class Repl {
     };
   };
 
-  readonly #postprocessor =
-    (program: ts.Program) =>
-    (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
-      const factory = context.factory;
-      const checker = program.getTypeChecker();
+  readonly #postprocessor = (
+    context: ts.TransformationContext,
+  ): ts.Transformer<ts.SourceFile> => {
+    const factory = context.factory;
 
-      const visitNext = (node: ts.Node): ts.Node | undefined => {
-        if (ts.isImportDeclaration(node) && node.importClause !== undefined) {
-          // Transform import declaration to awaited dynamic import statement.
-          return transformImportDeclaration(factory, node);
-        }
+    const visitNext = (node: ts.Node): ts.Node | undefined => {
+      if (ts.isImportDeclaration(node) && node.importClause !== undefined) {
+        // Transform import declaration to awaited dynamic import statement.
+        return transformImportDeclaration(factory, node);
+      }
 
-        if (ts.isBlockScope(node, node.parent)) {
-          // Don't descend into nested block scopes.
-          return node;
-        }
+      if (ts.isBlockScope(node, node.parent)) {
+        // Don't descend into nested block scopes.
+        return node;
+      }
 
-        return ts.visitEachChild(node, visitNext, context);
-      };
-
-      return (sourceFile: ts.SourceFile): ts.SourceFile => {
-        if (sourceFile.fileName !== this.#scriptName) {
-          return sourceFile;
-        }
-
-        const statements = ts.visitNodes(
-          sourceFile.statements,
-          visitNext,
-          undefined,
-          this.#executedStatementCount,
-          undefined,
-        ) as ts.NodeArray<ts.Statement>;
-
-        this.#pendingStatementCount = statements.length;
-
-        return factory.updateSourceFile(sourceFile, [
-          // Wrap all statements in an async IIFE that returns an object
-          // containing all declared bindings.
-          transformTopLevelAwait(
-            factory,
-            checker,
-            statements,
-            this.#pendingBindingTypes,
-          ),
-        ]);
-      };
+      return ts.visitEachChild(node, visitNext, context);
     };
+
+    return (sourceFile: ts.SourceFile): ts.SourceFile => {
+      if (sourceFile.fileName !== this.#scriptName) {
+        return sourceFile;
+      }
+
+      const statements = ts.visitNodes(
+        sourceFile.statements,
+        visitNext,
+        undefined,
+        this.#executedStatementCount,
+        undefined,
+      ) as ts.NodeArray<ts.Statement>;
+
+      return factory.updateSourceFile(sourceFile, [
+        // Wrap all statements in an async IIFE that returns an object
+        // containing all declared bindings.
+        transformTopLevelAwait(factory, statements),
+      ]);
+    };
+  };
 }
 
 export type { ReplOptions };

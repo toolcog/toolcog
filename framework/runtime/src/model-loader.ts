@@ -1,3 +1,4 @@
+import type { GenerativeModel, EmbeddingModel } from "@toolcog/core";
 import { PluginLoader } from "./plugin-loader.ts";
 
 interface ModelLoaderOptions {
@@ -173,5 +174,60 @@ const splitModelId = (
   return { pluginId, modelName };
 };
 
-export type { ModelLoaderOptions };
-export { ModelLoader, splitModelId };
+interface GenerativeModelPlugin {
+  supportsGenerativeModel?(modelName: string): boolean;
+
+  generativeModel?: GenerativeModel | undefined;
+}
+
+class GenerativeModelLoader extends ModelLoader<
+  GenerativeModel,
+  GenerativeModelPlugin
+> {
+  loadModel(
+    plugin: GenerativeModelPlugin,
+    modelName?: string,
+  ): Promise<GenerativeModel | undefined> {
+    if (
+      modelName === undefined ||
+      plugin.supportsGenerativeModel === undefined ||
+      plugin.supportsGenerativeModel(modelName)
+    ) {
+      return Promise.resolve(plugin.generativeModel);
+    }
+    return Promise.resolve(undefined);
+  }
+}
+
+interface EmbeddingModelPlugin {
+  supportsEmbeddingModel?(modelName: string): boolean;
+
+  embeddingModel?: EmbeddingModel | undefined;
+}
+
+class EmbeddingModelLoader extends ModelLoader<
+  EmbeddingModel,
+  EmbeddingModelPlugin
+> {
+  async loadModel(
+    plugin: EmbeddingModelPlugin,
+    modelName?: string,
+  ): Promise<EmbeddingModel | undefined> {
+    if (
+      modelName === undefined ||
+      plugin.supportsEmbeddingModel === undefined ||
+      plugin.supportsEmbeddingModel(modelName)
+    ) {
+      return Promise.resolve(plugin.embeddingModel);
+    }
+    return Promise.resolve(undefined);
+  }
+}
+
+export type { ModelLoaderOptions, GenerativeModelPlugin, EmbeddingModelPlugin };
+export {
+  ModelLoader,
+  GenerativeModelLoader,
+  EmbeddingModelLoader,
+  splitModelId,
+};

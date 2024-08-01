@@ -13,14 +13,14 @@ import {
 } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import ts from "typescript";
-import { toolcogTransformerFactory } from "@toolcog/compiler";
+import { toolcogTransformer } from "@toolcog/compiler";
 import { loadConfigFile } from "./config.ts";
 import { ProjectLoader } from "./project.ts";
 
 const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
   const projectCache = new Map<string, ProjectLoader>();
 
-  const programTransformers = [toolcogTransformerFactory];
+  const programTransformers = [toolcogTransformer];
 
   const resolveProject = (specifier: string): ProjectLoader => {
     const configPath = ts.findConfigFile(specifier, ts.sys.fileExists);
@@ -94,7 +94,7 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
     const resolvedModule = project.resolveModuleName(
       specifier,
       context.parentURL !== undefined ? fileURLToPath(context.parentURL) : "",
-    );
+    ).resolvedModule;
     if (resolvedModule === undefined) {
       return nextResolve(specifier, context);
     }

@@ -1,36 +1,39 @@
-import type { Schema } from "@toolcog/util/schema";
-import type { ToolDescriptor, Tool, Tools } from "@toolcog/core";
-import { forEachTool } from "@toolcog/core";
+import type { Schema, FunctionSchema, Tool, Tools } from "@toolcog/core";
+import { findTool } from "@toolcog/core";
 
 type GenerativeCallResultType = "any" | "object";
 
 interface GenerativeCallOptions {
+  function?: FunctionSchema | null | undefined;
+
   instructions?: string | undefined;
 
   tools?: Tools | null | undefined;
-
-  descriptor?: ToolDescriptor | null | undefined;
 
   resultType?: GenerativeCallResultType | undefined;
 }
 
 class GenerativeCall {
+  readonly #function: FunctionSchema | null;
+
   readonly #instructions: string | undefined;
 
   readonly #tools: Tools | null;
-
-  readonly #descriptor: ToolDescriptor | null;
 
   readonly #resultType: GenerativeCallResultType;
 
   #resultSchema: Schema | null | undefined;
 
   constructor(options: GenerativeCallOptions) {
+    this.#function = options.function ?? null;
     this.#instructions = options.instructions;
     this.#tools = options.tools ?? [];
-    this.#descriptor = options.descriptor ?? null;
     this.#resultType = options.resultType ?? "any";
     this.#resultSchema = undefined;
+  }
+
+  get function(): FunctionSchema | null {
+    return this.#function;
   }
 
   get instructions(): string | undefined {
@@ -41,16 +44,12 @@ class GenerativeCall {
     return this.#tools;
   }
 
-  get descriptor(): ToolDescriptor | null {
-    return this.#descriptor;
-  }
-
   get parameters(): Schema | null {
-    return this.descriptor?.parameters ?? null;
+    return this.function?.parameters ?? null;
   }
 
   get return(): Schema | null {
-    return this.descriptor?.return ?? null;
+    return this.function?.return ?? null;
   }
 
   get resultType(): GenerativeCallResultType {
@@ -264,16 +263,17 @@ class GenerativeCall {
   }
 
   findTool(name: string): Tool | undefined {
-    return this.tools !== null ?
-        forEachTool(this.tools, (tool) =>
-          tool.descriptor.name === name ? tool : undefined,
-        )
-      : undefined;
+    if (this.tools === null) {
+      return undefined;
+    }
+    return findTool(this.tools, (tool) =>
+      tool.function.name === name ? tool : undefined,
+    );
   }
 
   parseToolArguments(tool: Tool, args: string): unknown[] {
-    const toolDescriptor = tool.descriptor;
-    const parametersSchema = toolDescriptor.parameters;
+    const functionSchema = tool.function;
+    const parametersSchema = functionSchema.parameters;
     const parameters = parametersSchema?.properties;
     if (parameters === undefined) {
       return [];
@@ -287,7 +287,7 @@ class GenerativeCall {
         "Malformed arguments " +
           JSON.stringify(args) +
           " for tool " +
-          JSON.stringify(toolDescriptor.name),
+          JSON.stringify(functionSchema.name),
         { cause },
       );
     }
@@ -296,7 +296,7 @@ class GenerativeCall {
         "Invalid arguments " +
           JSON.stringify(parsedArgs) +
           " for tool " +
-          JSON.stringify(toolDescriptor.name),
+          JSON.stringify(functionSchema.name),
       );
     }
 

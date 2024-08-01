@@ -1,14 +1,32 @@
+import { fileURLToPath } from "node:url";
 import type ts from "typescript";
+import { Diagnostics } from "../diagnostics.ts";
+import { error } from "./errors.ts";
 
-const getModuleExportType = (
+type ModuleExportSymbols<ExportNames extends string> = {
+  [ExportName in ExportNames]?: ts.Symbol | undefined;
+};
+
+type ModuleExportTypes<ExportNames extends string> = {
+  [ExportName in ExportNames]?: ts.Type | undefined;
+};
+
+const resolveModuleExportSymbols = <ExportNames extends string>(
   ts: typeof import("typescript"),
   host: ts.ModuleResolutionHost,
   program: ts.Program,
   checker: ts.TypeChecker,
-  exportName: string,
+  addDiagnostic: ((diagnostic: ts.Diagnostic) => void) | undefined,
+  exportNames: readonly [...ExportNames[]],
   moduleName: string,
-  containingFile: string,
-): ts.Type | undefined => {
+  containingFile?: string,
+): ModuleExportSymbols<ExportNames> => {
+  const exportSymbols = Object.create(null) as ModuleExportSymbols<ExportNames>;
+
+  if (containingFile === undefined) {
+    containingFile = fileURLToPath(import.meta.url);
+  }
+
   const resolvedModule = ts.resolveModuleName(
     moduleName,
     containingFile,
@@ -16,34 +34,115 @@ const getModuleExportType = (
     host,
   ).resolvedModule;
   if (resolvedModule === undefined) {
-    return undefined;
+    if (addDiagnostic !== undefined) {
+      error(
+        ts,
+        addDiagnostic,
+        undefined,
+        Diagnostics.UnableToResolveModule,
+        moduleName,
+      );
+    }
+    return exportSymbols;
   }
 
   const moduleSourceFile = program.getSourceFile(
     resolvedModule.resolvedFileName,
   );
   if (moduleSourceFile === undefined) {
-    return undefined;
+    if (addDiagnostic !== undefined) {
+      error(
+        ts,
+        addDiagnostic,
+        undefined,
+        Diagnostics.CannotGetSourceFileForModule,
+        resolvedModule.resolvedFileName,
+        moduleName,
+      );
+    }
+    return exportSymbols;
   }
 
   const moduleSymbol = checker.getSymbolAtLocation(moduleSourceFile);
-  if (moduleSymbol === undefined) {
-    return undefined;
+  const moduleExports =
+    moduleSymbol !== undefined ?
+      checker.getExportsOfModule(moduleSymbol)
+    : undefined;
+
+  for (const exportName of exportNames) {
+    const exportSymbol = moduleExports?.find(
+      (moduleExport) => moduleExport.name === exportName,
+    );
+    if (exportSymbol === undefined) {
+      if (addDiagnostic !== undefined) {
+        error(
+          ts,
+          addDiagnostic,
+          undefined,
+          Diagnostics.ModuleHasNoExportedMember,
+          moduleName,
+          exportName,
+        );
+      }
+      return exportSymbols;
+    }
+
+    exportSymbols[exportName] = exportSymbol;
   }
 
-  const moduleExports = checker.getExportsOfModule(moduleSymbol);
-  const exportSymbol = moduleExports.find(
-    (moduleExport) => moduleExport.name === exportName,
-  );
-  if (exportSymbol === undefined) {
-    return undefined;
-  }
-
-  const originalSymbol = checker.getAliasedSymbol(exportSymbol);
-  const originalDeclaration = originalSymbol.declarations![0]!;
-  const exportType = checker.getTypeAtLocation(originalDeclaration);
-
-  return exportType;
+  return exportSymbols;
 };
 
-export { getModuleExportType };
+const resolveModuleExportTypes = <ExportNames extends string>(
+  ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
+  checker: ts.TypeChecker,
+  addDiagnostic: ((diagnostic: ts.Diagnostic) => void) | undefined,
+  exportNames: readonly [...ExportNames[]],
+  moduleName: string,
+  containingFile?: string,
+): ModuleExportTypes<ExportNames> => {
+  const exportSymbols = resolveModuleExportSymbols(
+    ts,
+    host,
+    program,
+    checker,
+    addDiagnostic,
+    exportNames,
+    moduleName,
+    containingFile,
+  );
+
+  const exportTypes = Object.create(null) as ModuleExportTypes<ExportNames>;
+
+  for (const exportName in exportSymbols) {
+    const exportSymbol = exportSymbols[exportName]!;
+
+    const originalSymbol = checker.getAliasedSymbol(exportSymbol);
+
+    const originalDeclaration = originalSymbol.declarations?.[0];
+    if (originalDeclaration === undefined) {
+      if (addDiagnostic !== undefined) {
+        error(
+          ts,
+          addDiagnostic,
+          undefined,
+          Diagnostics.CannotFindDeclarationForExportedMemberOfModule,
+          exportName,
+          moduleName,
+        );
+      }
+      continue;
+    }
+
+    const exportType = checker.getTypeAtLocation(originalDeclaration);
+
+    exportTypes[exportName] = exportType;
+  }
+
+  return exportTypes;
+};
+
+export type { ModuleExportSymbols, ModuleExportTypes };
+export { resolveModuleExportSymbols, resolveModuleExportTypes };

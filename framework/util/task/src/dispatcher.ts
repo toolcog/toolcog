@@ -78,7 +78,6 @@ interface DispatcherOptions extends EmitterOptions {
   Queue?: (new <T>() => Queue<T>) | undefined;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 type DispatcherEvents = {
   enqueue: [];
   execute: [];

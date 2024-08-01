@@ -49,6 +49,7 @@
     "rimraf": "catalog:build",
     "rollup": "catalog:build",
     "tslib": "catalog:build",
+    "ts-expose-internals": "catalog:build",
     "typescript": "catalog:build"
   }
 }

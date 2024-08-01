@@ -1,7 +1,7 @@
-import { defineTool } from "toolcog";
+import { tooling } from "toolcog";
 
 // Get information about the user's current location.
-export const currentLocation = defineTool(
+export const currentLocation = tooling(
   async (): Promise<{
     // The name of the user's current city.
     city?: string;

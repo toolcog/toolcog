@@ -13,6 +13,8 @@ export type {
 
 export { Thread, TemporaryThread } from "./thread.ts";
 
+export { currentTools, withTools, useTool } from "./tools.ts";
+
 export type {
   GenerativeCallResultType,
   GenerativeCallOptions,
@@ -22,17 +24,21 @@ export { GenerativeCall } from "./generative-call.ts";
 export type { PluginLoaderOptions } from "./plugin-loader.ts";
 export { PluginLoader } from "./plugin-loader.ts";
 
-export type { ModelLoaderOptions } from "./model-loader.ts";
-export { ModelLoader } from "./model-loader.ts";
-
-export type { GenerativeModelPlugin } from "./generative-model.ts";
-export { GenerativeModelLoader } from "./generative-model.ts";
-
-export type { EmbeddingModelPlugin } from "./embedding-model.ts";
-export { EmbeddingModelLoader } from "./embedding-model.ts";
+export type {
+  ModelLoaderOptions,
+  GenerativeModelPlugin,
+  EmbeddingModelPlugin,
+} from "./model-loader.ts";
+export {
+  ModelLoader,
+  GenerativeModelLoader,
+  EmbeddingModelLoader,
+} from "./model-loader.ts";
 
 export type { RuntimeOptions } from "./runtime.ts";
 export { Runtime, generativeModel, embeddingModel } from "./runtime.ts";
+
+export { embeddingStore } from "./embedding-store.ts";
 
 export type { JobInfo, JobEvents } from "./job.ts";
 export { Job } from "./job.ts";

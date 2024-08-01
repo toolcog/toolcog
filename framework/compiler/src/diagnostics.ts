@@ -1,41 +1,66 @@
 import ts from "typescript";
 
 const Diagnostics = {
-  UnableToResolve: {
-    key: "UnableToResolve",
+  UnableToResolveModule: {
+    key: "UnableToResolveModule",
     category: ts.DiagnosticCategory.Error,
     code: 900001,
-    message: 'Unable to resolve `{0}` from "{1}"',
+    message: 'Unable to resolve module "{0}".',
   },
-  UnableToResolveType: {
-    key: "UnableToResolveType",
+  CannotGetSourceFileForModule: {
+    key: "CannotGetSourceFileForModule",
     category: ts.DiagnosticCategory.Error,
     code: 900002,
-    message: 'Unable to resolve type `{0}` from "{1}"',
+    message: 'Cannot get source file "{0}" for module "{1}".',
   },
-  UnableToStaticallyAnalyzeSyntax: {
-    key: "UnableToStaticallyAnalyzeSyntax",
+  ModuleHasNoExportedMember: {
+    key: "ModuleHasNoExportedMember",
     category: ts.DiagnosticCategory.Error,
     code: 900003,
-    message: "Unable to statically analyze {0}",
+    message: 'Module "{0}" has no exported member `{1}`.',
   },
-  UnableToConstructSchemaForType: {
-    key: "UnableToConstructSchemaForType",
+  CannotFindDeclarationForExportedMemberOfModule: {
+    key: "CannotFindDeclarationForExportedMemberOfModule",
     category: ts.DiagnosticCategory.Error,
     code: 900004,
-    message: "Unable to construct schema for type `{0}`",
+    message:
+      'Cannot find declaration for exported member `{0}` of module "{1}".',
   },
-  UnsupportedToolProperty: {
-    key: "UnsupportedToolProperty",
+  CannotTransformHomogeneousArray: {
+    key: "CannotTransformHomogeneousArray",
     category: ts.DiagnosticCategory.Warning,
     code: 900005,
-    message: "Unsupported tool property",
+    message: "Cannot transform homogenous array `{0}`.",
   },
-  MissingToolComment: {
-    key: "MissingToolComment",
+  CannotTransformNonStableProperty: {
+    key: "CannotTransformNonStableProperty",
     category: ts.DiagnosticCategory.Warning,
     code: 900006,
-    message: "Missing tool comment",
+    message: 'Cannot transform non-stable property "{0}".',
+  },
+  CannotDeriveSchemaForType: {
+    key: "CannotDeriveSchemaForType",
+    category: ts.DiagnosticCategory.Error,
+    code: 900007,
+    message: "Cannot derive schema for type `{0}`.",
+  },
+  CommentNeededToDescribeToolToLLM: {
+    key: "CommentNeededToDescribeToolToLLM",
+    category: ts.DiagnosticCategory.Warning,
+    code: 900008,
+    message: "Comment needed to describe tool to LLM.",
+  },
+  CommentNeededToDescribeFunctionToLLM: {
+    key: "CommentNeededToDescribeFunctionToLLM",
+    category: ts.DiagnosticCategory.Warning,
+    code: 900009,
+    message: "Comment needed to describe function to LLM.",
+  },
+  CommentNeededToGenerateEmbedding: {
+    key: "CommentNeededToGenerateEmbedding",
+    category: ts.DiagnosticCategory.Warning,
+    code: 900010,
+    message: "Comment needed to generate embedding.",
   },
 } as const satisfies Record<string, ts.DiagnosticMessage>;
 

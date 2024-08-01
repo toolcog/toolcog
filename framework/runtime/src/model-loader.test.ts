@@ -18,11 +18,13 @@ class TestModelPlugin {
     this.defaultModel = defaultModel;
   }
 
-  async getModel(modelName?: string): Promise<TestModel | undefined> {
+  getModel(modelName?: string): Promise<TestModel | undefined> {
     if (modelName === undefined) {
-      return this.defaultModel;
+      return Promise.resolve(this.defaultModel);
     }
-    return this.models.find((model) => model.modelName === modelName);
+    return Promise.resolve(
+      this.models.find((model) => model.modelName === modelName),
+    );
   }
 }
 

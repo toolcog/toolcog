@@ -123,7 +123,7 @@ class ProjectLoader {
     moduleName: string,
     containingFile: string,
     resolutionMode?: ts.ResolutionMode,
-  ): ts.ResolvedModuleFull | undefined {
+  ): ts.ResolvedModuleWithFailedLookupLocations {
     return ts.resolveModuleName(
       moduleName,
       containingFile,
@@ -132,7 +132,7 @@ class ProjectLoader {
       this.compilerHost.getModuleResolutionCache?.(),
       this.redirectedReference,
       resolutionMode,
-    ).resolvedModule;
+    );
   }
 }
 

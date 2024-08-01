@@ -7,7 +7,8 @@ type SchemaTypeName =
   | "number"
   | "string"
   | "array"
-  | "object";
+  | "object"
+  | "function"; // non-standard
 
 type SchemaType =
   | void
@@ -24,7 +25,6 @@ type MetaSchema =
   | "http://json-schema.org/hyper-schema#"
   | "http://json-schema.org/draft-07/schema#"
   | "http://json-schema.org/draft-07/hyper-schema#"
-  // eslint-disable-next-line @typescript-eslint/ban-types
   | (string & {});
 
 type SchemaDefinition = Schema | boolean;
@@ -35,28 +35,27 @@ interface Schema {
   readonly $schema?: MetaSchema | undefined;
   readonly $comment?: string | undefined;
 
-  // https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-00#section-8.2.4
-  // https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-validation-00#appendix-A
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-01#section-8.2.4
   readonly $defs?: { readonly [key: string]: SchemaDefinition } | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.1
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-6.1
   readonly type?: readonly SchemaTypeName[] | SchemaTypeName | undefined;
   readonly enum?: readonly SchemaType[] | undefined;
   readonly const?: SchemaType | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.2
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-6.2
   readonly multipleOf?: number | undefined;
   readonly maximum?: number | undefined;
   readonly exclusiveMaximum?: number | undefined;
   readonly minimum?: number | undefined;
   readonly exclusiveMinimum?: number | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.3
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-6.3
   readonly maxLength?: number | undefined;
   readonly minLength?: number | undefined;
   readonly pattern?: string | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.4
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-6.4
   readonly items?: readonly SchemaDefinition[] | SchemaDefinition | undefined;
   readonly additionalItems?: SchemaDefinition | undefined;
   readonly maxItems?: number | undefined;
@@ -64,7 +63,7 @@ interface Schema {
   readonly uniqueItems?: boolean | undefined;
   readonly contains?: SchemaDefinition | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.5
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-6.5
   readonly maxProperties?: number | undefined;
   readonly minProperties?: number | undefined;
   readonly required?: string[] | undefined;
@@ -80,36 +79,40 @@ interface Schema {
     | undefined;
   readonly propertyNames?: SchemaDefinition | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.6
-  readonly if?: SchemaDefinition | undefined;
-  readonly then?: SchemaDefinition | undefined;
-  readonly else?: SchemaDefinition | undefined;
-
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-6.7
+  // https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-01#section-10.2.1
   readonly allOf?: SchemaDefinition[] | undefined;
   readonly anyOf?: SchemaDefinition[] | undefined;
   readonly oneOf?: SchemaDefinition[] | undefined;
   readonly not?: SchemaDefinition | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-7
+  // https://datatracker.ietf.org/doc/html/draft-bhutton-json-schema-01#section-10.2.2
+  readonly if?: SchemaDefinition | undefined;
+  readonly then?: SchemaDefinition | undefined;
+  readonly else?: SchemaDefinition | undefined;
+
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-7
   readonly format?: string | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-8
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-8
   readonly contentMediaType?: string | undefined;
   readonly contentEncoding?: string | undefined;
 
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-9
-  readonly definitions?:
-    | { readonly [key: string]: SchemaDefinition }
-    | undefined;
-
-  // https://tools.ietf.org/html/draft-handrews-json-schema-validation-01#section-10
+  // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-9
   readonly title?: string | undefined;
   readonly description?: string | undefined;
   readonly default?: SchemaType | undefined;
   readonly readOnly?: boolean | undefined;
   readonly writeOnly?: boolean | undefined;
   readonly examples?: SchemaType | undefined;
+
+  function?: FunctionSchema | undefined; // non-standard
+}
+
+interface FunctionSchema {
+  readonly name?: string | undefined;
+  readonly description?: string | undefined;
+  readonly parameters?: Schema | undefined;
+  readonly return?: Schema | undefined;
 }
 
 export type {
@@ -118,4 +121,5 @@ export type {
   MetaSchema,
   SchemaDefinition,
   Schema,
+  FunctionSchema,
 };

@@ -6,7 +6,7 @@ const createError = (
   message: ts.DiagnosticMessage,
   ...args: ts.DiagnosticArguments
 ): ts.Diagnostic => {
-  if (location !== undefined) {
+  if (location !== undefined && location.pos >= 0) {
     return ts.createDiagnosticForNode(location, message, ...args);
   } else {
     return ts.createCompilerDiagnostic(message, ...args);

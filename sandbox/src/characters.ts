@@ -1,4 +1,4 @@
-import { implement } from "toolcog";
+import { generative } from "toolcog";
 
 /**
  * A fictional character with a backstory.
@@ -26,7 +26,7 @@ export interface Character {
  * @param count - The number of characters to create.
  * @returns The generated cast of characters.
  */
-export const createCharacters = implement<
+export const createCharacters = generative<
   (genre: string, count?: number) => Character[]
 >({
   defaults: { count: 5 },

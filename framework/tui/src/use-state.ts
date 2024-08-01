@@ -3,12 +3,14 @@ import { update, useSlot } from "./context.ts";
 
 const useState: {
   <T>(
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    initialValue: (T extends Function ? never : T) | (() => T),
+    initialValue:
+      | (T extends (...args: any[]) => unknown ? never : T)
+      | (() => T),
   ): [T, (newValue: T) => void];
   <T>(
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    initialValue?: (T extends Function ? never : T) | (() => T),
+    initialValue?:
+      | (T extends (...args: any[]) => unknown ? never : T)
+      | (() => T),
   ): [T | undefined, (newValue: T | undefined) => void];
 } = <T>(initialValue: T | (() => T)): [T, (newValue: T) => void] => {
   return useSlot((slot: Slot<T>): [T, (newValue: T) => void] => {

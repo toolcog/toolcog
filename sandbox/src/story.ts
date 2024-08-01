@@ -1,4 +1,4 @@
-import { implement } from "toolcog";
+import { generative } from "toolcog";
 import type { Character } from "./characters.js";
 import { createCharacters } from "./characters.js";
 
@@ -45,7 +45,7 @@ interface Story {
  *
  * @param genre - The genre of the story.
  */
-export const writeStory = implement<(genre: string) => Story>({
+export const writeStory = generative<(genre: string) => Story>({
   tools: [createCharacters],
 });
 

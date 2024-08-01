@@ -1,10 +1,6 @@
 import ts from "typescript";
 
-const findTopLevelBindings = (
-  checker: ts.TypeChecker,
-  node: ts.Node,
-  bindings: Record<string, ts.Type>,
-): void => {
+const collectBindings = (node: ts.Node, bindings: string[]): void => {
   const visit = (node: ts.Node): void => {
     if (
       (ts.isImportClause(node) ||
@@ -15,7 +11,7 @@ const findTopLevelBindings = (
       node.name !== undefined &&
       ts.isIdentifier(node.name)
     ) {
-      bindings[node.name.text] = checker.getTypeAtLocation(node.name);
+      bindings.push(node.name.text);
     }
 
     // Don't descend into nested block scopes.
@@ -27,18 +23,16 @@ const findTopLevelBindings = (
   };
 
   visit(node);
-  return;
 };
 
 const transformTopLevelAwait = (
   factory: ts.NodeFactory,
-  checker: ts.TypeChecker,
   statements: readonly ts.Statement[],
-  bindings: Record<string, ts.Type> = {},
 ): ts.Statement => {
-  // Find all top-level bindings.
+  // Collect all top-level bindings.
+  const bindings: string[] = [];
   for (const statement of statements) {
-    findTopLevelBindings(checker, statement, bindings);
+    collectBindings(statement, bindings);
   }
 
   // Wrap in an async IIFE that executes all statements and returns
@@ -56,7 +50,7 @@ const transformTopLevelAwait = (
             ...statements,
             factory.createReturnStatement(
               factory.createObjectLiteralExpression(
-                Object.keys(bindings).map((binding) =>
+                bindings.map((binding) =>
                   factory.createShorthandPropertyAssignment(binding),
                 ),
                 true, // multiLine

@@ -17,9 +17,9 @@ const Thread = (() => {
     return threadVariable.get();
   };
 
-  const create = async (messages?: Message[]): Promise<Thread> => {
+  const create = (messages?: Message[]): Promise<Thread> => {
     const runtime = Runtime.current();
-    return runtime.createThread(messages);
+    return Promise.resolve(runtime.createThread(messages));
   };
 
   const getOrCreate = async (): Promise<Thread> => {

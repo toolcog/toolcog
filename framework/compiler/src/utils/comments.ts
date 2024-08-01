@@ -1,16 +1,16 @@
 import type ts from "typescript";
 import { replaceLines } from "@toolcog/util";
 
-const trimSingleLineComment = (comment: string): string => {
+const trimSingleLineComment = (commentText: string): string => {
   // Trim leading double slashes and trailing whitespace,
   // while preserving indentation.
-  return comment.replace(/\s*\/\/\s?|\s+$/g, "");
+  return commentText.replace(/\s*\/\/\s?|\s+$/g, "");
 };
 
-const trimMultiLineComment = (comment: string): string => {
+const trimMultiLineComment = (commentText: string): string => {
   return replaceLines(
-    // Trim surrounding comment and whitespace trivia.
-    comment.replace(/^\s*\/\*+\s*(\r?\n)*|(\r?\n)*\s*\*+\/\s*$/g, ""),
+    // Trim surrounding comment syntax and whitespace trivia.
+    commentText.replace(/^\s*\/\*+\s*(\r?\n)*|(\r?\n)*\s*\*+\/\s*$/g, ""),
     // Trim leading asterisks and trailing whitespace from each line,
     // while preserving indentation.
     (line) => line.replace(/^\s*\*\s?|^\s+|\s+$/g, ""),
@@ -47,14 +47,14 @@ const getCommentText = (
       commentText += "\n";
     }
 
-    let comment = sourceText.slice(commentRange.pos, commentRange.end);
+    let commentRangeText = sourceText.slice(commentRange.pos, commentRange.end);
     if (commentRange.kind === ts.SyntaxKind.SingleLineCommentTrivia) {
-      comment = trimSingleLineComment(comment);
+      commentRangeText = trimSingleLineComment(commentRangeText);
     } else {
-      comment = trimMultiLineComment(comment);
+      commentRangeText = trimMultiLineComment(commentRangeText);
     }
 
-    commentText += comment;
+    commentText += commentRangeText;
 
     prevCommentRange = commentRange;
   }
@@ -75,18 +75,23 @@ const getLeadingComment = (
   node: ts.Node,
 ): string | undefined => {
   const sourceFile = node.getSourceFile();
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (sourceFile === undefined) {
+    return undefined;
+  }
+
   const sourceText = sourceFile.getFullText();
 
-  let comment: string | undefined;
+  let commentText: string | undefined;
   while (true) {
-    comment = getCommentText(
+    commentText = getCommentText(
       ts,
       sourceText,
       ts.getLeadingCommentRanges(sourceText, node.getFullStart()),
     );
 
     const parent = node.parent as ts.Node | undefined;
-    if (comment !== undefined || parent === undefined) {
+    if (commentText !== undefined || parent === undefined) {
       break;
     }
 
@@ -139,7 +144,7 @@ const getLeadingComment = (
     break;
   }
 
-  return comment;
+  return commentText;
 };
 
 export { getLeadingComment };

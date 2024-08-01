@@ -1,1 +1,1 @@
-export { toolcogTransformerFactory as default } from "@toolcog/compiler";
+export { toolcogTransformer as default } from "@toolcog/compiler";

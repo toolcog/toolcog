@@ -7,7 +7,7 @@ const valueToExpression = (
   errorNode?: ts.Node,
 ): ts.Expression => {
   if (value === undefined) {
-    return factory.createIdentifier("undefined");
+    return factory.createVoidExpression(factory.createNumericLiteral(0));
   }
 
   if (value === null) {

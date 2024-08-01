@@ -32,8 +32,7 @@
   "dependencies": {
     "@toolcog/core": "workspace:*",
     "@toolcog/util/async": "workspace:*",
-    "@toolcog/util/emit": "workspace:*",
-    "@toolcog/util/schema": "workspace:*"
+    "@toolcog/util/emit": "workspace:*"
   },
   "devDependencies": {
     "@toolcog/config": "workspace:*",

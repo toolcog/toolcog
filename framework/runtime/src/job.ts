@@ -8,7 +8,6 @@ interface JobInfo {
   ellipsize?: number | undefined;
 }
 
-// eslint-disable-next-line @typescript-eslint/consistent-type-definitions
 type JobEvents = {
   update: [job: Job];
   finish: [job: Job];

@@ -23,15 +23,17 @@ export default pluginTs.config(
   {
     files: ["**/*.ts"],
     rules: {
-      "@typescript-eslint/class-literal-property-style": "off",
       "@typescript-eslint/consistent-indexed-object-style": "off",
+      "@typescript-eslint/consistent-type-definitions": "off",
       "@typescript-eslint/no-confusing-void-expression": [
         "error",
         { ignoreArrowShorthand: true },
       ],
-      "@typescript-eslint/no-empty-interface": "off",
+      "@typescript-eslint/no-empty-object-type": [
+        "error",
+        { allowInterfaces: "always" },
+      ],
       "@typescript-eslint/no-explicit-any": ["error", { ignoreRestArgs: true }],
-      "@typescript-eslint/no-extraneous-class": "off",
       "@typescript-eslint/no-inferrable-types": "off",
       "@typescript-eslint/no-invalid-void-type": "off",
       "@typescript-eslint/no-misused-promises": [
@@ -43,12 +45,9 @@ export default pluginTs.config(
         "error",
         { allowConstantLoopConditions: true },
       ],
-      "@typescript-eslint/no-unsafe-call": "off",
       "@typescript-eslint/no-unused-vars": "off",
-      "@typescript-eslint/no-useless-constructor": "off",
       "@typescript-eslint/prefer-function-type": "off",
       "@typescript-eslint/prefer-promise-reject-errors": "off",
-      "@typescript-eslint/require-await": "off",
       "@typescript-eslint/restrict-plus-operands": [
         "error",
         { allowNumberAndString: true },
@@ -58,7 +57,7 @@ export default pluginTs.config(
     },
     languageOptions: {
       parserOptions: {
-        EXPERIMENTAL_useProjectService: true,
+        projectService: true,
       },
     },
   },
