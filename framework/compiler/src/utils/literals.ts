@@ -7,7 +7,7 @@ const valueToExpression = (
   errorNode?: ts.Node,
 ): ts.Expression => {
   if (value === undefined) {
-    return factory.createVoidExpression(factory.createNumericLiteral(0));
+    return factory.createVoidZero();
   }
 
   if (value === null) {
@@ -37,7 +37,9 @@ const valueToExpression = (
   if (typeof value === "object") {
     const propertyExpressions = Object.entries(value).map(([key, value]) =>
       factory.createPropertyAssignment(
-        key,
+        ts.isIdentifierText(key, ts.ScriptTarget.ESNext) ?
+          factory.createIdentifier(key)
+        : factory.createStringLiteral(key),
         valueToExpression(ts, factory, value, errorNode),
       ),
     );

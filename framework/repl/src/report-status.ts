@@ -1,7 +1,7 @@
 import { EOL } from "node:os";
 import { throttle } from "@toolcog/util/timer";
 import { getLastNonEmptyLine } from "@toolcog/util";
-import { cursorHide, getStringWidth, ellipsize } from "@toolcog/util/tty";
+import { getStringWidth, ellipsize } from "@toolcog/util/tty";
 import { Job } from "@toolcog/runtime";
 import type { PartialTheme, RootTheme } from "@toolcog/tui";
 import {
@@ -41,7 +41,7 @@ const reportStatus = createComponent(
     const maxWidth = view.columns - 1;
 
     useEffect(() => {
-      const onUpdate = throttle(update, 16);
+      const onUpdate = throttle(update, 100);
 
       root.addListener("update", onUpdate);
       root.addListener("finish", onUpdate);
@@ -60,7 +60,6 @@ const reportStatus = createComponent(
       content += renderJobStatus(job, theme, maxWidth);
       jobCount += 1;
     }
-    content += cursorHide;
 
     if (root.finished) {
       finish();

@@ -4,12 +4,18 @@
   "type": "module",
   "scripts": {
     "dev": "tspc --watch",
-    "build": "tspc",
+    "build": "tspc && toolcog-compiler generate --manifest --cache",
     "clean": "rimraf .turbo dist",
     "clean-all": "rimraf .turbo dist node_modules"
   },
   "dependencies": {
-    "toolcog": "workspace:*"
+    "@toolcog/compiler": "workspace:*",
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
+    "@toolcog/tui": "workspace:*"
+  },
+  "optionalDependencies": {
+    "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
     "rimraf": "catalog:build",

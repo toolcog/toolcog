@@ -1,23 +1,35 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { EOL, homedir } from "node:os";
-import { dirname, resolve } from "node:path";
-import type { CompleterResult } from "node:readline";
-import type { Interface } from "node:readline";
+import { sep, dirname, resolve as resolvePath } from "node:path";
+import type { Interface, CompleterResult } from "node:readline";
 import { createInterface, cursorTo } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { inspect } from "node:util";
 import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
-import { splitLines } from "@toolcog/util";
+import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
 import { stylize, wrapText } from "@toolcog/util/tty";
 import { toolcogTransformer } from "@toolcog/compiler";
-import { Job, currentTools, generativeModel } from "@toolcog/runtime";
+import { Job, currentTools, generator } from "@toolcog/runtime";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
 import { reportStatus } from "./report-status.ts";
+
+class ReplCompilerError extends Error {
+  readonly diagnostics: readonly ts.Diagnostic[];
+
+  constructor(
+    message: string,
+    diagnostics: readonly ts.Diagnostic[],
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.diagnostics = diagnostics;
+  }
+}
 
 interface ReplOptions {
   input?: NodeJS.ReadableStream | undefined;
@@ -35,8 +47,6 @@ interface ReplOptions {
   compilerOptions?: ts.CompilerOptions | undefined;
 
   documentRegistry?: ts.DocumentRegistry | undefined;
-
-  defaultEmbeddingModel?: string | undefined;
 }
 
 class Repl {
@@ -55,11 +65,12 @@ class Repl {
 
   readonly #compilerOptions: ts.CompilerOptions;
 
-  readonly #defaultEmbeddingModel: string;
-
   readonly #scanner: ts.Scanner;
   readonly #printer: ts.Printer;
 
+  readonly #formatDiagnosticsHost: ts.FormatDiagnosticsHost;
+
+  readonly #languageServiceHost: ts.LanguageServiceHost;
   readonly #languageService: ts.LanguageService;
 
   readonly #scriptName: string;
@@ -87,7 +98,8 @@ class Repl {
     this.#style = stylize(this.#styled);
 
     this.#historyFile =
-      options?.historyFile ?? resolve(homedir(), ".toolcog", "repl_history");
+      options?.historyFile ??
+      resolvePath(homedir(), ".toolcog", "repl_history");
     this.#historySize = options?.historySize ?? 50;
 
     this.#languageVersion = options?.languageVersion ?? ts.ScriptTarget.Latest;
@@ -97,14 +109,11 @@ class Repl {
     this.#compilerOptions = options?.compilerOptions ?? {
       allowImportingTsExtensions: true,
       module: ts.ModuleKind.NodeNext,
-      outdir: resolve(process.cwd(), "dist"),
+      outdir: resolvePath(process.cwd(), "dist"),
       skipLibCheck: true,
       strict: true,
       target: ts.ScriptTarget.ESNext,
     };
-
-    this.#defaultEmbeddingModel =
-      options?.defaultEmbeddingModel ?? "text-embedding-3-small";
 
     this.#scanner = ts.createScanner(
       this.#languageVersion,
@@ -113,10 +122,13 @@ class Repl {
     );
     this.#printer = ts.createPrinter();
 
-    const documentRegistry =
-      options?.documentRegistry ?? ts.createDocumentRegistry();
+    this.#formatDiagnosticsHost = {
+      getCurrentDirectory: () => process.cwd(),
+      getCanonicalFileName: (fileName: string) => fileName,
+      getNewLine: () => ts.sys.newLine,
+    };
 
-    const languageServiceHost = {
+    this.#languageServiceHost = {
       getScriptFileNames: () => [this.#scriptName],
       getScriptVersion: (fileName) => {
         if (fileName === this.#scriptName) {
@@ -152,12 +164,12 @@ class Repl {
               this.#languageService.getProgram()!,
               {
                 contextToolsImportName: "currentTools",
-                contextToolsImportSpecifier: "@toolcog/runtime",
-                embeddingCacheGlobalName: "embeddingCache",
+                contextToolsModuleName: "@toolcog/runtime",
+                standalone: true,
                 keepIntrinsicImports: true,
               },
               undefined,
-              languageServiceHost,
+              this.#languageServiceHost,
             ),
             this.#postprocessor,
           ],
@@ -177,7 +189,7 @@ class Repl {
               moduleName,
               containingFile,
               compilerOptions,
-              languageServiceHost,
+              this.#languageServiceHost,
               undefined,
               redirectedReference,
             ).resolvedModule;
@@ -193,7 +205,7 @@ class Repl {
                 moduleName,
                 fileURLToPath(import.meta.url),
                 compilerOptions,
-                languageServiceHost,
+                this.#languageServiceHost,
                 undefined,
                 redirectedReference,
               ).resolvedModule;
@@ -206,11 +218,11 @@ class Repl {
     } satisfies ts.LanguageServiceHost;
 
     this.#languageService = ts.createLanguageService(
-      languageServiceHost,
-      documentRegistry,
+      this.#languageServiceHost,
+      options?.documentRegistry ?? ts.createDocumentRegistry(),
     );
 
-    this.#scriptName = resolve(process.cwd(), "[repl].mts");
+    this.#scriptName = resolvePath(process.cwd(), "[repl].mts");
     this.#scriptSnapshot = undefined;
     this.#scriptVersion = 0;
 
@@ -281,9 +293,24 @@ class Repl {
   async evalPrelude(): Promise<void> {
     // Import toolcog intrinsics.
     await this.evalCode(
-      'import { tooling, generate, generative, embedding } from "@toolcog/core";\n' +
-        'import { currentTools, withTools, useTool, generativeModel, embeddingModel, embeddingStore } from "@toolcog/runtime";\n' +
-        `const embeddingCache = { defaultModel: ${JSON.stringify(this.#defaultEmbeddingModel)} };\n`,
+      "import {\n" +
+        "  defineTool,\n" +
+        "  defineTools,\n" +
+        "  definePrompt,\n" +
+        "  prompt,\n" +
+        "  embed,\n" +
+        "  defineIdiom,\n" +
+        "  defineIdioms,\n" +
+        "  defineIndex,\n" +
+        '} from "@toolcog/core";\n' +
+        "import {\n" +
+        "  currentTools,\n" +
+        "  withTools,\n" +
+        "  useTool,\n" +
+        "  generator,\n" +
+        "  embedder,\n" +
+        "  indexer,\n" +
+        '} from "@toolcog/runtime";\n',
     );
     // Un-increment the turn count.
     this.#turnCount -= 1;
@@ -308,94 +335,135 @@ class Repl {
     });
 
     // Handle history change events.
-    readline.on("history", async (history: string[]): Promise<void> => {
-      if (this.#historySize === 0) {
-        return;
-      }
-      const historyDir = dirname(this.#historyFile);
-      if (!existsSync(historyDir)) {
-        await mkdir(historyDir, { recursive: true });
-      }
-      const historyData = history.slice().reverse().join(EOL);
-      await writeFile(this.#historyFile, historyData, "utf-8");
-    });
+    readline.addListener(
+      "history",
+      async (history: string[]): Promise<void> => {
+        if (this.#historySize === 0) {
+          return;
+        }
+        const historyDir = dirname(this.#historyFile);
+        if (!existsSync(historyDir)) {
+          await mkdir(historyDir, { recursive: true });
+        }
+        const historyData = history.slice().reverse().join(EOL);
+        await writeFile(this.#historyFile, historyData, "utf-8");
+      },
+    );
 
     return readline;
   }
 
   async run(): Promise<void> {
-    // Initialize the readline interface.
-    const readline = await this.#createInterface();
+    repl: while (true) {
+      // Initialize the readline interface.
+      const readline = await this.#createInterface();
 
-    // Handle Ctrl+C events.
-    readline.on("SIGINT", () => {
-      // Abort any currently active run.
-      this.#abortController?.abort();
+      // Handle Ctrl+C events.
+      readline.addListener("SIGINT", () => {
+        // Abort any currently active run.
+        this.#abortController?.abort();
 
-      // Clear any currently buffered input.
-      this.#bufferedInput = "";
+        // Clear any currently buffered input.
+        this.#bufferedInput = "";
 
-      // Move the cursor to the end of the line.
-      cursorTo(this.#output, readline.line.length);
+        // Move the cursor to the end of the line.
+        cursorTo(this.#output, readline.line.length);
 
-      // Reset the line buffer and print a newline.
-      (readline as { line: string }).line = "";
-      this.#output.write(EOL);
+        // Reset the line buffer and print a newline.
+        (readline as { line: string }).line = "";
+        this.#output.write(EOL);
 
-      // Issue a new prompt.
+        // Issue a new prompt.
+        readline.setPrompt(this.initialPrompt(this.#turnCount));
+        readline.prompt();
+      });
+
+      // Write the initial REPL prompt.
       readline.setPrompt(this.initialPrompt(this.#turnCount));
       readline.prompt();
-    });
 
-    // Write the initial REPL prompt.
-    readline.setPrompt(this.initialPrompt(this.#turnCount));
-    readline.prompt();
+      // Count the number of emitted lines to determine when it's safe
+      // to break out of the async iterator.
+      let bufferedLineCount = 0;
+      const readlineEmit: (
+        event: string | symbol,
+        ...args: unknown[]
+      ) => boolean = readline.emit;
+      readline.emit = (event: string | symbol, ...args: unknown[]): boolean => {
+        if (event === "line") {
+          bufferedLineCount += 1;
+        }
+        return readlineEmit.call(readline, event, ...args);
+      };
 
-    // Iterate over all input lines received by the REPL.
-    for await (const line of readline) {
-      // Check for non-continuation line special cases.
-      if (this.#bufferedInput.length === 0) {
-        const input = line.trim();
+      let inputType: "lang" | "code" | "cont" | undefined;
 
-        // Check for an empty input line.
-        if (input.length === 0) {
-          // Issue a new prompt and wait for the next line.
+      // Iterate over all input lines received by the REPL.
+      for await (const line of readline) {
+        bufferedLineCount -= 1;
+
+        // Check for non-continuation line special cases.
+        if (this.#bufferedInput.length === 0) {
+          const input = line.trim();
+
+          // Check for an empty input line.
+          if (input.length === 0) {
+            // Issue a new prompt and wait for the next line.
+            readline.prompt();
+            continue;
+          }
+
+          // Check for an explicit exit command.
+          if (input === ".exit") {
+            readline.close();
+            break repl;
+          }
+        }
+
+        // Append the new input line to the currently buffered input.
+        this.#bufferedInput += line + EOL;
+
+        // Consume all buffered lines before processing input.
+        if (bufferedLineCount > 0) {
+          continue;
+        }
+
+        // Classify the currently buffered input as natural language,
+        // code, or as needing a continuation line.
+        inputType = classifyInput(this.#scanner, this.#bufferedInput);
+
+        // Check if the input needs a continuation line.
+        if (inputType === "cont") {
+          // Issue a continuation prompt and wait for the next line.
+          readline.setPrompt(this.continuationPrompt(this.#turnCount));
           readline.prompt();
           continue;
         }
 
-        // Check for an explicit exit command.
-        if (input === ".exit") {
-          readline.close();
-          break;
-        }
+        // Handle the input outside of a readline context to prevent conflict
+        // between the REPL and interactive tools.
+        break;
       }
 
-      // Append the new input line to the currently buffered input.
-      this.#bufferedInput += line + EOL;
+      // End the readline context for this REPL input.
+      readline.close();
 
-      // Classify the currently buffered input as natural language,
-      // code, or as needing a continuation line.
-      const inputType = classifyInput(this.#scanner, this.#bufferedInput);
-
-      // Check if the input needs a continuation line.
-      if (inputType === "cont") {
-        // Issue a continuation prompt and wait for the next line.
-        readline.setPrompt(this.continuationPrompt(this.#turnCount));
-        readline.prompt();
-        continue;
+      // Check if the line iterator was terminated.
+      if (inputType === undefined) {
+        break;
       }
 
-      // Capture full stack traces on error.
+      // Capture a full stack trace on error.
       const stackTraceLimit = Error.stackTraceLimit;
       Error.stackTraceLimit = Infinity;
+
       try {
         if (inputType === "lang") {
           // Evaluate natural language input.
-          await this.#runLang(this.#bufferedInput, readline);
+          await this.#runLang(this.#bufferedInput);
         } else {
           // Evaluate code input.
-          await this.#runCode(this.#bufferedInput, readline);
+          await this.#runCode(this.#bufferedInput);
         }
       } catch (error) {
         // Print the error to the output stream and continue.
@@ -409,11 +477,10 @@ class Repl {
 
         // Reset the input buffer.
         this.#bufferedInput = "";
-
-        // Issue the next prompt.
-        readline.setPrompt(this.initialPrompt(this.#turnCount));
-        readline.prompt();
       }
+
+      // Begin a new readline context.
+      continue;
     }
 
     // Write a newline before exiting the REPL.
@@ -421,10 +488,100 @@ class Repl {
   }
 
   printError(error: unknown): void {
-    this.#output.write(this.#style.red(String(error)) + EOL);
+    let output = "";
+    output += this.#style.redBright(
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      (error as object)?.constructor?.name ?? "Error",
+    );
+    output += ": ";
+
+    if (error instanceof Error) {
+      output += this.formatError(error);
+    } else {
+      output += String(error);
+    }
+    output += EOL;
+
+    this.#output.write(output);
   }
 
-  async #runLang(input: string, readline: Interface): Promise<void> {
+  formatError(error: Error): string {
+    let output = error.message;
+    if (error.stack !== undefined) {
+      output += EOL;
+      output += this.formatStack(error.stack);
+    }
+    return output;
+  }
+
+  formatStack(stack: string): string {
+    const cwd = process.cwd() + sep;
+    return replaceLines(stack, (frame) => this.formatStackFrame(frame, cwd));
+  }
+
+  static readonly #stackFrameRegex =
+    /^(?: *)(at)(?: +)(?:(async)(?: +))?([^ ]+)(?:(?: +)\((.+)\))?(?: *)$/;
+
+  formatStackFrame(frame: string, cwd: string): string | undefined {
+    const match = Repl.#stackFrameRegex.exec(frame);
+    if (match === null) {
+      return undefined;
+    }
+
+    let functionName: string | undefined;
+    let fileName: string;
+    if (match[4] !== undefined) {
+      functionName = match[3]!;
+      fileName = match[4];
+    } else {
+      fileName = match[3]!;
+    }
+
+    fileName = fileName.replace("file://", "").replace(cwd, "");
+
+    let rowNumber: string | undefined;
+    let colNumber: string | undefined;
+
+    const colIndex = fileName.lastIndexOf(":");
+    if (colIndex >= 0) {
+      const lineIndex = fileName.lastIndexOf(":", colIndex - 1);
+      if (lineIndex >= 0) {
+        rowNumber = fileName.slice(lineIndex + 1, colIndex);
+        colNumber = fileName.slice(colIndex + 1);
+        fileName = fileName.slice(0, lineIndex);
+      }
+    }
+
+    let line = "  ";
+    line += this.#style.gray("at");
+    line += " ";
+    if (match[2] !== undefined) {
+      line += this.#style.blueBright("async");
+      line += " ";
+    }
+
+    if (functionName !== undefined) {
+      line += functionName;
+      line += " ";
+      line += "(";
+    }
+
+    line += this.#style.cyanBright(fileName);
+    if (rowNumber !== undefined && colNumber !== undefined) {
+      line += ":";
+      line += this.#style.yellowBright(rowNumber);
+      line += ":";
+      line += this.#style.yellowBright(colNumber);
+    }
+
+    if (functionName !== undefined) {
+      line += ")";
+    }
+
+    return line;
+  }
+
+  async #runLang(input: string): Promise<void> {
     await Job.run({ title: "Prompt" }, async (root) => {
       // Print job status updates.
       const finished = reportStatus(
@@ -432,8 +589,8 @@ class Repl {
         {
           input: this.#input,
           output: this.#output,
-          readline,
           styled: this.#styled,
+          interceptConsole: true,
         },
       );
 
@@ -467,8 +624,8 @@ class Repl {
   async evalLang(input: string): Promise<unknown> {
     this.#abortController = new AbortController();
     try {
-      // Complete the natural language using the default generative runtime.
-      const output = generativeModel(input, {
+      // Complete the natural language using the default generator.
+      const output = generator(input, {
         tools: currentTools(),
         signal: this.#abortController.signal,
       });
@@ -483,7 +640,7 @@ class Repl {
     }
   }
 
-  async #runCode(input: string, readline: Interface): Promise<void> {
+  async #runCode(input: string): Promise<void> {
     await Job.run(undefined, async (root) => {
       // Print job status updates.
       const finished = reportStatus(
@@ -491,8 +648,8 @@ class Repl {
         {
           input: this.#input,
           output: this.#output,
-          readline,
           styled: this.#styled,
+          interceptConsole: true,
         },
       );
 
@@ -500,6 +657,12 @@ class Repl {
       try {
         // Evaluate the input code.
         bindings = await this.evalCode(input);
+      } catch (error) {
+        if (error instanceof ReplCompilerError) {
+          // Diagnostics have already been reported.
+          return;
+        }
+        throw error;
       } finally {
         // Wait for all job status updates to finish.
         root.finish();
@@ -526,6 +689,15 @@ class Repl {
 
   formatValue(value: unknown): string {
     return inspect(value, { colors: true, showProxy: true });
+  }
+
+  printDiagnostics(diagnostics: readonly ts.Diagnostic[]): void {
+    this.#output.write(
+      ts.formatDiagnosticsWithColorAndContext(
+        diagnostics,
+        this.#formatDiagnosticsHost,
+      ),
+    );
   }
 
   async evalCode(input: string): Promise<Record<string, unknown>> {
@@ -579,6 +751,7 @@ class Repl {
       importModuleDynamically: constants.USE_MAIN_CONTEXT_DEFAULT_LOADER,
     }) as Record<string, unknown>;
 
+    // Await the evaluation of the bindings promise.
     return Promise.resolve(bindings);
   }
 
@@ -591,6 +764,8 @@ class Repl {
 
     // Transpile typescript to javascript.
     const output = this.#languageService.getEmitOutput(this.#scriptName, false);
+
+    // Collect filtered diagnostics.
     const diagnostics = [
       ...this.#languageService.getCompilerOptionsDiagnostics(),
       ...this.#languageService.getSyntacticDiagnostics(this.#scriptName),
@@ -603,18 +778,17 @@ class Repl {
       }
       return true;
     });
+
+    // Report diagnostics.
     if (diagnostics.length !== 0) {
-      let message = "";
-      for (let i = 0; i < diagnostics.length; i += 1) {
-        if (i !== 0) {
-          message += "\n";
-        }
-        message += ts.flattenDiagnosticMessageText(
-          diagnostics[i]!.messageText,
-          "\n",
-        );
+      this.printDiagnostics(diagnostics);
+      const hasError =
+        diagnostics.find((diagnostic) => {
+          return diagnostic.category === ts.DiagnosticCategory.Error;
+        }) !== undefined;
+      if (hasError) {
+        throw new ReplCompilerError("Invalid REPL input", diagnostics);
       }
-      throw new Error(message);
     }
 
     // Get the transpiled javascript code.
@@ -744,4 +918,4 @@ class Repl {
 }
 
 export type { ReplOptions };
-export { Repl };
+export { ReplCompilerError, Repl };

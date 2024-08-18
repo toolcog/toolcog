@@ -1,3 +1,9 @@
-import { defineLib } from "@toolcog/config/rollup.js";
+import { defineLib } from "../rollup.js";
 
-export default defineLib();
+export default defineLib({
+  replace: (pkg) => ({
+    __version__: JSON.stringify(pkg.version),
+    preventAssignment: true,
+    sourcemap: true,
+  }),
+});

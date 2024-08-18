@@ -1,213 +1,48 @@
-type EmbeddingVector = readonly number[];
+/**
+ * Each key of this type represents a known embedding model name.
+ * Embedder plugins augment this type to add supported models names.
+ *
+ * Use the {@link EmbeddingModel} type, which references the keys of this type,
+ * to refer to strings that represent embedding model names. The indirection
+ * through this type is necessary because type aliases cannot be augmented.
+ */
+interface EmbeddingModelNames {}
 
-type EmbeddingVectors<
-  T extends string | readonly string[] = string | readonly string[],
-> =
-  T extends string ? EmbeddingVector
-  : T extends string[] ? EmbeddingVector[]
-  : T extends readonly string[] ? readonly EmbeddingVector[]
-  : never;
+/**
+ * The identifying name of an embedding model.
+ */
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+type EmbeddingModel = keyof EmbeddingModelNames | (string & {});
 
-type EmbeddingSimilarity = (a: EmbeddingVector, b: EmbeddingVector) => number;
+/**
+ * Embedding model configuration options, such as API keys and API client
+ * parameters. Embedder plugins augment this type with supported options.
+ */
+interface EmbeddingConfig {}
 
-type Embeddable =
-  | ((...args: any[]) => unknown)
-  // Arrays are not embeddable.
-  | { readonly [key: string | symbol]: unknown }
-  | string
-  | number
-  | boolean
-  | null
-  | undefined;
+/**
+ * The type of an embedding vector. Embedding vectors are stored as float
+ * arrays for memory efficiency.
+ */
+type EmbeddingVector = Float32Array;
 
-type Embeddables = Embeddable | readonly Embeddables[];
+/**
+ * A distance metric in an embedding vector space.
+ */
+type EmbeddingDistance = (a: EmbeddingVector, b: EmbeddingVector) => number;
 
-interface Embed<T extends Embeddable = Embeddable> {
-  readonly id: string | undefined;
-
-  readonly value: T;
-
-  readonly intents: readonly string[];
-}
-
-type Embeds<T extends Embeddables = Embeddables> =
-  T extends EmbeddingFunction<infer U> ? Embeds<U>
-  : // Handle `Embeddable` case.
-  T extends Embeddable ? Embed<T>
-  : // Handle `Embeddables[]` cases.
-  T extends [] ? []
-  : T extends [infer Elem] ?
-    Elem extends Embeddables ?
-      [Embeds<Elem>]
-    : never
-  : T extends [infer Head, ...infer Tail] ?
-    [
-      Head extends Embeddables ? Embeds<Head> : never,
-      ...(Tail extends readonly Embeddables[] ? Embeds<Tail> : never),
-    ]
-  : T extends [...infer Body, infer Foot] ?
-    [
-      ...(Body extends readonly Embeddables[] ? Embeds<Body> : never),
-      Foot extends Embeddables ? Embeds<Foot> : never,
-    ]
-  : T extends Embeddable[] ? Embed[]
-  : T extends Embeddables[] ? Embeds[]
-  : // Handle `readonly Embeddables[]` cases.
-  T extends readonly [] ? readonly []
-  : T extends readonly [infer Elem] ?
-    Elem extends Embeddables ?
-      readonly [Embeds<Elem>]
-    : never
-  : T extends readonly [infer Head, ...infer Tail] ?
-    readonly [
-      Head extends Embeddables ? Embeds<Head> : never,
-      ...(Tail extends readonly Embeddables[] ? Embeds<Tail> : never),
-    ]
-  : T extends readonly [...infer Body, infer Foot] ?
-    readonly [
-      ...(Body extends readonly Embeddables[] ? Embeds<Body> : never),
-      Foot extends Embeddables ? Embeds<Foot> : never,
-    ]
-  : T extends readonly Embeddable[] ? readonly Embed[]
-  : T extends readonly Embeddables[] ? readonly Embeds[]
-  : never;
-
-/** @internal */
-type AnyEmbed = Embed;
-
-/** @internal */
-type AnyEmbeds = Embeds;
-
-const forEachEmbed = <T extends Embeddable>(
-  embeds: Embeds<T>,
-  callback: (embed: Embed<T>) => void,
-): void => {
-  if (isEmbedding<T>(embeds)) {
-    forEachEmbed(embeds.embeds, callback);
-  } else if (Array.isArray(embeds)) {
-    for (const embed of embeds as readonly Embeds<T>[]) {
-      forEachEmbed(embed, callback);
-    }
-  } else {
-    callback(embeds as Embed<T>);
-  }
-};
-
-interface EmbeddingConfig {
-  model?: string | undefined;
-
-  dimensions?: number | undefined;
-}
-
-interface EmbeddingOptions extends EmbeddingConfig {
-  signal?: AbortSignal | undefined;
-}
-
-interface EmbeddingIndex<T extends Embeddables> {
-  (
-    query: string | EmbeddingVector,
-    count: number,
-    options?: EmbeddingOptions,
-  ): Promise<T[]>;
-}
-
-interface EmbeddingFunction<T extends Embeddables> {
-  (query: string | EmbeddingVector, options?: EmbeddingOptions): Promise<T>;
-  (
-    query: string | EmbeddingVector,
-    count: number,
-    options?: EmbeddingOptions,
-  ): Promise<T[]>;
-
-  readonly embeds: Embeds<T>;
-
-  readonly index: EmbeddingIndex<T> | null;
-}
-
-interface EmbeddingProps extends EmbeddingConfig {}
-
-const isEmbedding = <T extends Embeddables>(
-  value: unknown,
-): value is EmbeddingFunction<T> => {
-  return typeof value === "function" && "embeds" in value;
-};
-
-const embedding: {
-  <T extends Embeddable>(
-    value: T,
-    props?: EmbeddingProps,
-  ): EmbeddingFunction<T>;
-  <T extends readonly Embeddables[]>(
-    values: [...T],
-    props?: EmbeddingProps,
-  ): EmbeddingFunction<T>;
-  <T extends { readonly [key: string]: Embeddables }>(
-    values: T,
-    props?: EmbeddingProps,
-  ): EmbeddingFunction<T>;
-  <T extends Embeddables>(
-    values: T,
-    props?: EmbeddingProps,
-  ): EmbeddingFunction<T>;
-
-  /** @internal */
-  readonly brand: unique symbol;
-} = Object.assign(
-  <T extends Embeddables>(
-    values: T,
-    props?: EmbeddingProps,
-  ): EmbeddingFunction<T> => {
-    throw new Error("Uncompiled embedding");
-  },
-  {
-    brand: Symbol("toolcog.embedding"),
-  } as const,
-) as typeof embedding;
-
-interface EmbeddingModelOptions extends EmbeddingOptions {}
-
-interface EmbeddingModel {
-  <T extends string | readonly string[]>(
-    content: T,
-    options?: EmbeddingModelOptions,
-  ): Promise<EmbeddingVectors<T>>;
-}
-
-interface EmbeddingStoreOptions extends EmbeddingOptions {
-  model: string;
-
-  embeddingModel: EmbeddingModel;
-
-  embeddingCache?: unknown;
-
-  similarity?: EmbeddingSimilarity | undefined;
-}
-
-interface EmbeddingStore {
-  <T extends Embeddable>(
-    embeds: Embeds<T>,
-    options: EmbeddingStoreOptions,
-  ): Promise<EmbeddingIndex<T>>;
+/**
+ * A mapping from embedding model names to embedding vectors.
+ */
+interface Embedding {
+  readonly [model: EmbeddingModel]: EmbeddingVector;
 }
 
 export type {
-  EmbeddingVector,
-  EmbeddingVectors,
-  EmbeddingSimilarity,
-  Embeddable,
-  Embeddables,
-  EmbeddingConfig,
-  EmbeddingOptions,
-  Embed,
-  Embeds,
-  AnyEmbed,
-  AnyEmbeds,
-  EmbeddingIndex,
-  EmbeddingFunction,
-  EmbeddingProps,
-  EmbeddingModelOptions,
+  EmbeddingModelNames,
   EmbeddingModel,
-  EmbeddingStoreOptions,
-  EmbeddingStore,
+  EmbeddingConfig,
+  EmbeddingVector,
+  EmbeddingDistance,
+  Embedding,
 };
-export { forEachEmbed, isEmbedding, embedding };

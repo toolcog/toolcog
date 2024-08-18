@@ -10,7 +10,9 @@ const useKeypress = (callback: (keypress: Key, view: View) => void): void => {
 
   useEffect((view: View) => {
     const onKeypress = batched((input: string, keypress: Key) => {
-      callbackRef.current(keypress, view);
+      if (!view.hidden) {
+        callbackRef.current(keypress, view);
+      }
     });
 
     view.input.addListener("keypress", onKeypress);

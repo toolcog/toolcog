@@ -1,0 +1,663 @@
+tools:
+  "@toolcog/sandbox/todo:getTodoLists":
+    function:
+      name: _toolcog_sandbox_todo_getTodoLists
+      description: |
+        Gets the names of all of the user's existing to-do lists.
+      return:
+        type: array
+        description: An array of to-do list names.
+        items:
+          type: string
+  "@toolcog/sandbox/todo:createTodoList":
+    function:
+      name: _toolcog_sandbox_todo_createTodoList
+      description: |
+        Creates a new to-do list.
+      parameters:
+        type: object
+        properties:
+          listName:
+            type: string
+            description: The name of the list to create.
+        required:
+          - listName
+      return:
+        type: void
+  "@toolcog/sandbox/todo:deleteTodoList":
+    function:
+      name: _toolcog_sandbox_todo_deleteTodoList
+      description: |
+        Deletes an existing to-do list.
+      parameters:
+        type: object
+        properties:
+          listName:
+            type: string
+            description: The name of the list to delete.
+        required:
+          - listName
+      return:
+        type: void
+  "@toolcog/sandbox/todo:getTodos":
+    function:
+      name: _toolcog_sandbox_todo_getTodos
+      description: |
+        Gets the current state of the items on a particular to-do list.
+        The names of all existing lists can be retrieved by calling the
+        `getTodoLists` function.
+      parameters:
+        type: object
+        properties:
+          listName:
+            type: string
+            description: The name of the to-do list whose items should be returned.
+        required:
+          - listName
+      return:
+        anyOf:
+          - type: "null"
+          - type: array
+            items:
+              type: object
+              description: An individual item on a to-do list.
+              properties:
+                id:
+                  type: number
+                  description: A unique identifier for this item in its list.
+                text:
+                  type: string
+                  description: A description of the thing to be done.
+                done:
+                  type: boolean
+                  description: Whether or not the item has been completed.
+              required:
+                - id
+                - text
+                - done
+        description: |-
+          The items on the to-do list with the given `listName`,
+          or `null` if no list with the given `listName` could be found.
+  "@toolcog/sandbox/todo:createTodo":
+    function:
+      name: _toolcog_sandbox_todo_createTodo
+      description: >
+        Adds a new unchecked item to an existing to-do list. If a new item isn't
+
+        a good fit for any of the user's existing to-do lists, first create a
+        new,
+
+        more appropriate list by calling `createTodoList`, and then add the item
+
+        to that new list.
+      parameters:
+        type: object
+        properties:
+          listName:
+            type: string
+            description: >-
+              The name of the list to which the item should be added.
+
+              Must be the name of an existing to-do list, as returned by
+              `getTodoLists`.
+          item:
+            type: string
+            description: The text of the item to add to the list.
+        required:
+          - listName
+          - item
+      return:
+        type: void
+  "@toolcog/sandbox/todo:updateTodo":
+    function:
+      name: _toolcog_sandbox_todo_updateTodo
+      description: |
+        Updates an existing item on a to-do list.
+      parameters:
+        type: object
+        properties:
+          listName:
+            type: string
+            description: The name of the to-do list that contains the item to update.
+          itemId:
+            type: number
+            description: The id of the item to update.
+          text:
+            type: string
+            description: The updated text of the to-do item.
+          done:
+            type: boolean
+            description: Whether or not the item should be marked as done.
+        required:
+          - listName
+          - itemId
+          - text
+          - done
+      return:
+        type: void
+  "@toolcog/sandbox/todo:deleteTodo":
+    function:
+      name: _toolcog_sandbox_todo_deleteTodo
+      description: |
+        Removes an existing item from a to-do list.
+      parameters:
+        type: object
+        properties:
+          listName:
+            type: string
+            description: The name of the to-do list from which to remove an item.
+          itemId:
+            type: number
+            description: The id of the item to remove.
+        required:
+          - listName
+          - itemId
+      return:
+        type: void
+  "@toolcog/sandbox/location:currentLocation":
+    function:
+      name: _toolcog_sandbox_location_currentLocation
+      description: Get information about the user's current location.
+      return:
+        type: object
+        properties:
+          city:
+            type: string
+            description: The name of the user's current city.
+          region:
+            type: string
+            description: The name of the user's current state or region.
+          country_name:
+            type: string
+            description: The name of the user's current country.
+          postal:
+            type: string
+            description: The user's current zip code or postal code.
+          latitude:
+            type: number
+            description: The approximate latitude of the user's current location.
+          longitude:
+            type: number
+            description: The approximate longitude of the user's current location.
+          timezone:
+            type: string
+            description: The name of the user's current time zone.
+          utc_offset:
+            type: string
+            description: The offset from UTC time of the user's current time zone.
+          currency_name:
+            type: string
+            description: The currency used at the user's current location.
+        required:
+          - country_name
+          - postal
+          - latitude
+          - longitude
+          - timezone
+          - utc_offset
+          - currency_name
+  "@toolcog/sandbox/feedback:promptInput":
+    function:
+      name: _toolcog_sandbox_feedback_promptInput
+      description: >
+        Ask the user for input. This tool should be used to ask the user to
+        answer
+
+        a question, or to ask the user for clarification.
+      parameters:
+        type: object
+        properties:
+          message:
+            type: string
+            description: The question to present to the user about what to input.
+          placeholder:
+            type: string
+            description: An optional default answer to provide the user.
+        required:
+          - message
+      return:
+        type: string
+        description: The input entered by the user.
+  "@toolcog/sandbox/feedback:promptPassword":
+    function:
+      name: _toolcog_sandbox_feedback_promptPassword
+      description: |
+        Ask the user to enter a password.
+      parameters:
+        type: object
+        properties:
+          message:
+            type: string
+            description: The question to present to the user about what to enter.
+        required:
+          - message
+      return:
+        type: string
+        description: The password entered by the user.
+  "@toolcog/sandbox/feedback:promptConfirm":
+    function:
+      name: _toolcog_sandbox_feedback_promptConfirm
+      description: >
+        Ask the user for confirmation. This tool should be used to ask the user
+        to
+
+        answer a yes/no question, or to ask the user for permission.
+      parameters:
+        type: object
+        properties:
+          message:
+            type: string
+            description: The question to present to the user about what to confirm.
+        required:
+          - message
+      return:
+        type: boolean
+        description: Whether or not the user responded affirmatively.
+  "@toolcog/sandbox/feedback:promptSelect":
+    function:
+      name: _toolcog_sandbox_feedback_promptSelect
+      description: |
+        Ask the user to select a single item from a list of options.
+        This tool should be used to ask the user a multiple choice question.
+      parameters:
+        type: object
+        properties:
+          message:
+            type: string
+            description: The question to present to the user about what to select.
+          options:
+            type: array
+            description: A list of options from which the user may select a single item.
+            items:
+              type: object
+              description: An option that the user can select.
+              properties:
+                name:
+                  type: string
+                  description: |-
+                    An optional display name for this option. If not provided,
+                    the `value` property will be used as the display name.
+                value:
+                  type: string
+                  description: The value returned when the user selects this option.
+                description:
+                  type: string
+                  description: An optional description of this option.
+              required:
+                - value
+        required:
+          - message
+          - options
+      return:
+        type: string
+        description: The `value` property of the option selected by the user.
+  "@toolcog/sandbox/feedback:promptMultiselect":
+    function:
+      name: _toolcog_sandbox_feedback_promptMultiselect
+      description: |
+        Ask the user to select multiple items from a list of options.
+      parameters:
+        type: object
+        properties:
+          message:
+            type: string
+            description: The question to present to the user about what to select.
+          options:
+            type: array
+            description: A list of options from which the user may select multiple items.
+            items:
+              type: object
+              description: An option that the user can select.
+              properties:
+                name:
+                  type: string
+                  description: |-
+                    An optional display name for this option. If not defined,
+                    the `value` property will be used as the display name.
+                value:
+                  type: string
+                  description: The value returned when the user selects this option.
+                description:
+                  type: string
+                  description: An optional description of this option.
+                selected:
+                  anyOf:
+                    - const: "false"
+                    - const: "true"
+                  description: |-
+                    Indicates whether or not this option should be preselected.
+                    If not defined, the option will not be preselected.
+              required:
+                - value
+        required:
+          - message
+          - options
+      return:
+        type: array
+        description: A list of the `value` properties of all options selected by the user.
+        items:
+          type: string
+prompts:
+  "@toolcog/sandbox/top10:makeList":
+    function:
+      name: _toolcog_sandbox_top10_makeList
+      description: |
+        Make a David Letterman style top-10 list about the given subject.
+      parameters:
+        type: object
+        properties:
+          subject:
+            type: string
+            description: The subject of the top-10 list.
+        required:
+          - subject
+      return:
+        type: array
+        description: The top-10 list.
+        items:
+          type: string
+  "@toolcog/sandbox/top10:reviewList":
+    function:
+      name: _toolcog_sandbox_top10_reviewList
+      description: |
+        Give feedback on the given David Letterman style top-10 list.
+        Evaluate each item for wit, novelty, and brevity. Give critical
+        feedback, not just faint praise.
+      parameters:
+        type: object
+        properties:
+          list:
+            type: array
+            description: The top-10 list to review.
+            items:
+              type: string
+        required:
+          - list
+      return:
+        type: string
+        description: Feedback about ways to improve the top-10 list.
+  "@toolcog/sandbox/top10:improveList":
+    function:
+      name: _toolcog_sandbox_top10_improveList
+      description: |
+        Improve the given David Letterman style top-10 list by incorporating
+        the provided feedback. Produce an updated top-10 list with the feedback.
+        Do not include any feedback in the new list.
+      parameters:
+        type: object
+        properties:
+          list:
+            type: array
+            description: The top-10 list to improve.
+            items:
+              type: string
+          feedback:
+            type: string
+            description: The feedback to incorporate into the top-10 list.
+        required:
+          - list
+          - feedback
+      return:
+        type: array
+        description: An improved top-10 list.
+        items:
+          type: string
+  "@toolcog/sandbox/top10:scoreImprovements":
+    function:
+      name: _toolcog_sandbox_top10_scoreImprovements
+      description: >
+        Score how well an improved David Letterman style top-10 list
+        incorporated
+
+        feedback from the original top-10 list. The score should be a number
+
+        between 1 and 10. Assign a score of 5 or above if the improved list
+
+        is indisputably funnier than the origin. Penalize new lists that
+
+        are not concise and quippy enough.
+      parameters:
+        type: object
+        properties:
+          originalList:
+            type: array
+            items:
+              type: string
+          feedback:
+            type: string
+            description: The feedback on the original top-10 list.
+          improvedList:
+            type: array
+            description: |-
+              The new and improved top-10 list,
+                     incorporating the given feedback.
+            items:
+              type: string
+        required:
+          - originalList
+          - feedback
+          - improvedList
+      return:
+        type: number
+        description: A number between 1 and 10 rating the level of improvement.
+  "@toolcog/sandbox/story:writeStory":
+    function:
+      name: _toolcog_sandbox_story_writeStory
+      description: |
+        Write an outline for a story in the given genre.
+      parameters:
+        type: object
+        properties:
+          genre:
+            type: string
+            description: The genre of the story.
+        required:
+          - genre
+      return:
+        type: object
+        description: An outline of the plot of a story.
+        properties:
+          title:
+            type: string
+            description: The title of the story.
+          synopsis:
+            type: string
+            description: A brief description of what the story is about.
+          cast:
+            type: array
+            description: The case of characters in the story.
+            items:
+              type: object
+              description: A fictional character with a backstory.
+              properties:
+                name:
+                  type: string
+                  description: The name of the character.
+                tagline:
+                  type: string
+                  description: A memorable phrase this character likes to say.
+                age:
+                  type: number
+                  description: The age of the character.
+                gender:
+                  anyOf:
+                    - const: male
+                    - const: female
+                    - const: other
+                  description: The gender of the character.
+                backstory:
+                  type: string
+                  description: >-
+                    A brief blurb about where the character comes from, what
+                    motivates them,
+
+                    and what their goal is.
+                alive:
+                  type: boolean
+                  description: Whether or not the character is currently alive.
+              required:
+                - name
+                - tagline
+                - age
+                - gender
+                - backstory
+                - alive
+          epigraph:
+            type: string
+            description: A quote that appears at the beginning of the story.
+          chapters:
+            type: array
+            description: An outline of each chapter in the story.
+            items:
+              type: object
+              description: An outline of a chapter in a story.
+              properties:
+                title:
+                  type: string
+                  description: The name of the chapter.
+                events:
+                  type: array
+                  description: The major events that occur in this chapter.
+                  items:
+                    type: object
+                    description: A key event that happens in the story.
+                    properties:
+                      date:
+                        type: string
+                        description: The date in the story on which the event occurs.
+                      description:
+                        type: string
+                        description: A description of what occurs during the event.
+                      significance:
+                        type: number
+                        description: A number from 1 to 10 indicating how important the event is to the
+                          story.
+                    required:
+                      - date
+                      - description
+                      - significance
+              required:
+                - title
+                - events
+        required:
+          - title
+          - synopsis
+          - cast
+          - chapters
+  "@toolcog/sandbox/joke:joke":
+    instructions: |-
+      Tell a funny joke about the given subject. Reference the user's current
+      location as part of the joke, if you can think of a funny way to do so.
+    function:
+      name: _toolcog_sandbox_joke_joke
+      description: |
+        Tell a funny joke about the given subject.
+      parameters:
+        type: object
+        properties:
+          subject:
+            type: string
+            description: The subject of the joke.
+          funniness:
+            type: number
+            description: How funny the joke should be, on a scale from 1 to 10.
+          ideas:
+            type: array
+            items:
+              type: string
+            description: Some joke ideas to consider for inspiration.
+        required:
+          - subject
+      return:
+        type: string
+        description: The generated joke.
+  "@toolcog/sandbox/characters:createCharacters":
+    function:
+      name: _toolcog_sandbox_characters_createCharacters
+      description: |
+        Creates a cast of characters for a story.
+      parameters:
+        type: object
+        properties:
+          genre:
+            type: string
+            description: The genre of the story in which the characters exist.
+          count:
+            type: number
+            description: The number of characters to create.
+        required:
+          - genre
+      return:
+        type: array
+        description: The generated cast of characters.
+        items:
+          type: object
+          description: A fictional character with a backstory.
+          properties:
+            name:
+              type: string
+              description: The name of the character.
+            tagline:
+              type: string
+              description: A memorable phrase this character likes to say.
+            age:
+              type: number
+              description: The age of the character.
+            gender:
+              anyOf:
+                - const: male
+                - const: female
+                - const: other
+              description: The gender of the character.
+            backstory:
+              type: string
+              description: >-
+                A brief blurb about where the character comes from, what
+                motivates them,
+
+                and what their goal is.
+            alive:
+              type: boolean
+              description: Whether or not the character is currently alive.
+          required:
+            - name
+            - tagline
+            - age
+            - gender
+            - backstory
+            - alive
+embeds: []
+idioms:
+  "@toolcog/sandbox/todo:todoToolSelector[0]":
+    embeds:
+      - Get the names of my to-do lists.
+  "@toolcog/sandbox/todo:todoToolSelector[1]":
+    embeds:
+      - Create a new to-do list.
+  "@toolcog/sandbox/todo:todoToolSelector[2]":
+    embeds:
+      - Delete a to-do list.
+  "@toolcog/sandbox/todo:todoToolSelector[3]":
+    embeds:
+      - Get the items on my to-do list.
+  "@toolcog/sandbox/todo:todoToolSelector[4]":
+    embeds:
+      - Add an item to my to-do list.
+  "@toolcog/sandbox/todo:todoToolSelector[5]":
+    embeds:
+      - Update my to-do list.
+      - I'm done.
+      - I finished.
+  "@toolcog/sandbox/todo:todoToolSelector[6]":
+    embeds:
+      - Remove an item from my to-do list.
+indexes:
+  "@toolcog/sandbox/todo:todoToolSelector":
+    idioms:
+      - "@toolcog/sandbox/todo:todoToolSelector[0]"
+      - "@toolcog/sandbox/todo:todoToolSelector[1]"
+      - "@toolcog/sandbox/todo:todoToolSelector[2]"
+      - "@toolcog/sandbox/todo:todoToolSelector[3]"
+      - "@toolcog/sandbox/todo:todoToolSelector[4]"
+      - "@toolcog/sandbox/todo:todoToolSelector[5]"
+      - "@toolcog/sandbox/todo:todoToolSelector[6]"

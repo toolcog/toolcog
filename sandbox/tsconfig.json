@@ -8,13 +8,12 @@
     "newLine": "lf",
     "noEmit": false,
     "outDir": "dist",
-    "plugins": [
-      { "transform": "@toolcog/transformer" }
-    ],
+    "plugins": [{ "transform": "@toolcog/compiler" }],
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "target": "esnext",
+    "types": ["node", "@toolcog/openai"],
     "verbatimModuleSyntax": true
   },
   "ts-node": {

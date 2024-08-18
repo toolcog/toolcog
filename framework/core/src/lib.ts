@@ -7,46 +7,52 @@ export type {
   FunctionSchema,
 } from "./schema.ts";
 
-export type {
-  Toolable,
-  Toolables,
-  Tool,
-  Tools,
-  AnyTool,
-  AnyTools,
-} from "./tooling.ts";
-export { isTool, forEachTool, findTool, mapTools, tooling } from "./tooling.ts";
+export type { Tool, Tools, AnyTool, AnyTools } from "./tool.ts";
+export { defineTool, defineTools } from "./tool.ts";
 
 export type {
-  GenerativeConfig,
-  GenerativeOptions,
-  GenerativeParameters,
-  GenerativeReturnType,
-  GenerativeFunction,
-  GenerativeProps,
-  GenerativeModelOptions,
+  GenerativeModelNames,
   GenerativeModel,
+  GenerativeConfig,
+  GenerativeFunction,
 } from "./generative.ts";
-export { generative, generate } from "./generative.ts";
 
 export type {
-  EmbeddingVector,
-  EmbeddingVectors,
-  EmbeddingSimilarity,
-  Embeddable,
-  Embeddables,
-  Embed,
-  Embeds,
-  AnyEmbed,
-  AnyEmbeds,
-  EmbeddingConfig,
-  EmbeddingOptions,
-  EmbeddingIndex,
-  EmbeddingFunction,
-  EmbeddingProps,
-  EmbeddingModelOptions,
+  GeneratorConfig,
+  GeneratorOptions,
+  Generator,
+} from "./generator.ts";
+
+export type {
+  PromptProps,
+  PromptParameters,
+  PromptReturnType,
+  PromptFunction,
+} from "./prompt.ts";
+export { definePrompt, prompt } from "./prompt.ts";
+
+export type {
+  EmbeddingModelNames,
   EmbeddingModel,
-  EmbeddingStoreOptions,
-  EmbeddingStore,
+  EmbeddingConfig,
+  EmbeddingVector,
+  EmbeddingDistance,
+  Embedding,
 } from "./embedding.ts";
-export { forEachEmbed, isEmbedding, embedding } from "./embedding.ts";
+
+export type {
+  EmbedderConfig,
+  EmbedderOptions,
+  EmbedderResult,
+  Embedder,
+} from "./embedder.ts";
+
+export { embed } from "./embed.ts";
+
+export type { Idiom, Idioms, AnyIdiom, AnyIdioms } from "./idiom.ts";
+export { defineIdiom, defineIdioms } from "./idiom.ts";
+
+export type { IndexConfig, IndexOptions, Index } from "./index.ts";
+export { defineIndex } from "./index.ts";
+
+export type { IndexerProps, Indexer } from "./indexer.ts";

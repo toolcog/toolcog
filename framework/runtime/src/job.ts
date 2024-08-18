@@ -9,6 +9,7 @@ interface JobInfo {
 }
 
 type JobEvents = {
+  fork: [parent: Job, child: Job];
   update: [job: Job];
   finish: [job: Job];
 };
@@ -239,6 +240,8 @@ class Job extends Emitter<JobEvents> {
       job.#descendantCount += 1;
       job = job.#parent;
     } while (job !== null);
+
+    this.emit("fork", this, child);
 
     return child;
   }

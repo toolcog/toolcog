@@ -54,11 +54,11 @@ export { paginate } from "./paginate.ts";
 export type { UsePaginationOptions } from "./use-pagination.ts";
 export { usePagination } from "./use-pagination.ts";
 
-export type { AskProps } from "./ask.ts";
-export { ask } from "./ask.ts";
+export type { InputProps } from "./input.ts";
+export { input } from "./input.ts";
 
-export type { SecureProps } from "./secure.ts";
-export { secure } from "./secure.ts";
+export type { PasswordProps } from "./password.ts";
+export { password } from "./password.ts";
 
 export type { ConfirmProps } from "./confirm.ts";
 export { confirm } from "./confirm.ts";
@@ -73,10 +73,10 @@ export type {
 export { selectTheme, select } from "./select.ts";
 
 export type {
-  ChooseTheme,
-  ChooseOption,
-  ChooseSeparator,
-  ChooseItem,
-  ChooseProps,
-} from "./choose.ts";
-export { chooseTheme, choose } from "./choose.ts";
+  MultiselectTheme,
+  MultiselectOption,
+  MultiselectSeparator,
+  MultiselectItem,
+  MultiselectProps,
+} from "./multiselect.ts";
+export { multiselectTheme, multiselect } from "./multiselect.ts";

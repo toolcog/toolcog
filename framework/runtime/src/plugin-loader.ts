@@ -1,6 +1,6 @@
-interface PluginLoaderOptions {
+interface PluginLoaderConfig {
   /**
-   * A list of module prefixes that will be prepended to plugin IDs in order
+   * A list of module prefixes that will be prepended to plugin names in order
    * to construct a plugin module specifier.
    */
   modulePrefixes?: string[] | undefined;
@@ -8,7 +8,7 @@ interface PluginLoaderOptions {
   /**
    * A list of plugins to pre-load.
    */
-  preloadPluginIds?: readonly string[] | undefined;
+  preloadPlugins?: readonly string[] | undefined;
 }
 
 class PluginLoader<Plugin> {
@@ -16,16 +16,16 @@ class PluginLoader<Plugin> {
 
   readonly #plugins: Map<string, Plugin>;
 
-  readonly #preloadPluginIds: readonly string[];
+  readonly #preloadPlugins: readonly string[];
 
-  #initialized: boolean;
+  #initialized: Promise<void> | null;
 
-  constructor(options?: PluginLoaderOptions) {
-    this.#modulePrefixes = options?.modulePrefixes ?? [];
+  constructor(config?: PluginLoaderConfig) {
+    this.#modulePrefixes = config?.modulePrefixes ?? [];
     this.#plugins = new Map();
 
-    this.#preloadPluginIds = options?.preloadPluginIds ?? [];
-    this.#initialized = false;
+    this.#preloadPlugins = config?.preloadPlugins ?? [];
+    this.#initialized = null;
   }
 
   /**
@@ -36,56 +36,56 @@ class PluginLoader<Plugin> {
   }
 
   /**
-   * Returns the plugin with the given `pluginId`, loading the plugin if it's
+   * Registers a `plugin` with the given `name`.
+   */
+  addPlugin(name: string, plugin: Plugin): void {
+    this.#plugins.set(name, plugin);
+  }
+
+  /**
+   * Unregisters the plugin with the given `name`.
+   */
+  removePlugin(name: string): void {
+    this.#plugins.delete(name);
+  }
+
+  /**
+   * Returns the plugin with the given `name`, loading the plugin if it's
    * not already cached. Throws an `Error` with the failed lookup locations
    * if the plugin could not be found.
    */
-  async getPlugin(pluginId: string): Promise<Plugin> {
+  async getPlugin(name: string): Promise<Plugin> {
     // Check for a cached plugin.
-    let plugin = this.#plugins.get(pluginId);
+    let plugin = this.#plugins.get(name);
 
     if (plugin === undefined) {
       // Try to load the plugin.
-      plugin = await this.loadPlugin(pluginId);
+      plugin = await this.loadPlugin(name);
       // Cache the loaded plugin.
-      this.#plugins.set(pluginId, plugin);
+      this.#plugins.set(name, plugin);
     }
 
     return plugin;
   }
 
   /**
-   * Registers a `plugin` with the given `pluginId`.
-   */
-  addPlugin(pluginId: string, plugin: Plugin): void {
-    this.#plugins.set(pluginId, plugin);
-  }
-
-  /**
-   * Unregisters the plugin with the given `pluginId`.
-   */
-  removePlugin(pluginId: string): void {
-    this.#plugins.delete(pluginId);
-  }
-
-  /**
-   * Loads a plugin module for the given `pluginId`. Throws an `Error` with
+   * Loads a plugin module for the given `name`. Throws an `Error` with
    * the failed lookup locations if the plugin could not be found.
    * @internal
    */
-  async loadPlugin(pluginId: string): Promise<Plugin> {
+  async loadPlugin(name: string): Promise<Plugin> {
     const failedLookups: string[] = [];
 
-    // Check if the pluginId does not match any known plugin pattern.
+    // Check if the plugin name does not match any known module prefix.
     if (
-      !pluginId.startsWith("@") &&
+      !name.startsWith("@") &&
       !this.#modulePrefixes.some((modulePrefix) =>
-        pluginId.startsWith(modulePrefix),
+        name.startsWith(modulePrefix),
       )
     ) {
       // Try to load a plugin with each module prefix.
       for (const modulePrefix of this.#modulePrefixes) {
-        const moduleSpecifier = modulePrefix + pluginId;
+        const moduleSpecifier = modulePrefix + name;
         try {
           // Try to load a plugin with a prefixed module specifier.
           return (await import(moduleSpecifier)) as Plugin;
@@ -97,15 +97,15 @@ class PluginLoader<Plugin> {
     }
 
     try {
-      // Try to load a plugin whose module specifier is the pluginId.
-      return (await import(pluginId)) as Plugin;
+      // Try to load a plugin whose module specifier is the plugin name.
+      return (await import(name)) as Plugin;
     } catch {
       // Record the failed lookup location.
-      failedLookups.push(pluginId);
+      failedLookups.push(name);
     }
 
     // No plugin was found; include the failed lookup locations in the error.
-    let message = `Unable to load plugin ${JSON.stringify(pluginId)}`;
+    let message = `Unable to load plugin ${JSON.stringify(name)}`;
     if (this.#modulePrefixes.length !== 0) {
       message += "; tried importing ";
       for (let i = 0; i < failedLookups.length; i += 1) {
@@ -125,12 +125,11 @@ class PluginLoader<Plugin> {
    * Initializes the plugin loader by pre-loading an initial set of plugins.
    * Does nothing if already initialized.
    */
-  async initialize(): Promise<void> {
-    if (this.#initialized) {
-      return;
+  initialize(): Promise<void> {
+    if (this.#initialized === null) {
+      this.#initialized = this.preloadPlugins();
     }
-    this.#initialized = true;
-    await this.preloadPlugins();
+    return this.#initialized;
   }
 
   /**
@@ -138,15 +137,15 @@ class PluginLoader<Plugin> {
    * @internal
    */
   async preloadPlugins(): Promise<void> {
-    for (const pluginId of this.#preloadPluginIds) {
+    for (const name of this.#preloadPlugins) {
       try {
-        await this.getPlugin(pluginId);
+        await this.getPlugin(name);
       } catch {
-        // Ignore pre-load failure.
+        // Ignore pre-load failures.
       }
     }
   }
 }
 
-export type { PluginLoaderOptions };
+export type { PluginLoaderConfig };
 export { PluginLoader };

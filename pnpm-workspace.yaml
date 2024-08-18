@@ -1,44 +1,35 @@
 packages:
-  - config
   - framework/util
-  - framework/util/queue
-  - framework/util/emit
-  - framework/util/task
-  - framework/util/async
-  - framework/util/timer
-  - framework/util/tty
   - framework/core
-  - framework/compiler
-  - framework/transformer
   - framework/runtime
+  - framework/compiler
   - framework/tui
   - framework/repl
-  - models/openai
   - adapters/node
-  - adapters/node/loader
-  - adapters/node/quiet
-  - adapters/node/cli
+  - models/openai
   - toolcog
-  - toolcog/cli
   - sandbox
 
 catalog:
   "@types/node": ">=20"
-  commander: ^12.1
+  citty: ^0.1
   defu: ^6.1
+  glob: ^11.0
   typescript: ^5.5
+  yaml: ^2.5
 
 catalogs:
   models:
-    openai: ^4.53
+    openai: ^4.56
+    whatwg-url: ^14.0
   build:
-    "@eslint/js": ^9.8
+    "@eslint/js": ^9.9
     "@rollup/plugin-node-resolve": ^15.2
     "@rollup/plugin-replace": ^5.0
     "@rollup/plugin-typescript": ^11.1
     "@types/node": ^22
-    eslint: ^9.8
-    eslint-plugin-jsdoc: ^48.10
+    eslint: ^9.9
+    eslint-plugin-jsdoc: ^50.2
     prettier: ^3.3
     rimraf: ^6.0
     rollup: ^4.19
@@ -49,5 +40,5 @@ catalogs:
     tslib: ^2.6
     turbo: ^2.0
     typescript: ^5.5
-    typescript-eslint: ^8.0
+    typescript-eslint: ^8.1
     vitest: ^2.0

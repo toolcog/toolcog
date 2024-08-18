@@ -3,7 +3,7 @@ import type { SchemaDefinition, Schema, FunctionSchema } from "@toolcog/core";
 import { abort } from "./utils/errors.ts";
 import { Diagnostics } from "./diagnostics.ts";
 import type { Comment } from "./comment.ts";
-import { getCommentForNode } from "./comment.ts";
+import { getCommentForNode, getComment } from "./comment.ts";
 
 const typeToSchema = (
   ts: typeof import("typescript"),
@@ -95,7 +95,38 @@ const typeToSchema = (
   }
 
   if ((type.flags & ts.TypeFlags.EnumLiteral) !== 0) {
-    // TODO
+    const enumType = checker.getBaseTypeOfLiteralType(type);
+    const enumSymbol = enumType.symbol;
+
+    const enumDeclaration = enumSymbol.declarations?.[0];
+    ts.Debug.assert(enumDeclaration !== undefined);
+    ts.Debug.assert(ts.isEnumDeclaration(enumDeclaration));
+
+    const memberSchemas: Schema[] = [];
+    for (const memberDeclaration of enumDeclaration.members) {
+      const memberType = checker.getTypeAtLocation(memberDeclaration);
+      const memberComment = getComment(
+        ts,
+        checker,
+        memberDeclaration,
+        memberType,
+      );
+      const memberSchema = typeToSchema(
+        ts,
+        checker,
+        addDiagnostic,
+        memberType,
+        memberComment?.description,
+        undefined,
+        errorNode,
+      );
+      memberSchemas.push(memberSchema);
+    }
+
+    return {
+      anyOf: memberSchemas,
+      ...(description !== undefined ? { description } : undefined),
+    };
   }
 
   if ((type.flags & ts.TypeFlags.Object) !== 0) {
@@ -166,7 +197,7 @@ const typeToSchema = (
       const propertyDeclaration = propertySymbol.declarations?.[0];
       const propertyComment =
         propertyDeclaration !== undefined ?
-          getCommentForNode(ts, propertyDeclaration)
+          getComment(ts, checker, propertyDeclaration, propertyType)
         : undefined;
       const propertyDescription =
         propertyComment?.description ?? propertyDescriptions?.[propertyName];
@@ -208,6 +239,7 @@ const typeToSchema = (
         //"array",
         "object",
       ],
+      ...(description !== undefined ? { description } : undefined),
     };
   }
 
@@ -228,10 +260,14 @@ const typeToSchema = (
       }
     }
     if (memberSchemas.length === 1) {
-      return memberSchemas[0]!;
+      return {
+        ...memberSchemas[0]!,
+        ...(description !== undefined ? { description } : undefined),
+      };
     }
     return {
       anyOf: memberSchemas,
+      ...(description !== undefined ? { description } : undefined),
     };
   }
 
@@ -251,6 +287,7 @@ const typeToSchema = (
     }
     return {
       allOf: memberSchemas,
+      ...(description !== undefined ? { description } : undefined),
     };
   }
 

@@ -1,6 +1,5 @@
 import { AsyncContext } from "@toolcog/util/async";
 import type { Message, SystemMessage } from "./message.ts";
-import { Runtime } from "./runtime.ts";
 
 interface Thread {
   readonly messages: readonly Message[];
@@ -18,8 +17,7 @@ const Thread = (() => {
   };
 
   const create = (messages?: Message[]): Promise<Thread> => {
-    const runtime = Runtime.current();
-    return Promise.resolve(runtime.createThread(messages));
+    return Promise.resolve(new TemporaryThread(messages));
   };
 
   const getOrCreate = async (): Promise<Thread> => {

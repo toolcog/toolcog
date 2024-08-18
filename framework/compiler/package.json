@@ -5,8 +5,10 @@
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
+  "bin": {
+    "toolcog-compiler": "./bin/toolcog-compiler.js"
+  },
   "scripts": {
-    "dev": "rollup --config --watch --no-watch.clearScreen",
     "build": "rollup --config",
     "check": "tsc --noEmit",
     "lint": "eslint src/",
@@ -14,11 +16,10 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules",
-    "prepack": "toolcog-config prepack",
-    "postpack": "toolcog-config postpack"
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "files": [
+    "bin/",
     "dist/"
   ],
   "sideEffects": false,
@@ -27,17 +28,28 @@
       "types": "./dist/lib.d.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js",
+      "require": "./dist/cli.cjs"
     }
   },
   "peerDependencies": {
     "typescript": "catalog:default"
   },
   "dependencies": {
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
     "@toolcog/util": "workspace:*",
-    "@toolcog/core": "workspace:*"
+    "citty": "catalog:default",
+    "glob": "catalog:default",
+    "yaml": "catalog:default"
+  },
+  "optionalDependencies": {
+    "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
-    "@toolcog/config": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",
     "rimraf": "catalog:build",

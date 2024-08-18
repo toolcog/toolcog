@@ -1,10 +1,10 @@
-import { generative } from "toolcog";
+import { definePrompt } from "@toolcog/core";
 
 // Make a David Letterman style top-10 list about the given subject.
 //
 // @param subject - The subject of the top-10 list.
 // @returns The top-10 list.
-const makeList = generative<(subject: string) => string[]>();
+const makeList = definePrompt<(subject: string) => string[]>();
 
 // Give feedback on the given David Letterman style top-10 list.
 // Evaluate each item for wit, novelty, and brevity. Give critical
@@ -12,7 +12,7 @@ const makeList = generative<(subject: string) => string[]>();
 //
 // @param list - The top-10 list to review.
 // @returns Feedback about ways to improve the top-10 list.
-const reviewList = generative<(list: string[]) => string>();
+const reviewList = definePrompt<(list: string[]) => string>();
 
 // Improve the given David Letterman style top-10 list by incorporating
 // the provided feedback. Produce an updated top-10 list with the feedback.
@@ -22,7 +22,7 @@ const reviewList = generative<(list: string[]) => string>();
 // @param feedback - The feedback to incorporate into the top-10 list.
 // @returns An improved top-10 list.
 const improveList =
-  generative<(list: string[], feedback: string) => string[]>();
+  definePrompt<(list: string[], feedback: string) => string[]>();
 
 // Score how well an improved David Letterman style top-10 list incorporated
 // feedback from the original top-10 list. The score should be a number
@@ -36,7 +36,7 @@ const improveList =
 //        incorporating the given feedback.
 // @returns A number between 1 and 10 rating the level of improvement.
 const scoreImprovements =
-  generative<
+  definePrompt<
     (originalList: string[], feedback: string, improvedList: string[]) => number
   >();
 
@@ -64,5 +64,3 @@ export async function top10(subject: string) {
 
   return list;
 }
-
-//console.log(await top10("Llamas"));

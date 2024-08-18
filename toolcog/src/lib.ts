@@ -1,1 +1,3 @@
-export * from "@toolcog/core";
+export { toolcogCommand } from "./toolcog.ts";
+
+export const version = __version__;

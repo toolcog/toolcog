@@ -1,5 +1,13 @@
 #!/usr/bin/env node
 
-import { cli } from "#cli";
+import { runMain } from "citty";
+import { nodeCommand, version } from "@toolcog/node";
 
-await cli().parseAsync(process.argv);
+await runMain({
+  ...nodeCommand,
+  meta: {
+    name: "toolcog-node",
+    version,
+    description: nodeCommand.meta.description,
+  },
+});

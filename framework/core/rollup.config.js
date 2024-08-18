@@ -1,3 +1,3 @@
-import { defineLib } from "@toolcog/config/rollup.js";
+import { defineLib } from "../../rollup.js";
 
 export default defineLib();

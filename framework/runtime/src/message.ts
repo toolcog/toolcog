@@ -30,6 +30,7 @@ interface UserMessage {
 interface AssistantMessage {
   readonly role: "assistant";
   readonly content: string | null;
+  readonly refusal?: string | null | undefined;
   readonly tool_calls?: ToolCall[] | undefined;
 }
 

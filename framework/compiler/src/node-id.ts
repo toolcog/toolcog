@@ -12,7 +12,93 @@ interface NodeIdOptions {
   getCommonSourceDirectory?: (() => string) | undefined;
 }
 
+const getNodeTypeId = (
+  ts: typeof import("typescript"),
+  node: ts.Node | undefined,
+  type?: ts.Type | undefined,
+  options?: NodeIdOptions | undefined,
+): string | undefined => {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  let nodeId = getNodeId(ts, node, options);
+
+  if (nodeId === undefined && type !== undefined) {
+    const declaration = type.getSymbol()?.declarations?.[0];
+    if (declaration !== undefined) {
+      nodeId = getNodeId(ts, declaration, options);
+    }
+  }
+
+  return nodeId;
+};
+
+const getNodeTypeIdentifier = (
+  ts: typeof import("typescript"),
+  node: ts.Node | undefined,
+  type?: ts.Type | undefined,
+): string | undefined => {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  let nodeIdentifier = getNodeIdentifier(ts, node);
+
+  if (nodeIdentifier === undefined && type !== undefined) {
+    const declaration = type.getSymbol()?.declarations?.[0];
+    if (declaration !== undefined) {
+      nodeIdentifier = getNodeIdentifier(ts, declaration);
+    }
+  }
+
+  return nodeIdentifier;
+};
+
 const getNodeId = (
+  ts: typeof import("typescript"),
+  node: ts.Node | undefined,
+  options?: NodeIdOptions | undefined,
+): string | undefined => {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  let nodeId = getNodePath(ts, node, options);
+
+  if (ts.isSourceFile(node) && nodeId?.endsWith(":") === true) {
+    nodeId = nodeId.substring(0, nodeId.length - 1);
+  }
+
+  return nodeId;
+};
+
+const getNodeIdentifier = (
+  ts: typeof import("typescript"),
+  node: ts.Node | undefined,
+): string | undefined => {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  const nodeName = getNodeName(ts, node);
+  if (nodeName === undefined) {
+    return getNodeIdentifier(ts, node.parent);
+  }
+
+  if (ts.isIdentifierText(nodeName, ts.ScriptTarget.ESNext)) {
+    return nodeName;
+  } else if (isFinite(parseInt(nodeName))) {
+    const parentNodeName = getNodeIdentifier(ts, node.parent);
+    if (parentNodeName !== undefined) {
+      return parentNodeName + nodeName;
+    }
+  }
+
+  return undefined;
+};
+
+const getNodePath = (
   ts: typeof import("typescript"),
   node: ts.Node | undefined,
   options?: NodeIdOptions,
@@ -49,64 +135,30 @@ const getNodeId = (
     }
   }
 
-  let name: ts.Node;
-  if (ts.isDeclaration(node)) {
-    name = ts.getNameOfDeclaration(node) ?? node;
-  } else {
-    name = node;
-  }
+  let nodePath = getNodePath(ts, node.parent, options);
 
-  let nodeId = getNodeId(ts, node.parent, options);
-
-  let keyword: string | undefined;
-  switch (name.kind) {
-    case ts.SyntaxKind.NumericLiteral:
-      if (nodeId === undefined) {
-        nodeId = "";
+  const nodeName = getNodeName(ts, node);
+  if (nodeName !== undefined) {
+    if (ts.isIdentifierText(nodeName, ts.ScriptTarget.ESNext)) {
+      if (nodePath === undefined) {
+        nodePath = "";
+      } else if (!nodePath.endsWith(":")) {
+        nodePath += ".";
       }
-      nodeId += "[" + (name as ts.NumericLiteral).text + "]";
-      break;
-    case ts.SyntaxKind.StringLiteral:
-      if (nodeId === undefined) {
-        nodeId = "";
+      nodePath += nodeName;
+    } else {
+      if (nodePath === undefined) {
+        nodePath = "";
       }
-      nodeId += "[" + JSON.stringify((name as ts.StringLiteral).text) + "]";
-      break;
-    case ts.SyntaxKind.Identifier:
-    case ts.SyntaxKind.PrivateIdentifier:
-      if (nodeId === undefined) {
-        nodeId = "";
-      } else if (!nodeId.endsWith(":")) {
-        nodeId += ".";
+      if (isFinite(parseInt(nodeName))) {
+        nodePath += "[" + nodeName + "]";
+      } else {
+        nodePath += "[" + JSON.stringify(nodeName) + "]";
       }
-      nodeId += (name as ts.Identifier | ts.PrivateIdentifier).text;
-      break;
-    case ts.SyntaxKind.FalseKeyword:
-      keyword = "false";
-      break;
-    case ts.SyntaxKind.NullKeyword:
-      keyword = "null";
-      break;
-    case ts.SyntaxKind.TrueKeyword:
-      keyword = "true";
-      break;
-    case ts.SyntaxKind.UndefinedKeyword:
-      keyword = "undefined";
-      break;
-    default:
-      break;
-  }
-
-  if (keyword !== undefined) {
-    if (nodeId === undefined) {
-      nodeId = "";
-    } else if (!nodeId.endsWith(":")) {
-      nodeId += ".";
     }
-    nodeId += keyword;
   }
 
-  return nodeId;
+  return nodePath;
 };
 
 const getNodeName = (
@@ -117,28 +169,55 @@ const getNodeName = (
     return undefined;
   }
 
-  let name: ts.Node;
-  if (ts.isDeclaration(node)) {
-    name = ts.getNameOfDeclaration(node) ?? node;
-  } else {
-    name = node;
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  if (node.parent !== undefined && ts.isArrayLiteralExpression(node.parent)) {
+    const index = node.parent.elements.findIndex((element) => element === node);
+    if (index >= 0) {
+      return String(index);
+    }
+    return undefined;
   }
 
-  switch (name.kind) {
+  switch (node.kind) {
+    case ts.SyntaxKind.PropertyAccessExpression:
+      return getNodeText(ts, (node as ts.PropertyAccessExpression).name);
+    case ts.SyntaxKind.ElementAccessExpression:
+      return getNodeText(
+        ts,
+        (node as ts.ElementAccessExpression).argumentExpression,
+      );
+    case ts.SyntaxKind.VariableDeclaration:
+      return getNodeText(ts, (node as ts.VariableDeclaration).name);
+    case ts.SyntaxKind.FunctionDeclaration:
+      return getNodeText(ts, (node as ts.FunctionDeclaration).name);
+    case ts.SyntaxKind.ClassDeclaration:
+      return getNodeText(ts, (node as ts.ClassDeclaration).name);
+    case ts.SyntaxKind.ModuleDeclaration:
+      return getNodeText(ts, (node as ts.ModuleDeclaration).name);
+    case ts.SyntaxKind.PropertyAssignment:
+      return getNodeText(ts, (node as ts.PropertyAssignment).name);
+    case ts.SyntaxKind.ShorthandPropertyAssignment:
+      return getNodeText(ts, (node as ts.ShorthandPropertyAssignment).name);
+    default:
+      return undefined;
+  }
+};
+
+const getNodeText = (
+  ts: typeof import("typescript"),
+  node: ts.Node | undefined,
+): string | undefined => {
+  if (node === undefined) {
+    return undefined;
+  }
+
+  switch (node.kind) {
     case ts.SyntaxKind.StringLiteral:
-      if (
-        ts.isIdentifierText(
-          (name as ts.StringLiteral).text,
-          ts.ScriptTarget.ESNext,
-        )
-      ) {
-        return (name as ts.StringLiteral).text;
-      }
-      break;
+      return (node as ts.StringLiteral).text;
     case ts.SyntaxKind.Identifier:
-      return (name as ts.Identifier).text;
+      return (node as ts.Identifier).text;
     case ts.SyntaxKind.PrivateIdentifier:
-      return (name as ts.PrivateIdentifier).text.substring(1);
+      return (node as ts.PrivateIdentifier).text;
     case ts.SyntaxKind.FalseKeyword:
       return "false";
     case ts.SyntaxKind.NullKeyword:
@@ -148,11 +227,9 @@ const getNodeName = (
     case ts.SyntaxKind.UndefinedKeyword:
       return "undefined";
     default:
-      break;
+      return undefined;
   }
-
-  return getNodeName(ts, node.parent);
 };
 
 export type { NodeIdOptions };
-export { getNodeId, getNodeName };
+export { getNodeTypeId, getNodeTypeIdentifier, getNodeId, getNodeIdentifier };

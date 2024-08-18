@@ -1,4 +1,4 @@
-import { generative } from "toolcog";
+import { definePrompt } from "@toolcog/core";
 
 /**
  * A fictional character with a backstory.
@@ -26,10 +26,8 @@ export interface Character {
  * @param count - The number of characters to create.
  * @returns The generated cast of characters.
  */
-export const createCharacters = generative<
+export const createCharacters = definePrompt<
   (genre: string, count?: number) => Character[]
 >({
   defaults: { count: 5 },
 });
-
-//console.log(await createCharacters("fantasy"));

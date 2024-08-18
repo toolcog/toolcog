@@ -7,6 +7,10 @@ type ModuleExportSymbols<ExportNames extends string> = {
   [ExportName in ExportNames]?: ts.Symbol | undefined;
 };
 
+type ModuleExportDeclarations<ExportNames extends string> = {
+  [ExportName in ExportNames]?: ts.Declaration | undefined;
+};
+
 type ModuleExportTypes<ExportNames extends string> = {
   [ExportName in ExportNames]?: ts.Type | undefined;
 };
@@ -93,7 +97,7 @@ const resolveModuleExportSymbols = <ExportNames extends string>(
   return exportSymbols;
 };
 
-const resolveModuleExportTypes = <ExportNames extends string>(
+const resolveModuleExportDeclarations = <ExportNames extends string>(
   ts: typeof import("typescript"),
   host: ts.ModuleResolutionHost,
   program: ts.Program,
@@ -102,7 +106,7 @@ const resolveModuleExportTypes = <ExportNames extends string>(
   exportNames: readonly [...ExportNames[]],
   moduleName: string,
   containingFile?: string,
-): ModuleExportTypes<ExportNames> => {
+): ModuleExportDeclarations<ExportNames> => {
   const exportSymbols = resolveModuleExportSymbols(
     ts,
     host,
@@ -114,7 +118,9 @@ const resolveModuleExportTypes = <ExportNames extends string>(
     containingFile,
   );
 
-  const exportTypes = Object.create(null) as ModuleExportTypes<ExportNames>;
+  const exportDeclarations = Object.create(
+    null,
+  ) as ModuleExportDeclarations<ExportNames>;
 
   for (const exportName in exportSymbols) {
     const exportSymbol = exportSymbols[exportName]!;
@@ -136,7 +142,39 @@ const resolveModuleExportTypes = <ExportNames extends string>(
       continue;
     }
 
-    const exportType = checker.getTypeAtLocation(originalDeclaration);
+    exportDeclarations[exportName] = originalDeclaration;
+  }
+
+  return exportDeclarations;
+};
+
+const resolveModuleExportTypes = <ExportNames extends string>(
+  ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
+  checker: ts.TypeChecker,
+  addDiagnostic: ((diagnostic: ts.Diagnostic) => void) | undefined,
+  exportNames: readonly [...ExportNames[]],
+  moduleName: string,
+  containingFile?: string,
+): ModuleExportTypes<ExportNames> => {
+  const exportDeclarations = resolveModuleExportDeclarations(
+    ts,
+    host,
+    program,
+    checker,
+    addDiagnostic,
+    exportNames,
+    moduleName,
+    containingFile,
+  );
+
+  const exportTypes = Object.create(null) as ModuleExportTypes<ExportNames>;
+
+  for (const exportName in exportDeclarations) {
+    const exportDeclaration = exportDeclarations[exportName]!;
+
+    const exportType = checker.getTypeAtLocation(exportDeclaration);
 
     exportTypes[exportName] = exportType;
   }
@@ -144,5 +182,13 @@ const resolveModuleExportTypes = <ExportNames extends string>(
   return exportTypes;
 };
 
-export type { ModuleExportSymbols, ModuleExportTypes };
-export { resolveModuleExportSymbols, resolveModuleExportTypes };
+export type {
+  ModuleExportSymbols,
+  ModuleExportDeclarations,
+  ModuleExportTypes,
+};
+export {
+  resolveModuleExportSymbols,
+  resolveModuleExportDeclarations,
+  resolveModuleExportTypes,
+};

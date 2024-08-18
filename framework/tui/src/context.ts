@@ -121,6 +121,16 @@ class Context {
     return result;
   }
 
+  static #global: Context | null = null;
+
+  static global(): Context | null {
+    return this.#global;
+  }
+
+  static setGlobal(context: Context | null): void {
+    this.#global = context;
+  }
+
   static readonly #current = new AsyncContext.Variable<Context>({
     name: "tui.context",
   });

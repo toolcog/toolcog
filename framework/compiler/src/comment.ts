@@ -6,7 +6,7 @@ interface Comment {
   description: string | undefined;
   params: Record<string, string>;
   returns: string | undefined;
-  intents: string[];
+  embeds: string[];
   tags: Record<string, string>;
 }
 
@@ -108,8 +108,8 @@ const parseTag = (
     return;
   }
 
-  if (tag === "intent") {
-    comment.intents.push(value);
+  if (tag === "embed") {
+    comment.embeds.push(value);
     return;
   }
 
@@ -124,7 +124,7 @@ const parseComment = (
     description: undefined,
     params: Object.create(null) as Record<string, string>,
     returns: undefined,
-    intents: [],
+    embeds: [],
     tags: Object.create(null) as Record<string, string>,
   };
 
@@ -169,7 +169,7 @@ const mergeComments: {
   let description: string | undefined;
   const params = Object.create(null) as Record<string, string>;
   let returns: string | undefined;
-  const intents = new Set<string>();
+  const embeds = new Set<string>();
   const tags = Object.create(null) as Record<string, string>;
 
   for (const comment of comments) {
@@ -187,8 +187,8 @@ const mergeComments: {
     if (comment.returns !== undefined) {
       returns = comment.returns;
     }
-    for (const intent of comment.intents) {
-      intents.add(intent);
+    for (const embed of comment.embeds) {
+      embeds.add(embed);
     }
     for (const tag in comment.tags) {
       tags[tag] = comment.tags[tag]!;
@@ -203,7 +203,7 @@ const mergeComments: {
     description,
     params,
     returns,
-    intents: [...intents],
+    embeds: [...embeds],
     tags,
   };
 }) as typeof mergeComments;
@@ -220,14 +220,11 @@ const getCommentForType = (
   ts: typeof import("typescript"),
   type: ts.Type,
 ): Comment | undefined => {
-  const typeSymbol = type.getSymbol();
-  if (typeSymbol !== undefined) {
-    const typeDeclaration = typeSymbol.declarations?.[0];
-    if (typeDeclaration !== undefined) {
-      return getCommentForNode(ts, typeDeclaration);
-    }
-  }
-  return undefined;
+  const symbol = type.getSymbol();
+  const declaration = symbol?.declarations?.[0];
+  return declaration !== undefined ?
+      getCommentForNode(ts, declaration)
+    : undefined;
 };
 
 const getComment = (
@@ -239,9 +236,12 @@ const getComment = (
   if (type === undefined) {
     type = checker?.getTypeAtLocation(node);
   }
+  const symbol = checker?.getSymbolAtLocation(node);
+  const declaration = symbol?.declarations?.[0];
   return mergeComments(
-    getCommentForNode(ts, node),
     type !== undefined ? getCommentForType(ts, type) : undefined,
+    declaration !== undefined ? getCommentForNode(ts, declaration) : undefined,
+    getCommentForNode(ts, node),
   );
 };
 

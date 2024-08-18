@@ -32,35 +32,53 @@ const Diagnostics = {
     code: 900005,
     message: "Cannot transform homogenous array `{0}`.",
   },
+  CannotTransformSplicedArray: {
+    key: "CannotTransformSplicedArray",
+    category: ts.DiagnosticCategory.Warning,
+    code: 900006,
+    message: "Cannot transform spliced array.",
+  },
   CannotTransformNonStableProperty: {
     key: "CannotTransformNonStableProperty",
     category: ts.DiagnosticCategory.Warning,
-    code: 900006,
+    code: 900007,
     message: 'Cannot transform non-stable property "{0}".',
   },
   CannotDeriveSchemaForType: {
     key: "CannotDeriveSchemaForType",
     category: ts.DiagnosticCategory.Error,
-    code: 900007,
-    message: "Cannot derive schema for type `{0}`.",
+    code: 900008,
+    message: "Cannot derive a schema for type `{0}`.",
   },
   CommentNeededToDescribeToolToLLM: {
     key: "CommentNeededToDescribeToolToLLM",
     category: ts.DiagnosticCategory.Warning,
-    code: 900008,
+    code: 900009,
     message: "Comment needed to describe tool to LLM.",
   },
   CommentNeededToDescribeFunctionToLLM: {
     key: "CommentNeededToDescribeFunctionToLLM",
     category: ts.DiagnosticCategory.Warning,
-    code: 900009,
+    code: 900010,
     message: "Comment needed to describe function to LLM.",
   },
-  CommentNeededToGenerateEmbedding: {
-    key: "CommentNeededToGenerateEmbedding",
+  CommentNeededToDefineEmbedding: {
+    key: "CommentNeededToDefineEmbedding",
     category: ts.DiagnosticCategory.Warning,
-    code: 900010,
+    code: 900011,
     message: "Comment needed to generate embedding.",
+  },
+  CannotExtractIdiomIdFromReference: {
+    key: "CannotExtractIdiomIdFromReference",
+    category: ts.DiagnosticCategory.Warning,
+    code: 900012,
+    message: "Cannot extract idiom ID from reference.",
+  },
+  CannotExtractIdiomIdsFromArrayReference: {
+    key: "CannotExtractIdiomIdsFromArrayReference",
+    category: ts.DiagnosticCategory.Warning,
+    code: 900012,
+    message: "Cannot extract idiom IDs from array reference.",
   },
 } as const satisfies Record<string, ts.DiagnosticMessage>;
 

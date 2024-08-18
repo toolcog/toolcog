@@ -1,1 +1,0 @@
-# Toolcog typescript transformer

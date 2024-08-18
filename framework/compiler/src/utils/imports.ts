@@ -147,5 +147,104 @@ const removeImportsWithTypes = (
   );
 };
 
+const insertNamedImport = (
+  ts: typeof import("typescript"),
+  factory: ts.NodeFactory,
+  sourceFile: ts.SourceFile,
+  propertyName: ts.Identifier | undefined,
+  name: ts.Identifier,
+  moduleSpecifier: string,
+): ts.SourceFile => {
+  let index: number;
+  for (index = 0; index < sourceFile.statements.length; index += 1) {
+    const statement = sourceFile.statements[index]!;
+    if (
+      !ts.isImportDeclaration(statement) ||
+      !ts.isStringLiteral(statement.moduleSpecifier) ||
+      (statement.moduleSpecifier.text.startsWith(".") &&
+        !moduleSpecifier.startsWith("."))
+    ) {
+      break;
+    }
+
+    if (statement.moduleSpecifier.text !== moduleSpecifier) {
+      continue;
+    }
+
+    let importClause = statement.importClause;
+
+    let namedBindings = importClause?.namedBindings;
+    if (namedBindings !== undefined && !ts.isNamedImports(namedBindings)) {
+      continue;
+    }
+
+    let elements: ts.ImportSpecifier[];
+    if (namedBindings?.elements !== undefined) {
+      for (const element of namedBindings.elements) {
+        if (
+          element.propertyName?.text === propertyName?.text &&
+          element.name.text === name.text
+        ) {
+          return sourceFile;
+        }
+      }
+      elements = [...namedBindings.elements];
+    } else {
+      elements = [];
+    }
+    elements.push(factory.createImportSpecifier(false, propertyName, name));
+
+    if (namedBindings !== undefined) {
+      namedBindings = factory.updateNamedImports(namedBindings, elements);
+    } else {
+      namedBindings = factory.createNamedImports(elements);
+    }
+
+    if (importClause !== undefined) {
+      importClause = factory.updateImportClause(
+        importClause,
+        false, // isTypeOnly
+        importClause.name,
+        namedBindings,
+      );
+    } else {
+      importClause = factory.createImportClause(
+        false, // isTypeOnly
+        undefined, // name
+        namedBindings,
+      );
+    }
+
+    return factory.updateSourceFile(sourceFile, [
+      ...sourceFile.statements.slice(0, index),
+      factory.updateImportDeclaration(
+        statement,
+        statement.modifiers,
+        importClause,
+        statement.moduleSpecifier,
+        statement.attributes, // attributes
+      ),
+      ...sourceFile.statements.slice(index + 1),
+    ]);
+  }
+
+  return factory.updateSourceFile(sourceFile, [
+    ...sourceFile.statements.slice(0, index),
+    factory.createImportDeclaration(
+      undefined, // modifiers
+      factory.createImportClause(
+        false, // isTypeOnly
+        undefined, // name
+        factory.createNamedImports([
+          factory.createImportSpecifier(false, propertyName, name),
+        ]),
+      ),
+      factory.createStringLiteral(moduleSpecifier),
+      undefined, // attributes
+    ),
+    ...sourceFile.statements.slice(index),
+  ]);
+};
+
 export type { ImportTypes, ImportSymbols };
-export { getImportSymbolsWithTypes, removeImportsWithTypes };
+export { getImportSymbolsWithTypes, removeImportsWithTypes, insertNamedImport };

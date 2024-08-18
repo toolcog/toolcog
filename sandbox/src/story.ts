@@ -1,4 +1,4 @@
-import { generative } from "toolcog";
+import { definePrompt } from "@toolcog/core";
 import type { Character } from "./characters.js";
 import { createCharacters } from "./characters.js";
 
@@ -45,8 +45,6 @@ interface Story {
  *
  * @param genre - The genre of the story.
  */
-export const writeStory = generative<(genre: string) => Story>({
+export const writeStory = definePrompt<(genre: string) => Story>({
   tools: [createCharacters],
 });
-
-//console.log(await writeStory("campy indie film"));

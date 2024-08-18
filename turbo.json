@@ -1,6 +1,5 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "ui": "tui",
   "tasks": {
     "topo": {
       "dependsOn": ["^topo"]
@@ -13,43 +12,26 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "inputs": [
-        "package.json",
-        "rollup.config.js",
-        "tsconfig.json",
-        "src/**"
-      ],
-      "outputs": [
-        "dist/**"
-      ],
-      "outputLogs": "new-only"
+      "inputs": ["package.json", "tsconfig.json", "rollup.config.js", "src/**"],
+      "outputs": ["dist/**"],
+      "outputLogs": "new-only",
+      "passThroughEnv": ["OPENAI_API_KEY"]
     },
     "check": {
       "dependsOn": ["topo"],
-      "inputs": [
-        "tsconfig.json",
-        "src/**"
-      ]
+      "inputs": ["tsconfig.json", "src/**"]
     },
     "lint": {
       "dependsOn": ["topo"],
-      "inputs": [
-        "eslint.config.js",
-        "src/**"
-      ]
+      "inputs": ["eslint.config.js", "src/**"]
     },
     "format": {
       "dependsOn": ["topo"],
-      "inputs": [
-        "prettier.config.js",
-        "src/**"
-      ]
+      "inputs": ["prettier.config.js", "src/**"]
     },
     "test": {
       "dependsOn": ["build"],
-      "inputs": [
-        "src/**/*.test.ts"
-      ]
+      "inputs": ["src/**/*.test.ts"]
     },
     "clean": {
       "cache": false

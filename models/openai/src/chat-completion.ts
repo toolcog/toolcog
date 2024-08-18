@@ -68,6 +68,7 @@ async function* createChatCompletionStreaming(
             index: choiceDelta.index,
             message: {
               role: "assistant",
+              refusal: null,
               content: null,
             },
             logprobs: null,
@@ -82,6 +83,14 @@ async function* createChatCompletionStreaming(
             message.content = messageDelta.content;
           } else {
             message.content += messageDelta.content;
+          }
+        }
+
+        if (typeof messageDelta.refusal === "string") {
+          if (message.refusal === null) {
+            message.refusal = messageDelta.refusal;
+          } else {
+            message.refusal += messageDelta.refusal;
           }
         }
 

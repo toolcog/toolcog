@@ -1,5 +1,4 @@
-import type { Schema, FunctionSchema, Tool, Tools } from "@toolcog/core";
-import { findTool } from "@toolcog/core";
+import type { Schema, FunctionSchema, Tool } from "@toolcog/core";
 
 type GenerativeCallResultType = "any" | "object";
 
@@ -8,7 +7,7 @@ interface GenerativeCallOptions {
 
   instructions?: string | undefined;
 
-  tools?: Tools | null | undefined;
+  tools?: readonly Tool[] | null | undefined;
 
   resultType?: GenerativeCallResultType | undefined;
 }
@@ -18,7 +17,7 @@ class GenerativeCall {
 
   readonly #instructions: string | undefined;
 
-  readonly #tools: Tools | null;
+  readonly #tools: readonly Tool[] | null;
 
   readonly #resultType: GenerativeCallResultType;
 
@@ -40,7 +39,7 @@ class GenerativeCall {
     return this.#instructions;
   }
 
-  get tools(): Tools | null {
+  get tools(): readonly Tool[] | null {
     return this.#tools;
   }
 
@@ -266,7 +265,7 @@ class GenerativeCall {
     if (this.tools === null) {
       return undefined;
     }
-    return findTool(this.tools, (tool) =>
+    return this.tools.find((tool) =>
       tool.function.name === name ? tool : undefined,
     );
   }
@@ -310,7 +309,7 @@ class GenerativeCall {
   }
 
   formatToolResult(tool: Tool, result: unknown): string {
-    return JSON.stringify(result);
+    return result !== undefined ? JSON.stringify(result) : "";
   }
 
   async callTool(name: Tool | string, args: string): Promise<string> {

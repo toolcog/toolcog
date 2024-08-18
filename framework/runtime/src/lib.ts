@@ -21,24 +21,19 @@ export type {
 } from "./generative-call.ts";
 export { GenerativeCall } from "./generative-call.ts";
 
-export type { PluginLoaderOptions } from "./plugin-loader.ts";
+export { cosineDistance, embeddedIndexer } from "./embedded-indexer.ts";
+
+export type { PluginLoaderConfig } from "./plugin-loader.ts";
 export { PluginLoader } from "./plugin-loader.ts";
 
-export type {
-  ModelLoaderOptions,
-  GenerativeModelPlugin,
-  EmbeddingModelPlugin,
-} from "./model-loader.ts";
-export {
-  ModelLoader,
-  GenerativeModelLoader,
-  EmbeddingModelLoader,
-} from "./model-loader.ts";
+export type { GeneratorPlugin } from "./generator.ts";
+export { GeneratorLoader, generator } from "./generator.ts";
 
-export type { RuntimeOptions } from "./runtime.ts";
-export { Runtime, generativeModel, embeddingModel } from "./runtime.ts";
+export type { EmbedderPlugin } from "./embedder.ts";
+export { EmbedderLoader, embedder } from "./embedder.ts";
 
-export { embeddingStore } from "./embedding-store.ts";
+export type { IndexerPlugin } from "./indexer.ts";
+export { IndexerLoader, indexer } from "./indexer.ts";
 
 export type { JobInfo, JobEvents } from "./job.ts";
 export { Job } from "./job.ts";

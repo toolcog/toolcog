@@ -147,4 +147,71 @@ const getLeadingComment = (
   return commentText;
 };
 
-export { getLeadingComment };
+const copyLeadingComments = <T extends ts.Node>(
+  ts: typeof import("typescript"),
+  fromNode: ts.Node,
+  toNode: T,
+): T => {
+  ts.setSyntheticLeadingComments(
+    toNode,
+    ts.getSyntheticLeadingComments(fromNode),
+  );
+
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const sourceText = fromNode.getSourceFile()?.text as string | undefined;
+  if (sourceText !== undefined) {
+    const leadingCommentRanges = ts.getLeadingCommentRanges(
+      sourceText,
+      fromNode.pos,
+    );
+    if (leadingCommentRanges !== undefined) {
+      for (const commentRange of leadingCommentRanges) {
+        let commentText: string;
+        switch (commentRange.kind) {
+          case ts.SyntaxKind.SingleLineCommentTrivia:
+            commentText = sourceText.slice(
+              commentRange.pos + 2,
+              commentRange.end,
+            );
+            break;
+          case ts.SyntaxKind.MultiLineCommentTrivia:
+            commentText = replaceLines(
+              sourceText.slice(commentRange.pos + 2, commentRange.end - 2),
+              // Replace indentation with a single leading space.
+              (line) => line.replace(/^\s+/g, " "),
+            );
+            break;
+          default:
+            continue;
+        }
+        ts.addSyntheticLeadingComment(
+          toNode,
+          commentRange.kind,
+          commentText,
+          commentRange.hasTrailingNewLine,
+        );
+      }
+    }
+  }
+
+  return toNode;
+};
+
+const moveLeadingComments = <T extends ts.Node>(
+  ts: typeof import("typescript"),
+  fromNode: ts.Node,
+  toNode: T,
+): T => {
+  copyLeadingComments(ts, fromNode, toNode);
+
+  ts.setSyntheticLeadingComments(fromNode, undefined);
+
+  ts.setEmitFlags(
+    fromNode,
+    ts.EmitFlags.NoLeadingComments | ts.EmitFlags.NoTrailingComments,
+  );
+
+  return toNode;
+};
+
+export { getLeadingComment, copyLeadingComments, moveLeadingComments };

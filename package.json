@@ -7,21 +7,36 @@
     "build": "turbo run build",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "toolcog-node": "turbo --filter=@toolcog/node/cli build && node adapters/node/bin/toolcog-node.js",
-    "toolcog": "turbo --filter=toolcog/cli build && node toolcog/bin/toolcog.js",
+    "toolcog-compiler": "turbo --filter=@toolcog/compiler build && node framework/compiler/bin/toolcog-compiler.js",
+    "toolcog-node": "turbo --filter=@toolcog/node build && node adapters/node/bin/toolcog-node.js",
+    "toolcog": "turbo --filter=toolcog build && node toolcog/bin/toolcog.js",
     "clean": "pnpm run -r clean && rimraf .turbo node_modules/.cache",
     "clean-all": "pnpm run -r clean-all && rimraf .turbo node_modules"
   },
   "devDependencies": {
+    "@eslint/js": "catalog:build",
+    "@rollup/plugin-node-resolve": "catalog:build",
+    "@rollup/plugin-replace": "catalog:build",
+    "@rollup/plugin-typescript": "catalog:build",
     "@types/node": "catalog:build",
+    "eslint-plugin-jsdoc": "catalog:build",
     "prettier": "catalog:build",
     "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "rollup-plugin-dts": "catalog:build",
+    "rollup-plugin-node-externals": "catalog:build",
     "turbo": "catalog:build",
     "typescript": "catalog:build",
+    "typescript-eslint": "catalog:build",
     "vitest": "catalog:build"
   },
   "engines": {
     "node": ">=20"
   },
-  "packageManager": "pnpm@9.6.0"
+  "pnpm": {
+    "overrides": {
+      "whatwg-url": "catalog:models"
+    }
+  },
+  "packageManager": "pnpm@9.7.1"
 }

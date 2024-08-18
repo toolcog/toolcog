@@ -36,6 +36,7 @@ class View {
   #cursor: CursorPos;
   #height: number;
   #bottom: number;
+  #hidden: boolean;
 
   constructor(options?: ViewOptions) {
     this.#input = options?.input ?? process.stdin;
@@ -62,6 +63,7 @@ class View {
     this.#cursor = this.#readline.getCursorPos();
     this.#height = 0;
     this.#bottom = 0;
+    this.#hidden = false;
   }
 
   get input(): NodeJS.ReadableStream {
@@ -100,17 +102,50 @@ class View {
     return this.#style;
   }
 
-  clearLine(dir: 0 | 1 | -1): void {
-    clearLine(this.#output, dir);
+  get hidden(): boolean {
+    return this.#hidden;
   }
 
-  write(data: Buffer | string, key?: Key): void;
-  write(data: Buffer | string | null | undefined, key: Key): void;
-  write(data: Buffer | string | null | undefined, key?: Key): void {
-    this.#readline.write(data, key!);
+  hide(): void {
+    if (this.#hidden) {
+      return;
+    }
+
+    this.clean();
+    this.#promptLine = "";
+    this.#height = 0;
+    this.#bottom = 0;
+
+    this.#output.unmute();
+    this.#output.write(cursorShow);
+    this.#output.mute();
+
+    this.#hidden = true;
   }
 
-  render(content: string, bottomContent?: string): void {
+  show(): void {
+    if (!this.#hidden) {
+      return;
+    }
+
+    this.#hidden = false;
+
+    this.#output.unmute();
+    this.#readline.prompt();
+    this.#output.mute();
+
+    this.updateCursor();
+  }
+
+  render(
+    content: string,
+    bottomContent?: string,
+    consoleCalls?: (() => void)[],
+  ): void {
+    if (this.#hidden) {
+      return;
+    }
+
     const promptLine = stripAnsi(getLastLine(content));
 
     // Remove readline.line from the prompt.
@@ -161,6 +196,13 @@ class View {
 
     this.clean();
 
+    if (consoleCalls !== undefined && consoleCalls.length !== 0) {
+      for (const consoleCall of consoleCalls) {
+        consoleCall();
+      }
+      consoleCalls.length = 0;
+    }
+
     this.#promptLine = promptLine;
     this.#height = countLines(output);
     this.#bottom = bottomHeight;
@@ -171,6 +213,10 @@ class View {
   }
 
   updateCursor(): void {
+    if (this.#hidden) {
+      return;
+    }
+
     const cursor = this.#readline.getCursorPos();
     if (cursor.cols !== this.#cursor.cols) {
       this.#output.unmute();
@@ -181,6 +227,10 @@ class View {
   }
 
   clean(): void {
+    if (this.#hidden) {
+      return;
+    }
+
     this.#output.unmute();
     if (this.#bottom !== 0) {
       // Move the cursor to the end of the previously displayed content.
@@ -192,6 +242,10 @@ class View {
   }
 
   clearContent(): void {
+    if (this.#hidden) {
+      return;
+    }
+
     this.#output.unmute();
     if (this.#bottom !== 0) {
       // Move the cursor to the end of the previously displayed content.
@@ -203,11 +257,31 @@ class View {
     this.#output.mute();
   }
 
-  close(): void {
-    this.#readline.setPrompt("");
+  clearLine(dir: 0 | 1 | -1): void {
+    if (this.#hidden) {
+      return;
+    }
+
     this.#output.unmute();
-    this.#output.write(cursorShow);
-    this.#output.end();
+    clearLine(this.#output, dir);
+    this.#output.mute();
+  }
+
+  write(data: Buffer | string, key?: Key): void;
+  write(data: Buffer | string | null | undefined, key: Key): void;
+  write(data: Buffer | string | null | undefined, key?: Key): void {
+    if (this.#hidden) {
+      return;
+    }
+    this.#readline.write(data, key!);
+  }
+
+  close(): void {
+    if (!this.#hidden) {
+      this.#output.unmute();
+      this.#readline.setPrompt("");
+      this.#output.write(cursorShow);
+    }
     if (this.#standalone) {
       this.#readline.close();
     }

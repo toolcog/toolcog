@@ -6,7 +6,6 @@
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
   "scripts": {
-    "dev": "rollup --config --watch --no-watch.clearScreen",
     "build": "rollup --config",
     "check": "tsc --noEmit",
     "lint": "eslint src/",
@@ -14,9 +13,7 @@
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules",
-    "prepack": "toolcog-config prepack",
-    "postpack": "toolcog-config postpack"
+    "clean-all": "rimraf .turbo dist node_modules"
   },
   "files": [
     "dist/"
@@ -31,11 +28,9 @@
   },
   "dependencies": {
     "@toolcog/core": "workspace:*",
-    "@toolcog/util/async": "workspace:*",
-    "@toolcog/util/emit": "workspace:*"
+    "@toolcog/util": "workspace:*"
   },
   "devDependencies": {
-    "@toolcog/config": "workspace:*",
     "eslint": "catalog:build",
     "prettier": "catalog:build",
     "rimraf": "catalog:build",
