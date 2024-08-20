@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
-import { runMain } from "citty";
-import { nodeCommand, version } from "@toolcog/node";
+import { Runtime } from "@toolcog/runtime";
+import { createNodeCommand, version } from "@toolcog/node";
+import "@toolcog/node/quiet";
+import "@toolcog/node/register";
 
-await runMain({
-  ...nodeCommand,
-  meta: {
-    name: "toolcog-node",
-    version,
-    description: nodeCommand.meta.description,
-  },
+const runtime = await Runtime.create({
+  plugins: [import("@toolcog/openai").then((plugin) => plugin.default())],
+});
+
+await Runtime.run(runtime, () => {
+  return createNodeCommand("toolcog-node")
+    .version(version)
+    .parseAsync(process.argv);
 });

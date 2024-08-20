@@ -21,7 +21,7 @@ class Bindings {
     return this.#variables.get(variable) as T | undefined;
   }
 
-  set<T>(variable: Variable<T>, value: T): this {
+  set<T>(variable: Variable<T>, value: T | undefined): this {
     this.#dealias();
     this.#variables.set(variable, value);
     return this;

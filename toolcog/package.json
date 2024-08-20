@@ -36,7 +36,8 @@
   "dependencies": {
     "@toolcog/compiler": "workspace:*",
     "@toolcog/node": "workspace:*",
-    "citty": "catalog:default"
+    "@toolcog/runtime": "workspace:*",
+    "commander": "catalog:default"
   },
   "optionalDependencies": {
     "@toolcog/openai": "workspace:*"

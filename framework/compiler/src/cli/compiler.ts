@@ -1,14 +1,10 @@
-import { defineCommand } from "citty";
-import { generateCommand } from "./generate.ts";
+import { Command } from "commander";
+import { createGenerateCommand } from "./generate.ts";
 
-const compilerCommand = defineCommand({
-  meta: {
-    name: "compile",
-    description: "Toolcog compiler",
-  },
-  subCommands: {
-    generate: generateCommand,
-  },
-});
+const createCompilerCommand = (name: string): Command => {
+  return new Command(name)
+    .description("Toolcog compiler")
+    .addCommand(createGenerateCommand("generate"));
+};
 
-export { compilerCommand };
+export { createCompilerCommand };

@@ -98,7 +98,7 @@ class Job extends Emitter<JobEvents> {
 
   *children(startIndex: number = 0): Iterable<Job> {
     if (startIndex < 0) {
-      throw new Error("negative start index");
+      throw new Error("Negative start index");
     }
     if (startIndex >= this.#childCount) {
       return;
@@ -120,7 +120,7 @@ class Job extends Emitter<JobEvents> {
 
   *descendants(startIndex: number = 0): Iterable<Job> {
     if (startIndex < 0) {
-      throw new Error("negative start index");
+      throw new Error("Negative start index");
     }
     if (startIndex >= this.#descendantCount) {
       return;

@@ -3,9 +3,11 @@ import type { Tool } from "./tool.ts";
 import type { GenerativeModel } from "./generative.ts";
 import type { GeneratorConfig, GeneratorOptions } from "./generator.ts";
 
-interface PromptProps extends GeneratorConfig {
+interface PromptConfig extends GeneratorConfig {
   defaults?: Record<string, unknown> | undefined;
 }
+
+interface PromptOptions extends GeneratorOptions {}
 
 /** @internal */
 type IsVariadic<T extends readonly unknown[]> =
@@ -16,7 +18,7 @@ type IsVariadic<T extends readonly unknown[]> =
 
 type PromptParameters<F extends (...args: any[]) => unknown> =
   IsVariadic<Parameters<F>> extends true ? Parameters<F>
-  : [...Parameters<F>, options?: GeneratorOptions];
+  : [...Parameters<F>, options?: PromptOptions];
 
 type PromptReturnType<F extends (...args: any[]) => unknown> = Promise<
   Awaited<ReturnType<F>>
@@ -38,14 +40,14 @@ interface PromptFunction<F extends (...args: any[]) => unknown> {
 
 const definePrompt: {
   <F extends (...args: any[]) => unknown>(
-    props?: PromptProps,
+    config?: PromptConfig,
   ): PromptFunction<F>;
 
   /** @internal */
   readonly brand: unique symbol;
 } = Object.assign(
   <F extends (...args: any[]) => unknown>(
-    props?: PromptProps,
+    config?: PromptConfig,
   ): PromptFunction<F> => {
     throw new Error("Uncompiled prompt");
   },
@@ -58,11 +60,11 @@ const prompt: {
   <T = string>(
     instructions: string | undefined,
     args?: Record<string, unknown>,
-    options?: GeneratorOptions,
+    options?: PromptOptions,
   ): Promise<T>;
   <T = string>(
     args?: Record<string, unknown>,
-    options?: GeneratorOptions,
+    options?: PromptOptions,
   ): Promise<T>;
 
   /** @internal */
@@ -70,8 +72,8 @@ const prompt: {
 } = Object.assign(
   <T>(
     instructionsOrArgs?: string | Record<string, unknown>,
-    argsOrOptions?: Record<string, unknown> | GeneratorOptions,
-    options?: GeneratorOptions,
+    argsOrOptions?: Record<string, unknown> | PromptOptions,
+    options?: PromptOptions,
   ): Promise<T> => {
     throw new Error("Uncompiled prompt");
   },
@@ -80,5 +82,11 @@ const prompt: {
   } as const,
 ) as typeof prompt;
 
-export type { PromptProps, PromptParameters, PromptReturnType, PromptFunction };
+export type {
+  PromptConfig,
+  PromptOptions,
+  PromptParameters,
+  PromptReturnType,
+  PromptFunction,
+};
 export { definePrompt, prompt };

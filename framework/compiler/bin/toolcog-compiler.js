@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 
-import { runMain } from "citty";
-import { compilerCommand, version } from "@toolcog/compiler/cli";
+import { Runtime } from "@toolcog/runtime";
+import { createCompilerCommand, version } from "@toolcog/compiler/cli";
 
-await runMain({
-  ...compilerCommand,
-  meta: {
-    name: "toolcog-compiler",
-    version,
-    description: compilerCommand.meta.description,
-  },
+const runtime = await Runtime.create({
+  plugins: [import("@toolcog/openai").then((plugin) => plugin.default())],
+});
+
+await Runtime.run(runtime, () => {
+  return createCompilerCommand("toolcog-compiler")
+    .version(version)
+    .parseAsync(process.argv);
 });

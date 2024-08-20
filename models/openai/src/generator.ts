@@ -1,6 +1,11 @@
+import type { ClientOptions } from "openai";
 import { OpenAI } from "openai";
 import { Dispatcher } from "@toolcog/util/task";
-import type { GeneratorOptions, Generator } from "@toolcog/core";
+import type {
+  GeneratorConfig,
+  GeneratorOptions,
+  Generator,
+} from "@toolcog/core";
 import { Thread } from "@toolcog/runtime";
 import { GenerativeCall, Job } from "@toolcog/runtime";
 import type { ChatCompletion } from "./chat-completion.ts";
@@ -36,39 +41,52 @@ declare module "@toolcog/core" {
   }
 
   interface GenerativeConfig {
-    openai?: OpenAI | undefined;
+    streaming?: boolean | undefined;
+  }
 
-    dispatcher?: Dispatcher | undefined;
-
+  interface GenerativeOptions {
     streaming?: boolean | undefined;
   }
 }
 
+interface OpenAIGeneratorConfig extends GeneratorConfig {
+  openai?: OpenAI | ClientOptions | undefined;
+
+  dispatcher?: Dispatcher | undefined;
+}
+
+interface OpenAIGeneratorOptions extends GeneratorOptions {
+  openai?: OpenAI | ClientOptions | undefined;
+
+  dispatcher?: Dispatcher | undefined;
+}
+
 const defaultGenerativeModel = "gpt-4o";
 
-const getGenerator = (
-  options?: GeneratorOptions,
-): Promise<Generator | undefined> => {
+const generator = (options?: OpenAIGeneratorOptions): Generator | undefined => {
   const model = options?.model;
   if (model !== undefined) {
     if (model.startsWith("gpt-")) {
-      return Promise.resolve(generator);
+      return generate;
     }
   } else if (
     options?.openai !== undefined ||
     (typeof process !== "undefined" && process.env.OPENAI_API_KEY)
   ) {
-    return Promise.resolve(generator);
+    return generate;
   }
 
-  return Promise.resolve(undefined);
+  return undefined;
 };
 
-const generator = (async (
+const generate = (async (
   args: unknown,
-  options?: GeneratorOptions,
+  options?: OpenAIGeneratorOptions,
 ): Promise<unknown> => {
-  const client = options?.openai ?? new OpenAI();
+  const client =
+    options?.openai instanceof OpenAI ?
+      options.openai
+    : new OpenAI(options?.openai);
 
   const dispatcher = options?.dispatcher ?? new Dispatcher({ retry: false });
 
@@ -173,7 +191,7 @@ const generator = (async (
     // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
     if (choice === undefined || choice.finish_reason === null) {
       // The request was aborted.
-      throw new Error("interrupted");
+      throw new Error("Interrupted");
     }
 
     const message = choice.message;
@@ -220,4 +238,5 @@ const generator = (async (
   }
 }) satisfies Generator;
 
-export { getGenerator, generator };
+export type { OpenAIGeneratorConfig, OpenAIGeneratorOptions };
+export { generator, generate };

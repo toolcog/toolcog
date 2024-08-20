@@ -29,7 +29,7 @@ class Variable<T> {
   }
 
   run<F extends (...args: any[]) => unknown>(
-    value: T,
+    value: T | undefined,
     func: F,
     ...args: Parameters<F>
   ): ReturnType<F> {

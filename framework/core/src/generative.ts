@@ -17,10 +17,17 @@ interface GenerativeModelNames {}
 type GenerativeModel = keyof GenerativeModelNames | (string & {});
 
 /**
- * Generative model configuration options, such as API keys and API client
+ * Options for configuring a generative model, such as API keys and API client
  * parameters. Generator plugins augment this type with supported options.
  */
 interface GenerativeConfig {}
+
+/**
+ * Options for controlling a generative model request, such as an abort signal
+ * for cancelling the request. Generator plugins augment this type with
+ * supported options.
+ */
+interface GenerativeOptions {}
 
 interface GenerativeFunction {
   readonly id: string;
@@ -34,5 +41,6 @@ export type {
   GenerativeModelNames,
   GenerativeModel,
   GenerativeConfig,
+  GenerativeOptions,
   GenerativeFunction,
 };

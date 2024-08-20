@@ -252,7 +252,7 @@ class Emitter<Events extends EmitEvents = EmitEvents> implements Emit<Events> {
         typeof result === "object" &&
         typeof result.then === "function"
       ) {
-        result.then(undefined, (error) => {
+        result.then(undefined, (error: unknown) => {
           (this as Emitter<{ [Emitter.error]: [unknown] }>).emit(
             Emitter.error,
             error,

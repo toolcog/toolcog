@@ -12,17 +12,17 @@ const Thread = (() => {
     name: "toolcog.thread",
   });
 
-  const get = (): Thread | undefined => {
-    return threadVariable.get();
-  };
-
   const create = (messages?: Message[]): Promise<Thread> => {
     return Promise.resolve(new TemporaryThread(messages));
   };
 
+  const get = (): Thread | null => {
+    return threadVariable.get() ?? null;
+  };
+
   const getOrCreate = async (): Promise<Thread> => {
     let thread = get();
-    if (thread === undefined) {
+    if (thread === null) {
       thread = await create();
     }
     return thread;

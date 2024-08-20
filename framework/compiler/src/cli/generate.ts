@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { dirname, resolve as resolvePath } from "node:path";
 import ts from "typescript";
-import { defineCommand } from "citty";
+import { Command } from "commander";
 import { glob } from "glob";
 import type { ToolcogManifest } from "@toolcog/compiler";
 import {
@@ -17,14 +17,14 @@ import {
   generateToolcogModule,
 } from "@toolcog/compiler";
 
-interface GenerateCommandArgs {
+interface GenerateCommandOptions {
   manifest?: string | boolean | undefined;
   cache?: string | boolean | undefined;
 }
 
 const runGenerateCommand = async (
   filesGlob: string,
-  options: GenerateCommandArgs,
+  options: GenerateCommandOptions,
 ): Promise<void> => {
   const manifestFiles = await glob(filesGlob);
 
@@ -79,36 +79,21 @@ const runGenerateCommand = async (
   }
 };
 
-const generateCommand = defineCommand({
-  meta: {
-    name: "generate",
-    description: "Generate toolcog modules",
-  },
-  args: {
-    manifest: {
-      type: "string",
-      valueHint: "FILE",
-      description: "Generate a manifest of all toolcog resources",
-    },
-    cache: {
-      type: "string",
-      valueHint: "FILE",
-      description: "Cache prefetched data",
-    },
-    files: {
-      type: "positional",
-      description: "Glob of files for which to generate toolcog modules",
-      default: `**/*${toolcogManifestFileSuffix}`,
-      required: false,
-    },
-  },
-  run: ({ args }) => {
-    return runGenerateCommand(args.files, {
-      manifest: args.manifest === "" ? true : args.manifest,
-      cache: args.cache === "" ? true : args.cache,
-    });
-  },
-});
+const createGenerateCommand = (name: string): Command => {
+  return new Command(name)
+    .description("Generate toolcog modules")
+    .option(
+      "--manifest [toolcog-manifest.yaml]",
+      "Generate a manifest of all toolcog resources",
+    )
+    .option(`--cache [${toolcogCacheFileName}]`, "Cache prefetched data")
+    .argument(
+      "[files]",
+      "Glob of files for which to generate toolcog modules",
+      `**/*${toolcogManifestFileSuffix}`,
+    )
+    .action(runGenerateCommand);
+};
 
-export type { GenerateCommandArgs };
-export { runGenerateCommand, generateCommand };
+export type { GenerateCommandOptions };
+export { runGenerateCommand, createGenerateCommand };

@@ -30,7 +30,7 @@ const definePromptExpression = (
     | undefined;
   ts.Debug.assert(signatureDeclaration !== undefined);
 
-  const propsExpression = callExpression.arguments[0];
+  const configExpression = callExpression.arguments[0];
 
   let promptId =
     getNodeId(ts, callExpression, {
@@ -71,9 +71,9 @@ const definePromptExpression = (
     );
   }
 
-  // Define and destructure the props parameter.
+  // Define and destructure the config parameter.
 
-  let propsParameterDeclaration: ts.ParameterDeclaration | undefined;
+  let configParameterDeclaration: ts.ParameterDeclaration | undefined;
 
   let modelIdentifier: ts.Identifier | undefined;
   let toolsIdentifier: ts.Identifier | undefined;
@@ -81,14 +81,14 @@ const definePromptExpression = (
   let defaultsIdentifier: ts.Identifier | undefined;
   let generatorConfigIdentifier: ts.Identifier | undefined;
 
-  let propsVariableDeclaration: ts.VariableStatement | undefined;
+  let configVariableDeclaration: ts.VariableStatement | undefined;
 
-  if (propsExpression !== undefined) {
-    const propsParameterName = factory.createIdentifier("props");
-    propsParameterDeclaration = factory.createParameterDeclaration(
+  if (configExpression !== undefined) {
+    const configParameterName = factory.createIdentifier("config");
+    configParameterDeclaration = factory.createParameterDeclaration(
       undefined, // modifiers
       undefined, // dotDotDotToken
-      propsParameterName,
+      configParameterName,
       undefined, // questionToken
       undefined, // type
       undefined, // initializer
@@ -100,7 +100,7 @@ const definePromptExpression = (
     defaultsIdentifier = factory.createIdentifier("defaults");
     generatorConfigIdentifier = factory.createIdentifier("generatorConfig");
 
-    propsVariableDeclaration = factory.createVariableStatement(
+    configVariableDeclaration = factory.createVariableStatement(
       undefined, // modifiers
       factory.createVariableDeclarationList(
         [
@@ -140,7 +140,7 @@ const definePromptExpression = (
             undefined, // exclamationToken
             undefined, // type
             factory.createBinaryExpression(
-              propsParameterName,
+              configParameterName,
               factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
               factory.createObjectLiteralExpression(),
             ),
@@ -267,8 +267,38 @@ const definePromptExpression = (
   const generatorCallOptions = factory.createObjectLiteralExpression(
     [
       factory.createPropertyAssignment(
-        "model",
-        factory.createPropertyAccessExpression(functionIdentifier, "model"),
+        "id",
+        factory.createPropertyAccessExpression(functionIdentifier, "id"),
+      ),
+
+      factory.createSpreadAssignment(
+        factory.createParenthesizedExpression(
+          factory.createConditionalExpression(
+            factory.createBinaryExpression(
+              factory.createPropertyAccessExpression(
+                functionIdentifier,
+                "model",
+              ),
+              factory.createToken(ts.SyntaxKind.ExclamationEqualsEqualsToken),
+              factory.createVoidZero(),
+            ),
+            undefined, // questionToken
+            factory.createObjectLiteralExpression(
+              [
+                factory.createPropertyAssignment(
+                  "model",
+                  factory.createPropertyAccessExpression(
+                    functionIdentifier,
+                    "model",
+                  ),
+                ),
+              ],
+              false,
+            ),
+            undefined, // colonToken
+            factory.createVoidZero(),
+          ),
+        ),
       ),
 
       factory.createPropertyAssignment(
@@ -276,11 +306,33 @@ const definePromptExpression = (
         factory.createPropertyAccessExpression(functionIdentifier, "tools"),
       ),
 
-      factory.createPropertyAssignment(
-        "instructions",
-        factory.createPropertyAccessExpression(
-          functionIdentifier,
-          "instructions",
+      factory.createSpreadAssignment(
+        factory.createParenthesizedExpression(
+          factory.createConditionalExpression(
+            factory.createBinaryExpression(
+              factory.createPropertyAccessExpression(
+                functionIdentifier,
+                "instructions",
+              ),
+              factory.createToken(ts.SyntaxKind.ExclamationEqualsEqualsToken),
+              factory.createVoidZero(),
+            ),
+            undefined, // questionToken
+            factory.createObjectLiteralExpression(
+              [
+                factory.createPropertyAssignment(
+                  "instructions",
+                  factory.createPropertyAccessExpression(
+                    functionIdentifier,
+                    "instructions",
+                  ),
+                ),
+              ],
+              false,
+            ),
+            undefined, // colonToken
+            factory.createVoidZero(),
+          ),
         ),
       ),
 
@@ -475,8 +527,8 @@ const definePromptExpression = (
       undefined, // modifiers,
       undefined, // typeParameters,
       [
-        ...(propsParameterDeclaration !== undefined ?
-          [propsParameterDeclaration]
+        ...(configParameterDeclaration !== undefined ?
+          [configParameterDeclaration]
         : []),
         ...(contextToolsParameterDeclaration !== undefined ?
           [contextToolsParameterDeclaration]
@@ -487,8 +539,8 @@ const definePromptExpression = (
       undefined, // equalsGreaterThanToken,
       factory.createBlock(
         [
-          ...(propsVariableDeclaration !== undefined ?
-            [propsVariableDeclaration]
+          ...(configVariableDeclaration !== undefined ?
+            [configVariableDeclaration]
           : []),
           generativeFunctionDeclaration,
           idAssignment,
@@ -503,7 +555,7 @@ const definePromptExpression = (
     ),
     undefined, // typeArguments
     [
-      ...(propsExpression !== undefined ? [propsExpression] : []),
+      ...(configExpression !== undefined ? [configExpression] : []),
       ...(contextToolsExpression !== undefined ? [contextToolsExpression] : []),
       generatorExpression,
     ],

@@ -23,21 +23,33 @@
     "dist/"
   ],
   "sideEffects": false,
+  "imports": {
+    "#loader": {
+      "types": "./dist/loader.d.ts",
+      "import": "./dist/loader.js",
+      "require": "./dist/loader.cjs"
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     },
+    "./quiet": {
+      "types": "./dist/quiet.d.ts",
+      "import": "./dist/quiet.js",
+      "require": "./dist/quiet.cjs"
+    },
     "./loader": {
       "types": "./dist/loader.d.ts",
       "import": "./dist/loader.js",
       "require": "./dist/loader.cjs"
     },
-    "./quiet": {
-      "types": "./dist/quiet.d.ts",
-      "import": "./dist/quiet.js",
-      "require": "./dist/quiet.cjs"
+    "./register": {
+      "types": "./dist/register.d.ts",
+      "import": "./dist/register.js",
+      "require": "./dist/register.cjs"
     }
   },
   "peerDependencies": {
@@ -49,7 +61,7 @@
     "@toolcog/repl": "workspace:*",
     "@toolcog/runtime": "workspace:*",
     "@types/node": "catalog:default",
-    "citty": "catalog:default"
+    "commander": "catalog:default"
   },
   "optionalDependencies": {
     "@toolcog/openai": "workspace:*"

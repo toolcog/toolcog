@@ -1,6 +1,6 @@
 import { parse as parsePath, format as formatPath } from "node:path";
 import type ts from "typescript";
-import { embedder } from "@toolcog/runtime";
+import { embed } from "@toolcog/runtime";
 import type { ToolcogCache } from "./cache.ts";
 import { createToolcogCache } from "./cache.ts";
 import type { ToolcogManifest } from "./manifest.ts";
@@ -125,7 +125,7 @@ const generateToolcogModule = async (
     }
 
     const embeds = [...uncachedEmbeds[embeddingModel]!];
-    const vectors = await embedder(embeds, { model: embeddingModel });
+    const vectors = await embed(embeds, { model: embeddingModel });
 
     for (let i = 0; i < embeds.length; i += 1) {
       cache.embeddings[embeds[i]!]![embeddingModel] = vectors[i]!;

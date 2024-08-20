@@ -58,13 +58,13 @@ const transformToolcog = (
   const factory = context.factory;
   const checker = program.getTypeChecker();
 
-  const generatorImportName = config?.generatorImportName ?? "generator";
+  const generatorImportName = config?.generatorImportName ?? "generate";
   const generatorModuleName = config?.generatorModuleName ?? "@toolcog/runtime";
 
-  const embedderImportName = config?.embedderImportName ?? "embedder";
+  const embedderImportName = config?.embedderImportName ?? "embed";
   const embedderModuleName = config?.embedderModuleName ?? "@toolcog/runtime";
 
-  const indexerImportName = config?.indexerImportName ?? "indexer";
+  const indexerImportName = config?.indexerImportName ?? "index";
   const indexerModuleName = config?.indexerModuleName ?? "@toolcog/runtime";
 
   const contextToolsImportName = config?.contextToolsImportName;

@@ -21,7 +21,7 @@ const defineIndexExpression = (
   ts.Debug.assert(manifest.embeddingModel !== undefined);
 
   const valuesExpression = callExpression.arguments[0]!;
-  const configExpression = callExpression.arguments[1];
+  const indexerOptionsExpression = callExpression.arguments[1];
 
   const valuesType = checker.getTypeAtLocation(valuesExpression);
 
@@ -62,17 +62,17 @@ const defineIndexExpression = (
     undefined, // initializer
   );
 
-  // Define the config parameter.
+  // Define the indexerOptions parameter.
 
-  let configParameterName: ts.Identifier | undefined;
-  let configParameterDeclaration: ts.ParameterDeclaration | undefined;
+  let indexerOptionsParameterName: ts.Identifier | undefined;
+  let indexerOptionsParameterDeclaration: ts.ParameterDeclaration | undefined;
 
-  if (configExpression !== undefined) {
-    configParameterName = factory.createIdentifier("config");
-    configParameterDeclaration = factory.createParameterDeclaration(
+  if (indexerOptionsExpression !== undefined) {
+    indexerOptionsParameterName = factory.createIdentifier("indexerOptions");
+    indexerOptionsParameterDeclaration = factory.createParameterDeclaration(
       undefined, // modifiers
       undefined, // dotDotDotToken
-      configParameterName,
+      indexerOptionsParameterName,
       undefined, // questionToken
       undefined, // type
       undefined, // initializer
@@ -143,14 +143,32 @@ const defineIndexExpression = (
     undefined, // initializer
   );
 
-  const indexerPropsExpression = factory.createObjectLiteralExpression(
+  const indexInitCallExpression = factory.createCallExpression(
+    indexerParameterName,
+    undefined, // typeArguments
     [
-      ...(configParameterName !== undefined ?
-        [factory.createSpreadAssignment(configParameterName)]
-      : []),
-      factory.createSpreadAssignment(indexIdentifier),
+      factory.createPropertyAccessExpression(indexIdentifier, "model"),
+      factory.createObjectLiteralExpression(
+        [
+          factory.createPropertyAssignment(
+            "id",
+            factory.createPropertyAccessExpression(indexIdentifier, "id"),
+          ),
+          factory.createPropertyAssignment(
+            "model",
+            factory.createPropertyAccessExpression(indexIdentifier, "model"),
+          ),
+          factory.createPropertyAssignment(
+            "embedder",
+            factory.createPropertyAccessExpression(indexIdentifier, "embedder"),
+          ),
+          ...(indexerOptionsParameterName !== undefined ?
+            [factory.createSpreadAssignment(indexerOptionsParameterName)]
+          : []),
+        ],
+        true, // multiLine
+      ),
     ],
-    false, // multiLine
   );
 
   const indexInitCondition = factory.createIfStatement(
@@ -165,11 +183,7 @@ const defineIndexExpression = (
           factory.createBinaryExpression(
             indexInitVariableName,
             factory.createToken(ts.SyntaxKind.EqualsToken),
-            factory.createCallExpression(
-              indexerParameterName,
-              undefined, // typeArguments
-              [indexerPropsExpression],
-            ),
+            indexInitCallExpression,
           ),
         ),
       ],
@@ -178,26 +192,24 @@ const defineIndexExpression = (
     undefined, // elseStatement
   );
 
-  let indexOptionsExpression: ts.Expression | undefined;
-  if (configParameterName !== undefined) {
-    indexOptionsExpression = factory.createObjectLiteralExpression(
-      [
-        factory.createSpreadAssignment(configParameterName),
-        factory.createSpreadAssignment(optionsParameterName),
-      ],
-      false, // multiLine
-    );
-  } else {
-    indexOptionsExpression = optionsParameterName;
-  }
-
   const indexCallExpression = factory.createAwaitExpression(
     factory.createCallExpression(
       factory.createParenthesizedExpression(
         factory.createAwaitExpression(indexInitVariableName),
       ),
       undefined, // typeArguments
-      [queryParameterName, indexOptionsExpression],
+      [
+        queryParameterName,
+        indexerOptionsParameterName !== undefined ?
+          factory.createObjectLiteralExpression(
+            [
+              factory.createSpreadAssignment(indexerOptionsParameterName),
+              factory.createSpreadAssignment(optionsParameterName),
+            ],
+            true, // multiLine
+          )
+        : optionsParameterName,
+      ],
     ),
   );
 
@@ -244,7 +256,35 @@ const defineIndexExpression = (
     factory.createBinaryExpression(
       factory.createPropertyAccessExpression(indexIdentifier, "model"),
       factory.createToken(ts.SyntaxKind.EqualsToken),
-      factory.createStringLiteral(manifest.embeddingModel),
+      indexerOptionsParameterName !== undefined ?
+        factory.createBinaryExpression(
+          factory.createPropertyAccessExpression(
+            indexerOptionsParameterName,
+            "model",
+          ),
+          factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+          factory.createStringLiteral(manifest.embeddingModel),
+        )
+      : factory.createStringLiteral(manifest.embeddingModel),
+    ),
+  );
+
+  // Define the embedder property.
+
+  const embedderAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(indexIdentifier, "embedder"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      indexerOptionsParameterName !== undefined ?
+        factory.createBinaryExpression(
+          factory.createPropertyAccessExpression(
+            indexerOptionsParameterName,
+            "embedder",
+          ),
+          factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+          embedderParameterName,
+        )
+      : embedderParameterName,
     ),
   );
 
@@ -283,16 +323,6 @@ const defineIndexExpression = (
 
   manifest.indexes[indexId] = { idioms };
 
-  // Define the embedder property.
-
-  const embedderAssignment = factory.createExpressionStatement(
-    factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(indexIdentifier, "embedder"),
-      factory.createToken(ts.SyntaxKind.EqualsToken),
-      embedderParameterName,
-    ),
-  );
-
   // Create and return an IIFE wrapper.
 
   const iifeExpression = factory.createCallExpression(
@@ -301,8 +331,8 @@ const defineIndexExpression = (
       undefined, // typeParameters,
       [
         idiomsParameterDeclaration,
-        ...(configParameterDeclaration !== undefined ?
-          [configParameterDeclaration]
+        ...(indexerOptionsParameterDeclaration !== undefined ?
+          [indexerOptionsParameterDeclaration]
         : []),
         embedderParameterDeclaration,
         indexerParameterDeclaration,
@@ -315,8 +345,8 @@ const defineIndexExpression = (
           indexFunctionDeclaration,
           idAssignment,
           modelAssignment,
-          idiomsAssignment,
           embedderAssignment,
+          idiomsAssignment,
           factory.createReturnStatement(indexIdentifier),
         ],
         true, // multiLine
@@ -325,7 +355,9 @@ const defineIndexExpression = (
     undefined, // typeArguments
     [
       idiomsArgument,
-      ...(configExpression !== undefined ? [configExpression] : []),
+      ...(indexerOptionsExpression !== undefined ?
+        [indexerOptionsExpression]
+      : []),
       embedderExpression,
       indexerExpression,
     ],

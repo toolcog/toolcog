@@ -42,7 +42,7 @@
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
     "@toolcog/util": "workspace:*",
-    "citty": "catalog:default",
+    "commander": "catalog:default",
     "glob": "catalog:default",
     "yaml": "catalog:default"
   },

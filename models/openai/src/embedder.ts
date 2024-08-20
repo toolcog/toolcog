@@ -1,7 +1,9 @@
+import type { ClientOptions } from "openai";
 import { OpenAI } from "openai";
 import { Dispatcher } from "@toolcog/util/task";
 import type {
   EmbeddingVector,
+  EmbedderConfig,
   EmbedderOptions,
   EmbedderResult,
   Embedder,
@@ -15,46 +17,61 @@ declare module "@toolcog/core" {
   }
 
   interface EmbeddingConfig {
-    openai?: OpenAI | undefined;
+    dimensions?: number | undefined;
 
-    dispatcher?: Dispatcher | undefined;
+    batchSize?: number | undefined;
+  }
 
+  interface EmbeddingOptions {
     dimensions?: number | undefined;
 
     batchSize?: number | undefined;
   }
 }
 
+interface OpenAIEmbedderConfig extends EmbedderConfig {
+  openai?: OpenAI | ClientOptions | undefined;
+
+  dispatcher?: Dispatcher | undefined;
+}
+
+interface OpenAIEmbedderOptions extends EmbedderOptions {
+  openai?: OpenAI | ClientOptions | undefined;
+
+  dispatcher?: Dispatcher | undefined;
+}
+
 const defaultBatchSize = 512;
 
 const defaultEmbeddingModel = "text-embedding-3-small";
 
-const getEmbedder = (
-  options?: EmbedderOptions,
-): Promise<Embedder | undefined> => {
+const embedder = (options?: OpenAIEmbedderOptions): Embedder | undefined => {
   const model = options?.model;
   if (model !== undefined) {
     if (
       model.startsWith("text-embedding-ada-") ||
       model.startsWith("text-embedding-3-")
     ) {
-      return Promise.resolve(embedder);
+      return embed;
     }
   } else if (
     options?.openai !== undefined ||
     (typeof process !== "undefined" && process.env.OPENAI_API_KEY)
   ) {
-    return Promise.resolve(embedder);
+    return embed;
   }
 
-  return Promise.resolve(undefined);
+  return undefined;
 };
 
-const embedder = (async <T extends string | readonly string[]>(
+const embed = (async <T extends string | readonly string[]>(
   embeds: T,
-  options?: EmbedderOptions,
+  options?: OpenAIEmbedderOptions,
 ): Promise<EmbedderResult<T>> => {
-  const client = options?.openai ?? new OpenAI();
+  const client =
+    options?.openai instanceof OpenAI ?
+      options.openai
+    : new OpenAI(options?.openai);
 
   const dispatcher = options?.dispatcher ?? new Dispatcher({ retry: false });
 
@@ -108,4 +125,5 @@ const embedder = (async <T extends string | readonly string[]>(
     : embeddings) as EmbedderResult<T>;
 }) satisfies Embedder;
 
-export { getEmbedder, embedder };
+export type { OpenAIEmbedderConfig, OpenAIEmbedderOptions };
+export { embedder, embed };

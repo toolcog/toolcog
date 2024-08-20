@@ -12,7 +12,7 @@ import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
 import { stylize, wrapText } from "@toolcog/util/tty";
 import { toolcogTransformer } from "@toolcog/compiler";
-import { Job, currentTools, generator } from "@toolcog/runtime";
+import { Job, currentTools, generate } from "@toolcog/runtime";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
@@ -298,7 +298,7 @@ class Repl {
         "  defineTools,\n" +
         "  definePrompt,\n" +
         "  prompt,\n" +
-        "  embed,\n" +
+        //"  embed,\n" +
         "  defineIdiom,\n" +
         "  defineIdioms,\n" +
         "  defineIndex,\n" +
@@ -307,9 +307,9 @@ class Repl {
         "  currentTools,\n" +
         "  withTools,\n" +
         "  useTool,\n" +
-        "  generator,\n" +
-        "  embedder,\n" +
-        "  indexer,\n" +
+        "  generate,\n" +
+        "  embed,\n" +
+        "  index,\n" +
         '} from "@toolcog/runtime";\n',
     );
     // Un-increment the turn count.
@@ -625,7 +625,7 @@ class Repl {
     this.#abortController = new AbortController();
     try {
       // Complete the natural language using the default generator.
-      const output = generator(input, {
+      const output = generate(input, {
         tools: currentTools(),
         signal: this.#abortController.signal,
       });

@@ -1,6 +1,6 @@
-export type { GenerateCommandArgs } from "./generate.ts";
-export { runGenerateCommand, generateCommand } from "./generate.ts";
+export type { GenerateCommandOptions } from "./generate.ts";
+export { runGenerateCommand, createGenerateCommand } from "./generate.ts";
 
-export { compilerCommand } from "./compiler.ts";
+export { createCompilerCommand } from "./compiler.ts";
 
 export const version = __version__;

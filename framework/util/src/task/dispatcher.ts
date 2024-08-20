@@ -166,7 +166,7 @@ class Dispatcher<
       }
     }
 
-    return new Promise<T>((resolve, reject) => {
+    return new Promise<T>((resolve, reject: (reason?: unknown) => void) => {
       let abortListener: (() => void) | undefined;
       if (signal !== undefined && signal !== null) {
         signal.throwIfAborted();

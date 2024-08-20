@@ -1,16 +1,11 @@
-import { defineCommand } from "citty";
-import { generateCommand } from "@toolcog/compiler/cli";
-import { nodeCommand } from "@toolcog/node";
+import { Command } from "commander";
+import { createGenerateCommand } from "@toolcog/compiler/cli";
+import { createNodeCommand } from "@toolcog/node";
 
-const toolcogCommand = defineCommand({
-  ...nodeCommand,
-  meta: {
-    name: "toolcog",
-    description: "Run toolcog programs",
-  },
-  subCommands: {
-    generate: generateCommand,
-  },
-});
+const createToolcogCommand = (name: string): Command => {
+  return createNodeCommand(name)
+    .description("Run toolcog programs")
+    .addCommand(createGenerateCommand("generate"));
+};
 
-export { toolcogCommand };
+export { createToolcogCommand };

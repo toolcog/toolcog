@@ -13,6 +13,8 @@ export type {
 
 export { Thread, TemporaryThread } from "./thread.ts";
 
+export type { ToolcogPlugin } from "./plugin.ts";
+
 export { currentTools, withTools, useTool } from "./tools.ts";
 
 export type {
@@ -21,19 +23,10 @@ export type {
 } from "./generative-call.ts";
 export { GenerativeCall } from "./generative-call.ts";
 
-export { cosineDistance, embeddedIndexer } from "./embedded-indexer.ts";
+export { cosineDistance, indexer } from "./indexer.ts";
 
-export type { PluginLoaderConfig } from "./plugin-loader.ts";
-export { PluginLoader } from "./plugin-loader.ts";
-
-export type { GeneratorPlugin } from "./generator.ts";
-export { GeneratorLoader, generator } from "./generator.ts";
-
-export type { EmbedderPlugin } from "./embedder.ts";
-export { EmbedderLoader, embedder } from "./embedder.ts";
-
-export type { IndexerPlugin } from "./indexer.ts";
-export { IndexerLoader, indexer } from "./indexer.ts";
+export type { RuntimeConfig, ResolvedRuntimeConfig } from "./runtime.ts";
+export { Runtime, generate, embed, index } from "./runtime.ts";
 
 export type { JobInfo, JobEvents } from "./job.ts";
 export { Job } from "./job.ts";

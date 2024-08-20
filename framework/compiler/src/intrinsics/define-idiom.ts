@@ -148,7 +148,7 @@ const defineIdiomExpression = (
     embedsPropertyExpression = factory.createPropertyAccessExpression(
       factory.createElementAccessExpression(
         idiomsParameterName,
-        factory.createStringLiteral(idiomId),
+        factory.createPropertyAccessExpression(idiomIdentifier, "id"),
       ),
       "embeds",
     );

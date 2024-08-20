@@ -80,7 +80,6 @@ const classifyInput = (
             case ts.SyntaxKind.ImportKeyword:
             case ts.SyntaxKind.InferKeyword:
             case ts.SyntaxKind.InKeyword:
-            case ts.SyntaxKind.InstanceOfKeyword:
             case ts.SyntaxKind.InterfaceKeyword:
             case ts.SyntaxKind.IntrinsicKeyword:
             case ts.SyntaxKind.IsKeyword:
@@ -125,17 +124,18 @@ const classifyInput = (
             case ts.SyntaxKind.WhileKeyword:
             case ts.SyntaxKind.WithKeyword:
             case ts.SyntaxKind.YieldKeyword:
-              // Keywords don't reset word runs.
+              // These keywords don't reset identifier runs.
               continue;
             case ts.SyntaxKind.NewLineTrivia:
             case ts.SyntaxKind.WhitespaceTrivia:
               break;
             case ts.SyntaxKind.CommaToken:
-              // Commas reset word runs when not parenthesized.
+              // Commas reset identifier runs when not parenthesized.
               if (parenthesisCount !== 0) {
                 identifiersInRun = 0;
               }
               break;
+            case ts.SyntaxKind.InstanceOfKeyword:
             default:
               identifiersInRun = 0;
               break;

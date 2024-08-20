@@ -14,6 +14,7 @@ export type {
   GenerativeModelNames,
   GenerativeModel,
   GenerativeConfig,
+  GenerativeOptions,
   GenerativeFunction,
 } from "./generative.ts";
 
@@ -24,7 +25,8 @@ export type {
 } from "./generator.ts";
 
 export type {
-  PromptProps,
+  PromptConfig,
+  PromptOptions,
   PromptParameters,
   PromptReturnType,
   PromptFunction,
@@ -35,6 +37,7 @@ export type {
   EmbeddingModelNames,
   EmbeddingModel,
   EmbeddingConfig,
+  EmbeddingOptions,
   EmbeddingVector,
   EmbeddingDistance,
   Embedding,
@@ -55,4 +58,4 @@ export { defineIdiom, defineIdioms } from "./idiom.ts";
 export type { IndexConfig, IndexOptions, Index } from "./index.ts";
 export { defineIndex } from "./index.ts";
 
-export type { IndexerProps, Indexer } from "./indexer.ts";
+export type { IndexerConfig, IndexerOptions, Indexer } from "./indexer.ts";
