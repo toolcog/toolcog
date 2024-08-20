@@ -1,13 +1,23 @@
 import type { FunctionSchema } from "./schema.ts";
-import type { Tool } from "./tool.ts";
 import type { GenerativeModel } from "./generative.ts";
-import type { GeneratorConfig, GeneratorOptions } from "./generator.ts";
+import type {
+  ToolSource,
+  InstructionsSource,
+  GeneratorConfig,
+  GeneratorOptions,
+} from "./generator.ts";
 
 interface PromptConfig extends GeneratorConfig {
+  tools?: readonly ToolSource[] | null | undefined;
+
   defaults?: Record<string, unknown> | undefined;
 }
 
-interface PromptOptions extends GeneratorOptions {}
+interface PromptOptions extends GeneratorOptions {
+  tools?: readonly ToolSource[] | null | undefined;
+
+  instructions?: InstructionsSource;
+}
 
 /** @internal */
 type IsVariadic<T extends readonly unknown[]> =
@@ -24,16 +34,18 @@ type PromptReturnType<F extends (...args: any[]) => unknown> = Promise<
   Awaited<ReturnType<F>>
 >;
 
-interface PromptFunction<F extends (...args: any[]) => unknown> {
+interface PromptFunction<
+  F extends (...args: any[]) => unknown = (...args: any[]) => unknown,
+> {
   (...args: PromptParameters<F>): PromptReturnType<F>;
 
   readonly id: string;
 
   readonly model: GenerativeModel | undefined;
 
-  readonly tools: readonly Tool[];
+  readonly tools: readonly ToolSource[];
 
-  readonly instructions: string | undefined;
+  readonly instructions: InstructionsSource;
 
   readonly function: FunctionSchema;
 }

@@ -90,9 +90,11 @@ const generate = (async (
 
   const dispatcher = options?.dispatcher ?? new Dispatcher({ retry: false });
 
-  const model = options?.model ?? defaultGenerativeModel;
+  const signal = options?.signal;
 
   const streaming = options?.streaming ?? true;
+
+  const model = options?.model ?? defaultGenerativeModel;
 
   let instructions: string | undefined;
   if (typeof args === "string") {
@@ -100,16 +102,16 @@ const generate = (async (
     args = undefined;
   }
 
-  const generativeCall = new GenerativeCall({
-    instructions: instructions ?? options?.instructions,
+  const generativeCall = await GenerativeCall.create(args, {
     tools: options?.tools,
+    instructions: instructions ?? options?.instructions,
     function: options?.function,
     resultType: "object",
   });
 
   let tools: OpenAI.ChatCompletionTool[] | undefined;
-  if (options?.tools !== undefined && options.tools !== null) {
-    tools = options.tools.map((tool) => {
+  if (generativeCall.tools !== null) {
+    tools = generativeCall.tools.map((tool) => {
       return {
         type: "function",
         function: tool.function as OpenAI.FunctionDefinition,
@@ -156,12 +158,8 @@ const generate = (async (
       },
       async (job) => {
         const completion = await dispatcher.enqueue(
-          () => {
-            return createChatCompletion(client, request, {
-              signal: options?.signal,
-            });
-          },
-          { signal: options?.signal },
+          () => createChatCompletion(client, request, { signal }),
+          { signal },
         );
         for await (response of completion) {
           const choice = response.choices[0];

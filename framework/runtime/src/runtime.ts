@@ -13,8 +13,19 @@ import type {
   IndexerOptions,
   Indexer,
 } from "@toolcog/core";
-import type { ToolcogPlugin } from "./plugin.ts";
+import type { Plugin, PluginSource } from "./plugin.ts";
+import { resolvePlugins } from "./plugin.ts";
 import { indexer as defaultIndexer } from "./indexer.ts";
+
+interface RuntimeConfigSource {
+  generator?: GeneratorConfig | undefined;
+
+  embedder?: EmbedderConfig | undefined;
+
+  indexer?: IndexerConfig | undefined;
+
+  plugins?: PluginSource[] | null | undefined;
+}
 
 interface RuntimeConfig {
   generator?: GeneratorConfig | undefined;
@@ -23,28 +34,16 @@ interface RuntimeConfig {
 
   indexer?: IndexerConfig | undefined;
 
-  plugins?:
-    | (Promise<ToolcogPlugin | undefined> | ToolcogPlugin | undefined)[]
-    | undefined;
-}
-
-interface ResolvedRuntimeConfig {
-  generator?: GeneratorConfig | undefined;
-
-  embedder?: EmbedderConfig | undefined;
-
-  indexer?: IndexerConfig | undefined;
-
-  plugins?: ToolcogPlugin[] | undefined;
+  plugins?: Plugin[] | null | undefined;
 }
 
 class Runtime {
   readonly #generatorConfig: GeneratorConfig;
   readonly #embedderConfig: EmbedderConfig;
   readonly #indexerConfig: IndexerConfig;
-  readonly #plugins: ToolcogPlugin[];
+  readonly #plugins: Plugin[];
 
-  constructor(config?: ResolvedRuntimeConfig) {
+  constructor(config?: RuntimeConfig) {
     this.#generatorConfig = config?.generator ?? {};
     this.#embedderConfig = config?.embedder ?? {};
     this.#indexerConfig = config?.indexer ?? {};
@@ -63,7 +62,7 @@ class Runtime {
     return this.#indexerConfig;
   }
 
-  get plugins(): ToolcogPlugin[] {
+  get plugins(): Plugin[] {
     return this.#plugins;
   }
 
@@ -71,6 +70,14 @@ class Runtime {
     return {
       ...this.generatorConfig,
       ...options,
+      ...((
+        this.generatorConfig.tools !== undefined &&
+        this.generatorConfig.tools !== null &&
+        options?.tools !== undefined &&
+        options.tools !== null
+      ) ?
+        { tools: [...this.generatorConfig.tools, ...options.tools] }
+      : undefined),
     };
   }
 
@@ -146,26 +153,17 @@ class Runtime {
   }
 
   static async resolveConfig(
-    config?: RuntimeConfig,
-  ): Promise<ResolvedRuntimeConfig> {
-    const plugins: ToolcogPlugin[] = [];
-    if (config?.plugins !== undefined) {
-      for (const result of await Promise.allSettled(config.plugins)) {
-        if (result.status === "fulfilled" && result.value !== undefined) {
-          plugins.push(result.value);
-        }
-      }
-    }
-
+    config?: RuntimeConfigSource,
+  ): Promise<RuntimeConfig> {
     return {
       generator: config?.generator,
       embedder: config?.embedder,
       indexer: config?.indexer,
-      plugins,
+      plugins: await resolvePlugins(config?.plugins),
     };
   }
 
-  static async create(config?: RuntimeConfig): Promise<Runtime> {
+  static async create(config?: RuntimeConfigSource): Promise<Runtime> {
     return new this(await this.resolveConfig(config));
   }
 
@@ -220,5 +218,5 @@ const index: Indexer = <T extends readonly unknown[]>(
   return runtime.index(idioms, options);
 };
 
-export type { RuntimeConfig, ResolvedRuntimeConfig };
+export type { RuntimeConfigSource, RuntimeConfig };
 export { Runtime, generate, embed, index };

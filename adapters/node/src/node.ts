@@ -1,6 +1,6 @@
 import { resolve as resolvePath } from "node:path";
 import { Command } from "commander";
-import type { RuntimeConfig } from "@toolcog/runtime";
+import type { RuntimeConfigSource } from "@toolcog/runtime";
 import { Runtime, Thread, withTools } from "@toolcog/runtime";
 import { Repl } from "@toolcog/repl";
 
@@ -32,7 +32,7 @@ const runNodeCommand = async (
   if (configFile !== undefined) {
     const configPath = resolvePath(process.cwd(), configFile);
     const configModule = (await import(configPath)) as {
-      default: RuntimeConfig;
+      default: RuntimeConfigSource;
     };
     runtime = await Runtime.create(configModule.default);
   } else {

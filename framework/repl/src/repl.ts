@@ -307,6 +307,7 @@ class Repl {
         "  currentTools,\n" +
         "  withTools,\n" +
         "  useTool,\n" +
+        "  useTools,\n" +
         "  generate,\n" +
         "  embed,\n" +
         "  index,\n" +

@@ -1,46 +1,63 @@
-import type { Schema, FunctionSchema, Tool } from "@toolcog/core";
+import type {
+  Schema,
+  FunctionSchema,
+  Tool,
+  ToolSource,
+  InstructionsSource,
+} from "@toolcog/core";
+import { resolveTools, resolveInstructions } from "@toolcog/core";
 
 type GenerativeCallResultType = "any" | "object";
 
 interface GenerativeCallOptions {
+  tools?: readonly ToolSource[] | null | undefined;
+
+  instructions?: InstructionsSource;
+
   function?: FunctionSchema | null | undefined;
+
+  resultType?: GenerativeCallResultType | undefined;
+}
+
+interface ResolvedGenerativeCallOptions {
+  tools?: readonly Tool[] | null | undefined;
 
   instructions?: string | undefined;
 
-  tools?: readonly Tool[] | null | undefined;
+  function?: FunctionSchema | null | undefined;
 
   resultType?: GenerativeCallResultType | undefined;
 }
 
 class GenerativeCall {
-  readonly #function: FunctionSchema | null;
+  readonly #tools: readonly Tool[] | null;
 
   readonly #instructions: string | undefined;
 
-  readonly #tools: readonly Tool[] | null;
+  readonly #function: FunctionSchema | null;
 
   readonly #resultType: GenerativeCallResultType;
 
   #resultSchema: Schema | null | undefined;
 
-  constructor(options: GenerativeCallOptions) {
-    this.#function = options.function ?? null;
-    this.#instructions = options.instructions;
+  constructor(options: ResolvedGenerativeCallOptions) {
     this.#tools = options.tools ?? [];
+    this.#instructions = options.instructions;
+    this.#function = options.function ?? null;
     this.#resultType = options.resultType ?? "any";
     this.#resultSchema = undefined;
   }
 
-  get function(): FunctionSchema | null {
-    return this.#function;
+  get tools(): readonly Tool[] | null {
+    return this.#tools;
   }
 
   get instructions(): string | undefined {
     return this.#instructions;
   }
 
-  get tools(): readonly Tool[] | null {
-    return this.#tools;
+  get function(): FunctionSchema | null {
+    return this.#function;
   }
 
   get parameters(): Schema | null {
@@ -331,7 +348,30 @@ class GenerativeCall {
 
     return this.formatToolResult(tool, toolResult);
   }
+
+  static async resolveOptions(
+    args: unknown,
+    options: GenerativeCallOptions,
+  ): Promise<ResolvedGenerativeCallOptions> {
+    return {
+      tools: await resolveTools(options.tools, args),
+      instructions: await resolveInstructions(options.instructions, args),
+      function: options.function,
+      resultType: options.resultType,
+    };
+  }
+
+  static async create(
+    args: unknown,
+    options: GenerativeCallOptions,
+  ): Promise<GenerativeCall> {
+    return new this(await this.resolveOptions(args, options));
+  }
 }
 
-export type { GenerativeCallResultType, GenerativeCallOptions };
+export type {
+  GenerativeCallResultType,
+  GenerativeCallOptions,
+  ResolvedGenerativeCallOptions,
+};
 export { GenerativeCall };

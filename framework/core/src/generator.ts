@@ -6,6 +6,18 @@ import type {
   GenerativeOptions,
 } from "./generative.ts";
 
+type ToolSource =
+  | ((args: unknown) => Promise<Tool | undefined> | Tool | undefined)
+  | Promise<Tool | undefined>
+  | Tool
+  | undefined;
+
+type InstructionsSource =
+  | ((args: unknown) => Promise<string | undefined> | string | undefined)
+  | Promise<string | undefined>
+  | string
+  | undefined;
+
 /**
  * Options for configuring a {@link Generator} function.
  *
@@ -22,7 +34,7 @@ interface GeneratorConfig extends GenerativeConfig {
   /**
    * The default set of tools the generator should use.
    */
-  tools?: readonly Tool[] | null | undefined;
+  tools?: readonly ToolSource[] | null | undefined;
 }
 
 /**
@@ -43,12 +55,12 @@ interface GeneratorOptions extends GenerativeOptions {
   /**
    * The tools the generator should use when generating the response.
    */
-  tools?: readonly Tool[] | null | undefined;
+  tools?: readonly ToolSource[] | null | undefined;
 
   /**
    * Instructions the generator should follow when generating the response.
    */
-  instructions?: string | undefined;
+  instructions?: InstructionsSource;
 
   /**
    * A schema that describes the parameters to the generator call,
@@ -79,4 +91,48 @@ interface Generator {
   (args: unknown, options?: GeneratorOptions): Promise<unknown>;
 }
 
-export type { GeneratorConfig, GeneratorOptions, Generator };
+const resolveTool = async (
+  tool: ToolSource,
+  args: unknown,
+): Promise<Tool | undefined> => {
+  if (typeof tool === "function" && !("id" in tool) && !("function" in tool)) {
+    tool = tool(args);
+  }
+  return await (tool as Promise<Tool | undefined> | Tool | undefined);
+};
+
+const resolveTools = async (
+  tools: readonly ToolSource[] | null | undefined,
+  args: unknown,
+): Promise<Tool[] | null> => {
+  if (tools === undefined || tools === null) {
+    return null;
+  }
+  return (
+    await Promise.allSettled(tools.map((tool) => resolveTool(tool, args)))
+  ).reduce<Tool[]>((tools, result) => {
+    if (result.status === "fulfilled" && result.value !== undefined) {
+      tools.push(result.value);
+    }
+    return tools;
+  }, []);
+};
+
+const resolveInstructions = async (
+  instructions: InstructionsSource,
+  args: unknown,
+): Promise<string | undefined> => {
+  if (typeof instructions === "function") {
+    instructions = instructions(args);
+  }
+  return await instructions;
+};
+
+export type {
+  ToolSource,
+  InstructionsSource,
+  GeneratorConfig,
+  GeneratorOptions,
+  Generator,
+};
+export { resolveTool, resolveTools, resolveInstructions };

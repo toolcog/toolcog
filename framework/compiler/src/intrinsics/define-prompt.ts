@@ -348,8 +348,52 @@ const definePromptExpression = (
       ...(optionsParameterName !== undefined ?
         [factory.createSpreadAssignment(optionsParameterName)]
       : []),
+
+      ...(optionsParameterName !== undefined ?
+        [
+          factory.createSpreadAssignment(
+            factory.createParenthesizedExpression(
+              factory.createConditionalExpression(
+                factory.createBinaryExpression(
+                  factory.createPropertyAccessChain(
+                    optionsParameterName,
+                    factory.createToken(ts.SyntaxKind.QuestionDotToken),
+                    "tools",
+                  ),
+                  factory.createToken(
+                    ts.SyntaxKind.ExclamationEqualsEqualsToken,
+                  ),
+                  factory.createVoidZero(),
+                ),
+                undefined, // questionToken
+                factory.createObjectLiteralExpression([
+                  factory.createPropertyAssignment(
+                    "tools",
+                    factory.createArrayLiteralExpression([
+                      factory.createSpreadElement(
+                        factory.createPropertyAccessExpression(
+                          functionIdentifier,
+                          "tools",
+                        ),
+                      ),
+                      factory.createSpreadElement(
+                        factory.createPropertyAccessExpression(
+                          optionsParameterName,
+                          "tools",
+                        ),
+                      ),
+                    ]),
+                  ),
+                ]),
+                undefined, // colonToken
+                factory.createVoidZero(),
+              ),
+            ),
+          ),
+        ]
+      : []),
     ],
-    true,
+    true, // multiLine
   );
 
   const generativeFunction = factory.createArrowFunction(

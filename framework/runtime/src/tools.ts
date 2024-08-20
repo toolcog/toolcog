@@ -17,17 +17,22 @@ const withTools = <F extends (...args: any[]) => unknown>(
   return toolsVariable.run(tools, func, ...args);
 };
 
-const useTool = <const T extends Tool | readonly Tool[]>(tool: T): T => {
+const useTool = <const T extends Tool>(tool: T): T => {
   const currentTools = toolsVariable.get();
   if (currentTools === undefined) {
     throw new Error("No current tools scope");
   }
-  if (Array.isArray(tool)) {
-    currentTools.push(...(tool as readonly Tool[]));
-  } else {
-    currentTools.push(tool as Tool);
-  }
+  currentTools.push(tool);
   return tool;
 };
 
-export { currentTools, withTools, useTool };
+const useTools = <const T extends readonly Tool[]>(tools: T): T => {
+  const currentTools = toolsVariable.get();
+  if (currentTools === undefined) {
+    throw new Error("No current tools scope");
+  }
+  currentTools.push(...tools);
+  return tools;
+};
+
+export { currentTools, withTools, useTool, useTools };

@@ -19,10 +19,13 @@ export type {
 } from "./generative.ts";
 
 export type {
+  ToolSource,
+  InstructionsSource,
   GeneratorConfig,
   GeneratorOptions,
   Generator,
 } from "./generator.ts";
+export { resolveTool, resolveTools, resolveInstructions } from "./generator.ts";
 
 export type {
   PromptConfig,

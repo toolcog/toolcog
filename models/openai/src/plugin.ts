@@ -6,7 +6,7 @@ import type {
   EmbedderOptions,
   Embedder,
 } from "@toolcog/core";
-import type { ToolcogPlugin } from "@toolcog/runtime";
+import type { Plugin } from "@toolcog/runtime";
 import type { OpenAIGeneratorConfig } from "./generator.ts";
 import { generator } from "./generator.ts";
 import type { OpenAIEmbedderConfig } from "./embedder.ts";
@@ -20,7 +20,7 @@ interface OpenAIPluginConfig extends ClientOptions {
   dispatcher?: Dispatcher | undefined;
 }
 
-const openai = (config?: OpenAIPluginConfig): ToolcogPlugin => {
+const openai = (config?: OpenAIPluginConfig): Plugin => {
   const {
     generator: generatorConfig,
     embedder: embedderConfig,
