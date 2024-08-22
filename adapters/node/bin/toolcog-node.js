@@ -6,6 +6,9 @@ import "@toolcog/node/quiet";
 import "@toolcog/node/register";
 
 const runtime = await Runtime.create({
+  generator: {
+    system: Runtime.systemPrompt(),
+  },
   plugins: [
     import("@toolcog/openai").then((plugin) => plugin.default()),
     import("@toolcog/anthropic").then((plugin) => plugin.default()),

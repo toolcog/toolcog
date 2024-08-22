@@ -1,5 +1,5 @@
 import { AsyncContext } from "@toolcog/util/async";
-import type { Message, SystemMessage } from "./message.ts";
+import type { Message } from "./message.ts";
 
 interface Thread {
   readonly messages: readonly Message[];
@@ -47,10 +47,7 @@ const Thread = (() => {
 class TemporaryThread implements Thread {
   readonly #messages: Message[];
 
-  constructor(messages?: Message[]) {
-    if (messages === undefined) {
-      messages = [(this.constructor as typeof TemporaryThread).systemMessage];
-    }
+  constructor(messages: Message[] = []) {
     this.#messages = messages;
   }
 
@@ -61,11 +58,6 @@ class TemporaryThread implements Thread {
   addMessage(message: Message): void {
     this.#messages.push(message);
   }
-
-  static readonly systemMessage: SystemMessage = {
-    role: "system",
-    content: "You are an AI function embedded in a computer program.",
-  };
 }
 
 export { Thread, TemporaryThread };

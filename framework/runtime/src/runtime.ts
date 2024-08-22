@@ -152,6 +152,10 @@ class Runtime {
     return await indexer(idioms, options);
   }
 
+  static systemPrompt(): string {
+    return "You are an AI function embedded in a computer program.";
+  }
+
   static async resolveConfig(
     config?: RuntimeConfigSource,
   ): Promise<RuntimeConfig> {

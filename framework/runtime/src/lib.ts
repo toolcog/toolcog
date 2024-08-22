@@ -1,14 +1,15 @@
 export type {
-  MessageRole,
-  MessageContent,
-  TextMessageContent,
-  ImageUrlMessageContent,
-  Message,
-  SystemMessage,
+  TextBlock,
+  ImageBlock,
+  RefusalBlock,
+  RequestBlock,
+  ResponseBlock,
+  UserBlock,
   UserMessage,
+  AssistantBlock,
   AssistantMessage,
-  ToolMessage,
-  ToolCall,
+  MessageBlock,
+  Message,
 } from "./message.ts";
 
 export { Thread, TemporaryThread } from "./thread.ts";

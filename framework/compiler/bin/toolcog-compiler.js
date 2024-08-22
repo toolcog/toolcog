@@ -4,6 +4,9 @@ import { Runtime } from "@toolcog/runtime";
 import { createCompilerCommand, version } from "@toolcog/compiler/cli";
 
 const runtime = await Runtime.create({
+  generator: {
+    system: Runtime.systemPrompt(),
+  },
   plugins: [
     import("@toolcog/openai").then((plugin) => plugin.default()),
     import("@toolcog/anthropic").then((plugin) => plugin.default()),

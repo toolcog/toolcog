@@ -22,7 +22,7 @@ type InstructionsSource =
  * Options for configuring a {@link Generator} function.
  *
  * Note that additional model-specific configuration may be available
- * depending on the particular plugins you use. Generator plugins augment the
+ * depending on the particular plugins you use. Generator plugins augment
  * the {@link GenerativeConfig} interface, which this interface extends.
  */
 interface GeneratorConfig extends GenerativeConfig {
@@ -35,6 +35,12 @@ interface GeneratorConfig extends GenerativeConfig {
    * The default set of tools the generator should use.
    */
   tools?: readonly ToolSource[] | null | undefined;
+
+  /**
+   * The default system prompt the generator should use
+   * when generating the response.
+   */
+  system?: string | undefined;
 }
 
 /**
@@ -56,6 +62,11 @@ interface GeneratorOptions extends GenerativeOptions {
    * The tools the generator should use when generating the response.
    */
   tools?: readonly ToolSource[] | null | undefined;
+
+  /**
+   * The system prompt the generator should use when generating the response.
+   */
+  system?: string | undefined;
 
   /**
    * Instructions the generator should follow when generating the response.

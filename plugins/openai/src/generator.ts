@@ -9,7 +9,7 @@ import type {
   Generator,
 } from "@toolcog/core";
 import { resolveTools, resolveInstructions } from "@toolcog/core";
-import type { ToolMessage } from "@toolcog/runtime";
+import type { AssistantBlock, UserBlock, Message } from "@toolcog/runtime";
 import { Thread } from "@toolcog/runtime";
 import { Job } from "@toolcog/runtime";
 import type { ChatCompletion } from "./client.ts";
@@ -142,7 +142,6 @@ const generate = (async (
 
   const dispatcher = options?.dispatcher ?? new Dispatcher({ retry: false });
   const signal = options?.signal;
-  const stream = options?.stream ?? true;
 
   let model = options?.model ?? "gpt-4o-2024-08-06";
   if (model.startsWith("openai:")) {
@@ -207,10 +206,23 @@ const generate = (async (
 
   const tools = await resolveTools(options?.tools, args);
 
-  const requestTools =
+  const openAITools =
     tools !== undefined && tools.length !== 0 ?
-      tools.map(createOpenAITool)
+      tools.map(toOpenAITool)
     : undefined;
+
+  const thread = await Thread.getOrCreate();
+
+  const systemMessage: OpenAI.ChatCompletionSystemMessageParam | undefined =
+    options?.system !== undefined ?
+      { role: "system", content: options.system }
+    : undefined;
+
+  const messages = [
+    ...(systemMessage !== undefined ? [systemMessage] : []),
+    ...thread.messages.flatMap(toOpenAIMessage),
+  ];
+  const initialMessageCount = messages.length;
 
   const prompt = createPrompt(
     parametersSchema,
@@ -221,8 +233,7 @@ const generate = (async (
     instructions,
   );
 
-  const thread = await Thread.getOrCreate();
-  thread.addMessage({
+  messages.push({
     role: "user",
     content: prompt,
   });
@@ -230,16 +241,16 @@ const generate = (async (
   while (true) {
     const request = {
       model,
-      messages: thread.messages as OpenAI.ChatCompletionMessageParam[],
+      messages,
 
       ...(responseFormat !== undefined ?
         { response_format: responseFormat }
       : undefined),
 
-      ...(requestTools !== undefined ? { tools: requestTools } : undefined),
+      ...(openAITools !== undefined ? { tools: openAITools } : undefined),
 
-      stream,
-      ...(stream ?
+      stream: options?.stream ?? true,
+      ...((options?.stream ?? true) ?
         {
           stream_options: {
             include_usage: true,
@@ -324,10 +335,17 @@ const generate = (async (
     }
 
     const message = choice.message;
-    thread.addMessage(message);
+    messages.push({
+      role: "assistant",
+      content: message.content,
+      refusal: message.refusal,
+      ...(message.tool_calls !== undefined ?
+        { tool_calls: message.tool_calls }
+      : undefined),
+    });
 
     if (choice.finish_reason === "tool_calls") {
-      const toolResults: Promise<ToolMessage>[] = [];
+      const toolResults: Promise<OpenAI.ChatCompletionToolMessageParam>[] = [];
 
       for (const toolCall of message.tool_calls!) {
         const toolFunction = toolCall.function;
@@ -355,7 +373,7 @@ const generate = (async (
                 role: "tool",
                 tool_call_id: toolCall.id,
                 content: result,
-              } satisfies ToolMessage;
+              } satisfies OpenAI.ChatCompletionToolMessageParam;
             });
           },
         );
@@ -363,11 +381,15 @@ const generate = (async (
         toolResults.push(toolResult);
       }
 
-      for (const toolResult of await Promise.all(toolResults)) {
-        thread.addMessage(toolResult);
-      }
+      messages.push(...(await Promise.all(toolResults)));
 
       continue;
+    }
+
+    for (const message of messages
+      .slice(initialMessageCount)
+      .reduce(fromOpenAIMessage, [])) {
+      thread.addMessage(message);
     }
 
     if (returnSchema === undefined) {
@@ -376,15 +398,18 @@ const generate = (async (
       return undefined;
     }
 
-    let returnValue = JSON.parse(message.content ?? "") as unknown;
+    let resultValue =
+      message.content !== null && message.content.length !== 0 ?
+        (JSON.parse(message.content) as unknown)
+      : undefined;
     if (resultSchema !== undefined) {
-      returnValue = (returnValue as { result: unknown }).result;
+      resultValue = (resultValue as { result: unknown }).result;
     }
-    return returnValue;
+    return resultValue;
   }
 }) satisfies Generator;
 
-const createOpenAITool = (tool: Tool): OpenAI.ChatCompletionTool => {
+const toOpenAITool = (tool: Tool): OpenAI.ChatCompletionTool => {
   return {
     type: "function",
     function: {
@@ -401,6 +426,206 @@ const createOpenAITool = (tool: Tool): OpenAI.ChatCompletionTool => {
       : undefined),
     },
   };
+};
+
+const toOpenAIMessage = (
+  message: Message,
+): OpenAI.ChatCompletionMessageParam[] => {
+  if (typeof message.content === "string") {
+    return [message as OpenAI.ChatCompletionMessageParam];
+  }
+
+  const messages: OpenAI.ChatCompletionMessageParam[] = [];
+  if (message.role === "user") {
+    let content: OpenAI.ChatCompletionContentPart[] | undefined;
+    for (const block of message.content) {
+      if (block.type === "text") {
+        if (content === undefined) {
+          content = [];
+        }
+        content.push(block);
+      } else if (block.type === "image") {
+        if (content === undefined) {
+          content = [];
+        }
+        content.push({
+          type: "image_url",
+          image_url: { url: block.source },
+        });
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      else if (block.type === "response") {
+        if (content !== undefined) {
+          messages.push({ role: "user", content });
+        }
+        content = undefined;
+        messages.push({
+          role: "tool",
+          tool_call_id: block.id,
+          content:
+            block.result !== undefined ? JSON.stringify(block.result) : "",
+        });
+      }
+    }
+    if (content !== undefined) {
+      messages.push({ role: "user", content });
+    }
+  }
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  else if (message.role === "assistant") {
+    let content:
+      | (
+          | OpenAI.ChatCompletionContentPartText
+          | OpenAI.ChatCompletionContentPartRefusal
+        )[]
+      | undefined;
+    let toolCalls: OpenAI.ChatCompletionMessageToolCall[] | undefined;
+    for (const block of message.content) {
+      if (block.type === "text") {
+        if (content === undefined) {
+          content = [];
+        }
+        content.push(block);
+      } else if (block.type === "refusal") {
+        if (content === undefined) {
+          content = [];
+        }
+        content.push(block);
+      }
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      else if (block.type === "request") {
+        if (toolCalls === undefined) {
+          toolCalls = [];
+        }
+        toolCalls.push({
+          type: "function",
+          id: block.id,
+          function: {
+            name: block.name,
+            arguments:
+              block.arguments !== undefined ?
+                JSON.stringify(block.arguments)
+              : "",
+          },
+        });
+      }
+    }
+    messages.push({
+      role: "assistant",
+      ...(content !== undefined ? { content } : undefined),
+      ...(toolCalls !== undefined ? { tool_calls: toolCalls } : undefined),
+    });
+  }
+  return messages;
+};
+
+const fromOpenAIMessage = (
+  messages: Message[],
+  message: OpenAI.ChatCompletionMessageParam,
+): Message[] => {
+  if (message.role === "assistant") {
+    let content: AssistantBlock[] | string | undefined;
+
+    if (typeof message.content === "string") {
+      content = message.content;
+    } else if (message.content !== undefined && message.content !== null) {
+      content = message.content;
+    }
+
+    if (message.refusal !== undefined && message.refusal !== null) {
+      if (content === undefined) {
+        content = [];
+      } else if (typeof content === "string") {
+        content = [{ type: "text", text: content }];
+      }
+      content.push({ type: "refusal", refusal: message.refusal });
+    }
+
+    if (message.tool_calls !== undefined && message.tool_calls.length !== 0) {
+      if (content === undefined) {
+        content = [];
+      } else if (typeof content === "string") {
+        content = [{ type: "text", text: content }];
+      }
+      for (const toolCall of message.tool_calls) {
+        content.push({
+          type: "request",
+          id: toolCall.id,
+          name: toolCall.function.name,
+          arguments:
+            toolCall.function.arguments.length !== 0 ?
+              JSON.parse(toolCall.function.arguments)
+            : undefined,
+        });
+      }
+    }
+
+    if (content === undefined) {
+      content = [];
+    }
+    messages.push({ role: "assistant", content });
+  } else if (message.role === "user" || message.role === "tool") {
+    const lastMessage = messages[messages.length - 1];
+    let content: UserBlock[] | string | undefined =
+      lastMessage?.role === "user" ?
+        (lastMessage.content as UserBlock[] | string)
+      : undefined;
+
+    if (message.role === "user") {
+      if (typeof message.content === "string") {
+        if (content === undefined) {
+          content = message.content;
+        } else {
+          if (typeof content === "string") {
+            content = [{ type: "text", text: content }];
+          }
+          content.push({ type: "text", text: message.content });
+        }
+      } else {
+        if (content === undefined) {
+          content = [];
+        } else if (typeof content === "string") {
+          content = [{ type: "text", text: content }];
+        }
+        for (const block of message.content) {
+          if (block.type === "text") {
+            content.push(block);
+          }
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          else if (block.type === "image_url") {
+            content.push({ type: "image", source: block.image_url.url });
+          }
+        }
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    else if (message.role === "tool") {
+      if (content === undefined) {
+        content = [];
+      } else if (typeof content === "string") {
+        content = [{ type: "text", text: content }];
+      }
+      content.push({
+        type: "response",
+        id: message.tool_call_id,
+        result:
+          typeof message.content === "string" && message.content.length !== 0 ?
+            JSON.parse(message.content)
+          : undefined,
+      });
+    }
+
+    if (content === undefined) {
+      content = [];
+    }
+    if (lastMessage?.role === "user") {
+      messages[messages.length - 1] = { role: "user", content };
+    } else {
+      messages.push({ role: "user", content });
+    }
+  }
+
+  return messages;
 };
 
 const createPrompt = (
@@ -533,9 +758,12 @@ const parseToolArguments = (tool: Tool, args: string): unknown[] => {
     return [];
   }
 
-  let parsedArgs: Record<string, unknown> | null;
+  let parsedArgs: Record<string, unknown> | null | undefined;
   try {
-    parsedArgs = JSON.parse(args) as Record<string, unknown> | null;
+    parsedArgs =
+      args.length !== 0 ?
+        (JSON.parse(args) as Record<string, unknown> | null)
+      : undefined;
   } catch (cause) {
     throw new Error(
       "Malformed arguments " +
@@ -545,7 +773,11 @@ const parseToolArguments = (tool: Tool, args: string): unknown[] => {
       { cause },
     );
   }
-  if (parsedArgs === null || typeof parsedArgs !== "object") {
+  if (
+    parsedArgs === undefined ||
+    parsedArgs === null ||
+    typeof parsedArgs !== "object"
+  ) {
     throw new Error(
       "Invalid arguments " +
         JSON.stringify(parsedArgs) +

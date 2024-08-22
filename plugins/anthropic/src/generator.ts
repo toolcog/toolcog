@@ -9,7 +9,7 @@ import type {
   Generator,
 } from "@toolcog/core";
 import { resolveTools, resolveInstructions } from "@toolcog/core";
-import type { ToolMessage, ToolCall } from "@toolcog/runtime";
+import type { MessageBlock, Message } from "@toolcog/runtime";
 import { Thread } from "@toolcog/runtime";
 import { Job } from "@toolcog/runtime";
 import { createMessage } from "./client.ts";
@@ -106,7 +106,6 @@ const generate = (async (
 
   const dispatcher = options?.dispatcher ?? new Dispatcher({ retry: false });
   const signal = options?.signal;
-  const stream = options?.stream ?? true;
 
   let model = options?.model ?? "claude-3-5-sonnet-20240620";
   if (model.startsWith("anthropic:")) {
@@ -151,15 +150,22 @@ const generate = (async (
 
   const tools = await resolveTools(options?.tools, args);
 
-  const requestTools =
+  const anthropicTools =
     returnTool !== undefined || (tools !== undefined && tools.length !== 0) ?
       [
         ...(returnTool !== undefined ? [returnTool] : []),
-        ...(tools !== undefined ? tools.map(createAnthropicTool) : []),
+        ...(tools !== undefined ? tools.map(toAnthropicTool) : []),
       ]
     : undefined;
 
   let toolChoice = options?.tool_choice;
+
+  const thread = await Thread.getOrCreate();
+
+  const system = options?.system;
+
+  const messages = thread.messages.map(toAnthropicMessage);
+  const initialMessageCount = messages.length;
 
   const prompt = createPrompt(
     parametersSchema,
@@ -169,95 +175,27 @@ const generate = (async (
     instructions,
   );
 
-  const thread = await Thread.getOrCreate();
-  thread.addMessage({
-    role: "user",
-    content: prompt,
-  });
+  const lastMessage = messages[messages.length - 1];
+  if (lastMessage?.role === "user") {
+    let content = lastMessage.content;
+    if (typeof content === "string") {
+      content = [{ type: "text", text: content }];
+    }
+    content.push({ type: "text", text: prompt });
+    messages[messages.length - 1] = { role: "user", content };
+  } else {
+    messages.push({ role: "user", content: prompt });
+  }
 
   while (true) {
-    let system: string | undefined;
-    const messages: Anthropic.MessageParam[] = [];
-
-    for (const message of thread.messages) {
-      if (message.role === "system") {
-        if (system === undefined) {
-          system = message.content;
-        } else {
-          system += "\n" + message.content;
-        }
-      } else if (message.role === "user") {
-        let content: Anthropic.MessageParam["content"] | undefined;
-        const previousMessage = messages[messages.length - 1];
-        if (previousMessage !== undefined && previousMessage.role === "user") {
-          messages.pop();
-          content = previousMessage.content;
-        }
-        if (typeof message.content === "string") {
-          if (typeof content === "string") {
-            content = [{ type: "text", text: content }];
-          } else if (content === undefined) {
-            content = message.content;
-          } else {
-            content.push({ type: "text", text: message.content });
-          }
-        } else {
-          if (typeof content === "string") {
-            content = [{ type: "text", text: content }];
-          } else if (content === undefined) {
-            content = [];
-          }
-          for (const block of message.content) {
-            if (block.type === "text") {
-              content.push(block);
-            }
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            else if (block.type === "image_url") {
-              // TODO
-            }
-          }
-        }
-        messages.push({ role: "user", content });
-      } else if (message.role === "assistant") {
-        const content: Anthropic.MessageParam["content"] = [];
-        if (typeof message.content === "string") {
-          content.push({ type: "text", text: message.content });
-        }
-        if (message.tool_calls !== undefined) {
-          for (const toolCall of message.tool_calls) {
-            content.push({
-              type: "tool_use",
-              id: toolCall.id,
-              name: toolCall.function.name,
-              input: JSON.parse(toolCall.function.arguments),
-            });
-          }
-        }
-        messages.push({ role: "assistant", content });
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      else if (message.role === "tool") {
-        messages.push({
-          role: "user",
-          content: [
-            {
-              type: "tool_result",
-              tool_use_id: message.tool_call_id,
-              content: message.content,
-            },
-          ],
-        });
-      }
-    }
-
     const request = {
       model,
       ...(system !== undefined ? { system } : undefined),
       messages,
 
-      ...(requestTools !== undefined ? { tools: requestTools } : undefined),
+      ...(anthropicTools !== undefined ? { tools: anthropicTools } : undefined),
 
-      stream,
+      stream: options?.stream ?? true,
 
       max_tokens: options?.max_tokens ?? 8192,
       ...(options?.metadata !== undefined ?
@@ -317,38 +255,15 @@ const generate = (async (
       throw new Error("Interrupted");
     }
 
-    let content = "";
-    let tool_calls: ToolCall[] | undefined;
-    for (const block of message.content) {
-      if (block.type === "text") {
-        content += block.text;
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      else if (block.type === "tool_use") {
-        if (tool_calls === undefined) {
-          tool_calls = [];
-        }
-        tool_calls.push({
-          type: "function",
-          id: block.id,
-          function: {
-            name: block.name,
-            arguments: JSON.stringify(block.input),
-          },
-        });
-      }
-    }
-
-    thread.addMessage({
+    messages.push({
       role: "assistant",
-      content,
-      tool_calls,
+      content: message.content,
     });
 
-    let returnValue: unknown;
+    let resultValue: unknown;
 
     if (message.stop_reason === "tool_use") {
-      const toolResults: Promise<ToolMessage>[] = [];
+      const toolResults: Promise<Anthropic.ToolResultBlockParam>[] = [];
 
       for (const block of message.content) {
         if (block.type !== "tool_use") {
@@ -356,12 +271,14 @@ const generate = (async (
         }
 
         if (block.name === "return" && returnTool !== undefined) {
-          returnValue = block.input;
-          thread.addMessage({
-            role: "tool",
-            tool_call_id: block.id,
-            content: "",
-          });
+          resultValue = block.input;
+          toolResults.push(
+            Promise.resolve({
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: "",
+            }),
+          );
           continue;
         }
 
@@ -385,10 +302,10 @@ const generate = (async (
               toolJob.finish(result);
 
               return {
-                role: "tool",
-                tool_call_id: block.id,
+                type: "tool_result",
+                tool_use_id: block.id,
                 content: result,
-              } satisfies ToolMessage;
+              } satisfies Anthropic.ToolResultBlockParam;
             });
           },
         );
@@ -396,18 +313,21 @@ const generate = (async (
         toolResults.push(toolResult);
       }
 
-      for (const toolResult of await Promise.all(toolResults)) {
-        thread.addMessage(toolResult);
+      if (toolResults.length !== 0) {
+        messages.push({
+          role: "user",
+          content: await Promise.all(toolResults),
+        });
       }
 
-      if (returnValue === undefined) {
+      if (resultValue === undefined) {
         continue;
       }
     }
 
     if (
       returnSchema !== undefined &&
-      returnValue === undefined &&
+      resultValue === undefined &&
       message.stop_reason === "end_turn"
     ) {
       if (
@@ -424,20 +344,30 @@ const generate = (async (
       continue;
     }
 
+    for (let i = initialMessageCount; i < messages.length; i += 1) {
+      thread.addMessage(fromAnthropicMessage(messages[i]!));
+    }
+
     if (returnSchema === undefined) {
+      let content = "";
+      for (const block of message.content) {
+        if (block.type === "text") {
+          content += block.text;
+        }
+      }
       return content;
     } else if (returnSchema.type === "void") {
       return undefined;
     }
 
     if (resultSchema !== undefined) {
-      returnValue = (returnValue as { result: unknown }).result;
+      resultValue = (resultValue as { result: unknown }).result;
     }
-    return returnValue;
+    return resultValue;
   }
 }) satisfies Generator;
 
-const createAnthropicTool = (tool: Tool): Anthropic.Tool => {
+const toAnthropicTool = (tool: Tool): Anthropic.Tool => {
   return {
     name: tool.function.name,
 
@@ -449,6 +379,90 @@ const createAnthropicTool = (tool: Tool): Anthropic.Tool => {
       | Anthropic.Tool.InputSchema
       | undefined) ?? { type: "object" },
   };
+};
+
+const toAnthropicMessage = (message: Message): Anthropic.MessageParam => {
+  if (typeof message.content === "string") {
+    return message as Anthropic.MessageParam;
+  }
+
+  const content: Anthropic.MessageParam["content"] = [];
+  for (const block of message.content) {
+    if (block.type === "text") {
+      content.push(block);
+    } else if (block.type === "image") {
+      const match = /^data:([^;]+);base64,(.+)$/.exec(block.source);
+      if (match !== null) {
+        content.push({
+          type: "image",
+          source: {
+            type: "base64",
+            media_type:
+              match[1]! as Anthropic.ImageBlockParam.Source["media_type"],
+            data: match[2]!,
+          },
+        });
+      }
+    } else if (block.type === "refusal") {
+      content.push({
+        type: "text",
+        text: block.refusal,
+      });
+    } else if (block.type === "request") {
+      content.push({
+        type: "tool_use",
+        id: block.id,
+        name: block.name,
+        input: block.arguments,
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    else if (block.type === "response") {
+      content.push({
+        type: "tool_result",
+        tool_use_id: block.id,
+        content: block.result !== undefined ? JSON.stringify(block.result) : "",
+      });
+    }
+  }
+  return { role: message.role, content };
+};
+
+const fromAnthropicMessage = (message: Anthropic.MessageParam): Message => {
+  if (typeof message.content === "string") {
+    return message as Message;
+  }
+
+  const content: MessageBlock[] = [];
+  for (const block of message.content) {
+    if (block.type === "text") {
+      content.push(block);
+    } else if (block.type === "image") {
+      content.push({
+        type: "image",
+        source: `data:${block.source.media_type};base64,${block.source.data}`,
+      });
+    } else if (block.type === "tool_use") {
+      content.push({
+        type: "request",
+        id: block.id,
+        name: block.name,
+        arguments: block.input,
+      });
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    else if (block.type === "tool_result") {
+      content.push({
+        type: "response",
+        id: block.tool_use_id,
+        result:
+          typeof block.content === "string" && block.content.length !== 0 ?
+            JSON.parse(block.content)
+          : undefined,
+      });
+    }
+  }
+  return { role: message.role, content } as Message;
 };
 
 const createPrompt = (
@@ -567,8 +581,12 @@ const parseToolArguments = (tool: Tool, args: unknown): unknown[] => {
     return [];
   }
 
-  const parsedArgs = args as Record<string, unknown> | null;
-  if (parsedArgs === null || typeof parsedArgs !== "object") {
+  const parsedArgs = args as Record<string, unknown> | null | undefined;
+  if (
+    parsedArgs === undefined ||
+    parsedArgs === null ||
+    typeof parsedArgs !== "object"
+  ) {
     throw new Error(
       "Invalid arguments " +
         JSON.stringify(parsedArgs) +
