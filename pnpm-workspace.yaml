@@ -3,7 +3,6 @@ packages:
   - framework/core
   - framework/runtime
   - framework/compiler
-  - framework/tui
   - framework/repl
   - adapters/node
   - plugins/anthropic
@@ -14,7 +13,6 @@ packages:
 catalog:
   "@types/node": ">=20"
   commander: ^12.1
-  defu: ^6.1
   glob: ^11.0
   typescript: ^5.5
   yaml: ^2.5

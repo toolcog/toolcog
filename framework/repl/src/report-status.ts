@@ -3,7 +3,7 @@ import { throttle } from "@toolcog/util/timer";
 import { getLastNonEmptyLine } from "@toolcog/util";
 import { getStringWidth, ellipsize } from "@toolcog/util/tty";
 import { Job } from "@toolcog/runtime";
-import type { PartialTheme, RootTheme } from "@toolcog/tui";
+import type { PartialTheme, RootTheme } from "@toolcog/util/tui";
 import {
   update,
   useView,
@@ -12,7 +12,7 @@ import {
   style,
   makeTheme,
   useTheme,
-} from "@toolcog/tui";
+} from "@toolcog/util/tui";
 
 interface StatusTheme {
   readonly style: {

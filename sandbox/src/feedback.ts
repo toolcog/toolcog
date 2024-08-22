@@ -1,5 +1,11 @@
 import { defineTool } from "@toolcog/core";
-import { input, password, confirm, select, multiselect } from "@toolcog/tui";
+import {
+  input,
+  password,
+  confirm,
+  select,
+  multiselect,
+} from "@toolcog/util/tui";
 
 /**
  * Ask the user for input. This tool should be used to ask the user to answer

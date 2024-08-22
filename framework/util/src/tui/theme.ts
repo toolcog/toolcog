@@ -1,4 +1,3 @@
-import { defu } from "defu";
 import { stylize } from "@toolcog/util/tty";
 import { Context } from "./context.ts";
 
@@ -62,7 +61,13 @@ const makeTheme: {
   if (baseTheme === undefined) {
     baseTheme = rootTheme as BaseTheme;
   }
-  return defu(theme, baseTheme) as Theme & BaseTheme;
+  return {
+    ...baseTheme,
+    ...theme,
+    ...("style" in baseTheme && "style" in theme ?
+      { style: { ...(baseTheme.style as object), ...(theme.style as object) } }
+    : undefined),
+  } as Theme & BaseTheme;
 };
 
 export type { PartialTheme, RootTheme };

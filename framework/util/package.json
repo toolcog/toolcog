@@ -31,11 +31,6 @@
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     },
-    "./tty": {
-      "types": "./dist/tty.d.ts",
-      "import": "./dist/tty.js",
-      "require": "./dist/tty.cjs"
-    },
     "./queue": {
       "types": "./dist/queue.d.ts",
       "import": "./dist/queue.js",
@@ -82,6 +77,16 @@
       "types": "./dist/timer.d.ts",
       "import": "./dist/timer.js",
       "require": "./dist/timer.cjs"
+    },
+    "./tty": {
+      "types": "./dist/tty.d.ts",
+      "import": "./dist/tty.js",
+      "require": "./dist/tty.cjs"
+    },
+    "./tui": {
+      "types": "./dist/tui.d.ts",
+      "import": "./dist/tui.js",
+      "require": "./dist/tui.cjs"
     }
   },
   "devDependencies": {

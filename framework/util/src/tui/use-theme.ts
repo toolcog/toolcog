@@ -1,4 +1,3 @@
-import { defu } from "defu";
 import { useMemo } from "./use-memo.ts";
 import type { PartialTheme, RootTheme } from "./theme.ts";
 import { rootTheme } from "./theme.ts";
@@ -16,7 +15,20 @@ const useTheme: {
   if (baseTheme === undefined) {
     baseTheme = rootTheme as Theme;
   }
-  return useMemo(() => defu(theme, baseTheme), [theme]) as Theme;
+  return useMemo(() => {
+    return {
+      ...baseTheme,
+      ...theme,
+      ...(theme !== undefined && "style" in baseTheme && "style" in theme ?
+        {
+          style: {
+            ...(baseTheme.style as object),
+            ...(theme.style as object),
+          },
+        }
+      : undefined),
+    };
+  }, [theme]);
 };
 
 export { useTheme };
