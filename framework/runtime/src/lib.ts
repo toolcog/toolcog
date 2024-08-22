@@ -18,13 +18,6 @@ export { resolvePlugin, resolvePlugins } from "./plugin.ts";
 
 export { currentTools, withTools, useTool, useTools } from "./tools.ts";
 
-export type {
-  GenerativeCallResultType,
-  GenerativeCallOptions,
-  ResolvedGenerativeCallOptions,
-} from "./generative-call.ts";
-export { GenerativeCall } from "./generative-call.ts";
-
 export { cosineDistance, indexer } from "./indexer.ts";
 
 export type { RuntimeConfigSource, RuntimeConfig } from "./runtime.ts";

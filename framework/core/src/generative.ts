@@ -2,7 +2,7 @@ import type { FunctionSchema } from "./schema.ts";
 
 /**
  * Each key of this type represents a known generative model name.
- * Generator plugins augment this type to add supported models names.
+ * Generator plugins augment this type to add supported model names.
  *
  * Use the {@link GenerativeModel} type, which references the keys of this type,
  * to refer to strings that represent generative model names. The indirection
@@ -34,7 +34,7 @@ interface GenerativeFunction {
 
   readonly model: GenerativeModel | undefined;
 
-  readonly function: FunctionSchema;
+  readonly function: FunctionSchema & { readonly name: string };
 }
 
 export type {

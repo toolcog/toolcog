@@ -6,7 +6,8 @@ packages:
   - framework/tui
   - framework/repl
   - adapters/node
-  - models/openai
+  - plugins/anthropic
+  - plugins/openai
   - toolcog
   - sandbox
 
@@ -19,7 +20,8 @@ catalog:
   yaml: ^2.5
 
 catalogs:
-  models:
+  plugins:
+    "@anthropic-ai/sdk": ^0.27
     openai: ^4.56
     whatwg-url: ^14.0
   build:

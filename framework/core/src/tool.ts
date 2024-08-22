@@ -7,7 +7,7 @@ interface Tool<
 
   readonly id: string;
 
-  readonly function: FunctionSchema;
+  readonly function: FunctionSchema & { readonly name: string };
 }
 
 type Tools<F extends readonly ((...args: any[]) => unknown)[]> =

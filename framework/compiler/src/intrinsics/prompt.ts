@@ -72,7 +72,10 @@ const promptExpression = (
   );
 
   if (instructionsExpression === undefined) {
-    const instructions = comment?.tags.instructions;
+    let instructions = comment?.tags.instructions;
+    if (instructions === undefined) {
+      instructions = comment?.description;
+    }
     if (instructions !== undefined) {
       instructionsExpression = factory.createStringLiteral(instructions);
     }

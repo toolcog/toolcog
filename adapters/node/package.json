@@ -64,6 +64,7 @@
     "commander": "catalog:default"
   },
   "optionalDependencies": {
+    "@toolcog/anthropic": "workspace:*",
     "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {

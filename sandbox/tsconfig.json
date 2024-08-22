@@ -13,7 +13,7 @@
     "sourceMap": true,
     "strict": true,
     "target": "esnext",
-    "types": ["node", "@toolcog/openai"],
+    "types": ["node", "@toolcog/anthropic", "@toolcog/openai"],
     "verbatimModuleSyntax": true
   },
   "ts-node": {

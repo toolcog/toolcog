@@ -1,13 +1,10 @@
 {
-  "name": "@toolcog/compiler",
+  "name": "@toolcog/anthropic",
   "version": "0.0.1",
-  "description": "Toolcog compiler",
+  "description": "Toolcog Anthropic plugin",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
-  "bin": {
-    "toolcog-compiler": "./bin/toolcog-compiler.js"
-  },
   "scripts": {
     "build": "rollup --config",
     "check": "tsc --noEmit",
@@ -19,7 +16,6 @@
     "clean-all": "rimraf .turbo dist node_modules"
   },
   "files": [
-    "bin/",
     "dist/"
   ],
   "sideEffects": false,
@@ -28,34 +24,19 @@
       "types": "./dist/lib.d.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
-    },
-    "./cli": {
-      "types": "./dist/cli.d.ts",
-      "import": "./dist/cli.js",
-      "require": "./dist/cli.cjs"
     }
   },
-  "peerDependencies": {
-    "typescript": "catalog:default"
-  },
   "dependencies": {
+    "@anthropic-ai/sdk": "catalog:plugins",
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "@toolcog/util": "workspace:*",
-    "commander": "catalog:default",
-    "glob": "catalog:default",
-    "yaml": "catalog:default"
-  },
-  "optionalDependencies": {
-    "@toolcog/anthropic": "workspace:*",
-    "@toolcog/openai": "workspace:*"
+    "@toolcog/util": "workspace:*"
   },
   "devDependencies": {
     "eslint": "catalog:build",
     "prettier": "catalog:build",
     "rimraf": "catalog:build",
     "rollup": "catalog:build",
-    "ts-expose-internals": "catalog:build",
     "tslib": "catalog:build",
     "typescript": "catalog:build"
   }

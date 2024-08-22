@@ -20,7 +20,7 @@ catalogs:
       version: 11.1.6
     '@types/node':
       specifier: ^22
-      version: 22.4.1
+      version: 22.5.0
     eslint:
       specifier: ^9.9
       version: 9.9.0
@@ -66,7 +66,7 @@ catalogs:
   default:
     '@types/node':
       specifier: '>=20'
-      version: 22.4.1
+      version: 22.5.0
     commander:
       specifier: ^12.1
       version: 12.1.0
@@ -79,7 +79,10 @@ catalogs:
     yaml:
       specifier: ^2.5
       version: 2.5.0
-  models:
+  plugins:
+    '@anthropic-ai/sdk':
+      specifier: ^0.27
+      version: 0.27.0
     openai:
       specifier: ^4.56
       version: 4.56.0
@@ -105,7 +108,7 @@ importers:
         version: 11.1.6(rollup@4.21.0)(tslib@2.6.3)(typescript@5.5.4)
       '@types/node':
         specifier: catalog:build
-        version: 22.4.1
+        version: 22.5.0
       eslint-plugin-jsdoc:
         specifier: catalog:build
         version: 50.2.2(eslint@9.9.0)
@@ -135,7 +138,7 @@ importers:
         version: 8.2.0(eslint@9.9.0)(typescript@5.5.4)
       vitest:
         specifier: catalog:build
-        version: 2.0.5(@types/node@22.4.1)
+        version: 2.0.5(@types/node@22.5.0)
 
   adapters/node:
     dependencies:
@@ -153,14 +156,17 @@ importers:
         version: link:../../framework/runtime
       '@types/node':
         specifier: catalog:default
-        version: 22.4.1
+        version: 22.5.0
       commander:
         specifier: catalog:default
         version: 12.1.0
     optionalDependencies:
+      '@toolcog/anthropic':
+        specifier: workspace:*
+        version: link:../../plugins/anthropic
       '@toolcog/openai':
         specifier: workspace:*
-        version: link:../../models/openai
+        version: link:../../plugins/openai
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -205,9 +211,12 @@ importers:
         specifier: catalog:default
         version: 2.5.0
     optionalDependencies:
+      '@toolcog/anthropic':
+        specifier: workspace:*
+        version: link:../../plugins/anthropic
       '@toolcog/openai':
         specifier: workspace:*
-        version: link:../../models/openai
+        version: link:../../plugins/openai
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -369,7 +378,41 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  models/openai:
+  plugins/anthropic:
+    dependencies:
+      '@anthropic-ai/sdk':
+        specifier: catalog:plugins
+        version: 0.27.0
+      '@toolcog/core':
+        specifier: workspace:*
+        version: link:../../framework/core
+      '@toolcog/runtime':
+        specifier: workspace:*
+        version: link:../../framework/runtime
+      '@toolcog/util':
+        specifier: workspace:*
+        version: link:../../framework/util
+    devDependencies:
+      eslint:
+        specifier: catalog:build
+        version: 9.9.0
+      prettier:
+        specifier: catalog:build
+        version: 3.3.3
+      rimraf:
+        specifier: catalog:build
+        version: 6.0.1
+      rollup:
+        specifier: catalog:build
+        version: 4.21.0
+      tslib:
+        specifier: catalog:build
+        version: 2.6.3
+      typescript:
+        specifier: catalog:build
+        version: 5.5.4
+
+  plugins/openai:
     dependencies:
       '@toolcog/core':
         specifier: workspace:*
@@ -381,7 +424,7 @@ importers:
         specifier: workspace:*
         version: link:../../framework/util
       openai:
-        specifier: catalog:models
+        specifier: catalog:plugins
         version: 4.56.0
     devDependencies:
       eslint:
@@ -418,9 +461,12 @@ importers:
         specifier: workspace:*
         version: link:../framework/tui
     optionalDependencies:
+      '@toolcog/anthropic':
+        specifier: workspace:*
+        version: link:../plugins/anthropic
       '@toolcog/openai':
         specifier: workspace:*
-        version: link:../models/openai
+        version: link:../plugins/openai
     devDependencies:
       rimraf:
         specifier: catalog:build
@@ -447,9 +493,12 @@ importers:
         specifier: catalog:default
         version: 12.1.0
     optionalDependencies:
+      '@toolcog/anthropic':
+        specifier: workspace:*
+        version: link:../plugins/anthropic
       '@toolcog/openai':
         specifier: workspace:*
-        version: link:../models/openai
+        version: link:../plugins/openai
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -475,6 +524,9 @@ packages:
   '@ampproject/remapping@2.3.0':
     resolution: {integrity: sha512-30iZtAPgz+LTIYoeivqYo853f02jBYSd5uGnGpkFV0M3xOt9aN73erkgYAmZU43x4VfqcnLxW9Kpg3R5LC4YYw==}
     engines: {node: '>=6.0.0'}
+
+  '@anthropic-ai/sdk@0.27.0':
+    resolution: {integrity: sha512-DuksaCaCb0ENDAc1UHef341SRK6LQmPvey10+Q662Eo4rc8H2i/MKK/n6q/dJagqVkqJBoEEirrlMBLqIIhupw==}
 
   '@babel/code-frame@7.24.7':
     resolution: {integrity: sha512-BcYH1CVJBO9tvyIZ2jVeXgSIMvGZ2FDRvDdOIVQyuklNKSsx+eppDEBq/g47Ayw+RqNFE+URvOShmf+f/qwAlA==}
@@ -835,8 +887,8 @@ packages:
   '@types/node@18.19.45':
     resolution: {integrity: sha512-VZxPKNNhjKmaC1SUYowuXSRSMGyQGmQjvvA1xE4QZ0xce2kLtEhPDS+kqpCPBZYgqblCLQ2DAjSzmgCM5auvhA==}
 
-  '@types/node@22.4.1':
-    resolution: {integrity: sha512-1tbpb9325+gPnKK0dMm+/LMriX0vKxf6RnB0SZUqfyVkQ4fMgUSySqhxE/y8Jvs4NyF1yHzTfG9KlnkIODxPKg==}
+  '@types/node@22.5.0':
+    resolution: {integrity: sha512-DkFrJOe+rfdHTqqMg0bSNlGlQ85hSoh2TPzZyhHsXnMtligRWpxUySiyw8FY14ITt24HVCiQPWxS3KO/QlGmWg==}
 
   '@types/resolve@1.20.2':
     resolution: {integrity: sha512-60BCwRFOZCQhDncwQdxxeOEEkbc5dIMccYLwbxsS4TUNeVECQ/pBJ0j09mrHOl/JJvpRPGwO9SvE4nR2Nb/a4Q==}
@@ -1297,8 +1349,8 @@ packages:
     resolution: {integrity: sha512-BSLE3HnV2syZ0FK0iMA/yUGplUeMmNz4AW5fnTunbCIqZi4vG3WjJT9FHMy5D69xmAYBHXQhJdALdpwVxV501A==}
     engines: {node: '>=6'}
 
-  is-core-module@2.15.0:
-    resolution: {integrity: sha512-Dd+Lb2/zvk9SKy1TGCt1wFJFo/MWBPMX5x7KcvLajWTGuomczdQX61PvY5yK6SVACwpoexWo81IfFyoKY2QnTA==}
+  is-core-module@2.15.1:
+    resolution: {integrity: sha512-z0vtXSwucUJtANQWldhbtbt7BnL0vxiFjIdDLAatwhDYty2bad6s+rijD6Ri4YuYJubLzIJLUidCh09e1djEVQ==}
     engines: {node: '>= 0.4'}
 
   is-extglob@2.1.1:
@@ -1623,8 +1675,8 @@ packages:
   spdx-expression-parse@4.0.0:
     resolution: {integrity: sha512-Clya5JIij/7C6bRR22+tnGXbc4VKlibKSVj2iHvVeX5iMW7s1SIQlqu699JkODJJIhh/pUu8L0/VLh8xflD+LQ==}
 
-  spdx-license-ids@3.0.18:
-    resolution: {integrity: sha512-xxRs31BqRYHwiMzudOrpSiHtZ8i/GeionCBDSilhYRj+9gIcI8wCZTlXZKu9vZIVqViP3dcp9qE5G6AlIaD+TQ==}
+  spdx-license-ids@3.0.20:
+    resolution: {integrity: sha512-jg25NiDV/1fLtSgEgyvVyDunvaNHbuwF9lfNV17gSmPFAlYzdfNBlLtLzXTevwkPj7DhGbmN9VnmJIgLnhvaBw==}
 
   stackback@0.0.2:
     resolution: {integrity: sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==}
@@ -1780,8 +1832,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite@5.4.1:
-    resolution: {integrity: sha512-1oE6yuNXssjrZdblI9AfBbHCC41nnyoVoEZxQnID6yvQZAFBzxxkqoFLtHUMkYunL8hwOLEjgTuxpkRxvba3kA==}
+  vite@5.4.2:
+    resolution: {integrity: sha512-dDrQTRHp5C1fTFzcSaMxjk6vdpKvT+2/mIdE07Gw2ykehT49O0z/VHS3zZ8iV/Gh8BJJKHWOe5RjaNrW5xf/GA==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
@@ -1889,6 +1941,18 @@ snapshots:
     dependencies:
       '@jridgewell/gen-mapping': 0.3.5
       '@jridgewell/trace-mapping': 0.3.25
+
+  '@anthropic-ai/sdk@0.27.0':
+    dependencies:
+      '@types/node': 18.19.45
+      '@types/node-fetch': 2.6.11
+      abort-controller: 3.0.0
+      agentkeepalive: 4.5.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
 
   '@babel/code-frame@7.24.7':
     dependencies:
@@ -2156,7 +2220,7 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
-  '@types/node@22.4.1':
+  '@types/node@22.5.0':
     dependencies:
       undici-types: 6.19.8
 
@@ -2686,7 +2750,7 @@ snapshots:
     dependencies:
       builtin-modules: 3.3.0
 
-  is-core-module@2.15.0:
+  is-core-module@2.15.1:
     dependencies:
       hasown: 2.0.2
 
@@ -2892,7 +2956,7 @@ snapshots:
 
   resolve@1.22.8:
     dependencies:
-      is-core-module: 2.15.0
+      is-core-module: 2.15.1
       path-parse: 1.0.7
       supports-preserve-symlinks-flag: 1.0.0
 
@@ -2964,9 +3028,9 @@ snapshots:
   spdx-expression-parse@4.0.0:
     dependencies:
       spdx-exceptions: 2.5.0
-      spdx-license-ids: 3.0.18
+      spdx-license-ids: 3.0.20
 
-  spdx-license-ids@3.0.18: {}
+  spdx-license-ids@3.0.20: {}
 
   stackback@0.0.2: {}
 
@@ -3099,13 +3163,13 @@ snapshots:
     dependencies:
       punycode: 2.3.1
 
-  vite-node@2.0.5(@types/node@22.4.1):
+  vite-node@2.0.5(@types/node@22.5.0):
     dependencies:
       cac: 6.7.14
       debug: 4.3.6
       pathe: 1.1.2
       tinyrainbow: 1.2.0
-      vite: 5.4.1(@types/node@22.4.1)
+      vite: 5.4.2(@types/node@22.5.0)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -3117,16 +3181,16 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.1(@types/node@22.4.1):
+  vite@5.4.2(@types/node@22.5.0):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.41
       rollup: 4.21.0
     optionalDependencies:
-      '@types/node': 22.4.1
+      '@types/node': 22.5.0
       fsevents: 2.3.3
 
-  vitest@2.0.5(@types/node@22.4.1):
+  vitest@2.0.5(@types/node@22.5.0):
     dependencies:
       '@ampproject/remapping': 2.3.0
       '@vitest/expect': 2.0.5
@@ -3144,11 +3208,11 @@ snapshots:
       tinybench: 2.9.0
       tinypool: 1.0.1
       tinyrainbow: 1.2.0
-      vite: 5.4.1(@types/node@22.4.1)
-      vite-node: 2.0.5(@types/node@22.4.1)
+      vite: 5.4.2(@types/node@22.5.0)
+      vite-node: 2.0.5(@types/node@22.5.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 22.4.1
+      '@types/node': 22.5.0
     transitivePeerDependencies:
       - less
       - lightningcss

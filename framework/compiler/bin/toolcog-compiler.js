@@ -4,7 +4,10 @@ import { Runtime } from "@toolcog/runtime";
 import { createCompilerCommand, version } from "@toolcog/compiler/cli";
 
 const runtime = await Runtime.create({
-  plugins: [import("@toolcog/openai").then((plugin) => plugin.default())],
+  plugins: [
+    import("@toolcog/openai").then((plugin) => plugin.default()),
+    import("@toolcog/anthropic").then((plugin) => plugin.default()),
+  ],
 });
 
 await Runtime.run(runtime, () => {

@@ -15,6 +15,7 @@
     "@toolcog/tui": "workspace:*"
   },
   "optionalDependencies": {
+    "@toolcog/anthropic": "workspace:*",
     "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {

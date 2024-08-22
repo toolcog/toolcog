@@ -104,9 +104,9 @@ const resolveTool = async (
 const resolveTools = async (
   tools: readonly ToolSource[] | null | undefined,
   args: unknown,
-): Promise<Tool[] | null> => {
+): Promise<Tool[] | undefined> => {
   if (tools === undefined || tools === null) {
-    return null;
+    return undefined;
   }
   return (
     await Promise.allSettled(tools.map((tool) => resolveTool(tool, args)))

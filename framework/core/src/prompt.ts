@@ -47,7 +47,7 @@ interface PromptFunction<
 
   readonly instructions: InstructionsSource;
 
-  readonly function: FunctionSchema;
+  readonly function: FunctionSchema & { readonly name: string };
 }
 
 const definePrompt: {

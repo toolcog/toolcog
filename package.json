@@ -35,7 +35,7 @@
   },
   "pnpm": {
     "overrides": {
-      "whatwg-url": "catalog:models"
+      "whatwg-url": "catalog:plugins"
     }
   },
   "packageManager": "pnpm@9.7.1"

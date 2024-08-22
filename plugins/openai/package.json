@@ -1,7 +1,7 @@
 {
   "name": "@toolcog/openai",
   "version": "0.0.1",
-  "description": "Toolcog OpenAI models",
+  "description": "Toolcog OpenAI plugin",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
@@ -30,7 +30,7 @@
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
     "@toolcog/util": "workspace:*",
-    "openai": "catalog:models"
+    "openai": "catalog:plugins"
   },
   "devDependencies": {
     "eslint": "catalog:build",

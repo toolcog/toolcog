@@ -339,6 +339,8 @@ tools:
           type: string
 prompts:
   "@toolcog/sandbox/top10:makeList":
+    instructions: |
+      Make a David Letterman style top-10 list about the given subject.
     function:
       name: _toolcog_sandbox_top10_makeList
       description: |
@@ -357,6 +359,10 @@ prompts:
         items:
           type: string
   "@toolcog/sandbox/top10:reviewList":
+    instructions: |
+      Give feedback on the given David Letterman style top-10 list.
+      Evaluate each item for wit, novelty, and brevity. Give critical
+      feedback, not just faint praise.
     function:
       name: _toolcog_sandbox_top10_reviewList
       description: |
@@ -377,6 +383,10 @@ prompts:
         type: string
         description: Feedback about ways to improve the top-10 list.
   "@toolcog/sandbox/top10:improveList":
+    instructions: |
+      Improve the given David Letterman style top-10 list by incorporating
+      the provided feedback. Produce an updated top-10 list with the feedback.
+      Do not include any feedback in the new list.
     function:
       name: _toolcog_sandbox_top10_improveList
       description: |
@@ -403,6 +413,12 @@ prompts:
         items:
           type: string
   "@toolcog/sandbox/top10:scoreImprovements":
+    instructions: |
+      Score how well an improved David Letterman style top-10 list incorporated
+      feedback from the original top-10 list. The score should be a number
+      between 1 and 10. Assign a score of 5 or above if the improved list
+      is indisputably funnier than the origin. Penalize new lists that
+      are not concise and quippy enough.
     function:
       name: _toolcog_sandbox_top10_scoreImprovements
       description: >
@@ -441,6 +457,8 @@ prompts:
         type: number
         description: A number between 1 and 10 rating the level of improvement.
   "@toolcog/sandbox/story:writeStory":
+    instructions: |
+      Write an outline for a story in the given genre.
     function:
       name: _toolcog_sandbox_story_writeStory
       description: |
@@ -572,6 +590,8 @@ prompts:
         type: string
         description: The generated joke.
   "@toolcog/sandbox/characters:createCharacters":
+    instructions: |
+      Creates a cast of characters for a story.
     function:
       name: _toolcog_sandbox_characters_createCharacters
       description: |

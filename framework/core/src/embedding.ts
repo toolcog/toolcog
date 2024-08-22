@@ -1,6 +1,6 @@
 /**
  * Each key of this type represents a known embedding model name.
- * Embedder plugins augment this type to add supported models names.
+ * Embedder plugins augment this type to add supported model names.
  *
  * Use the {@link EmbeddingModel} type, which references the keys of this type,
  * to refer to strings that represent embedding model names. The indirection
