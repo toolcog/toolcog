@@ -147,7 +147,7 @@ const defineIndexExpression = (
     indexerParameterName,
     undefined, // typeArguments
     [
-      factory.createPropertyAccessExpression(indexIdentifier, "model"),
+      factory.createPropertyAccessExpression(indexIdentifier, "idioms"),
       factory.createObjectLiteralExpression(
         [
           factory.createPropertyAssignment(

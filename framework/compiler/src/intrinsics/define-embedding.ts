@@ -1,8 +1,8 @@
 import type ts from "typescript";
-//import { moveLeadingComments } from "../utils/comments.ts";
+import { moveLeadingComments } from "../utils/comments.ts";
 import type { ToolcogManifest } from "../manifest.ts";
 
-const embedExpression = (
+const defineEmbeddingExpression = (
   ts: typeof import("typescript"),
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
@@ -28,6 +28,7 @@ const embedExpression = (
   );
 
   if (!ts.isStringLiteral(embedsExpression)) {
+    moveLeadingComments(ts, callExpression, embedderCallExpression);
     return ts.setOriginalNode(embedderCallExpression, callExpression);
   }
 
@@ -269,7 +270,9 @@ const embedExpression = (
     ],
   );
 
+  moveLeadingComments(ts, callExpression, iifeExpression);
+
   return ts.setOriginalNode(iifeExpression, callExpression);
 };
 
-export { embedExpression };
+export { defineEmbeddingExpression };

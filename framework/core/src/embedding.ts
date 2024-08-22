@@ -39,7 +39,7 @@ type EmbeddingVector = Float32Array;
 type EmbeddingDistance = (a: EmbeddingVector, b: EmbeddingVector) => number;
 
 /**
- * A mapping of embedding vectors keyed by embedding model.
+ * A set of embedding vectors keyed by the model that generated each vector.
  */
 interface Embedding {
   readonly [model: EmbeddingModel]: EmbeddingVector;

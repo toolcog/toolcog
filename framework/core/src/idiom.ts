@@ -1,7 +1,7 @@
 import type { Embedding } from "./embedding.ts";
 
 /**
- * A value with an associated set of embeddings.
+ * A set of embeddings associated with a value.
  */
 interface Idiom<T> {
   readonly id: string;

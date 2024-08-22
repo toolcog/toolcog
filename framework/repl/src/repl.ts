@@ -298,7 +298,7 @@ class Repl {
         "  defineTools,\n" +
         "  definePrompt,\n" +
         "  prompt,\n" +
-        //"  embed,\n" +
+        "  defineEmbedding,\n" +
         "  defineIdiom,\n" +
         "  defineIdioms,\n" +
         "  defineIndex,\n" +

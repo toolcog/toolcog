@@ -52,8 +52,7 @@ export type {
   EmbedderResult,
   Embedder,
 } from "./embedder.ts";
-
-export { embed } from "./embed.ts";
+export { defineEmbedding } from "./embedder.ts";
 
 export type { Idiom, Idioms, AnyIdiom, AnyIdioms } from "./idiom.ts";
 export { defineIdiom, defineIdioms } from "./idiom.ts";

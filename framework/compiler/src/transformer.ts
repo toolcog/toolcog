@@ -19,7 +19,7 @@ import { defineToolExpression } from "./intrinsics/define-tool.ts";
 import { defineToolsExpression } from "./intrinsics/define-tools.ts";
 import { definePromptExpression } from "./intrinsics/define-prompt.ts";
 import { promptExpression } from "./intrinsics/prompt.ts";
-import { embedExpression } from "./intrinsics/embed.ts";
+import { defineEmbeddingExpression } from "./intrinsics/define-embedding.ts";
 import { defineIdiomExpression } from "./intrinsics/define-idiom.ts";
 import { defineIdiomsExpression } from "./intrinsics/define-idioms.ts";
 import { defineIndexExpression } from "./intrinsics/define-index.ts";
@@ -92,7 +92,7 @@ const transformToolcog = (
       "defineTools",
       "definePrompt",
       "prompt",
-      "embed",
+      "defineEmbedding",
       "defineIdiom",
       "defineIdioms",
       "defineIndex",
@@ -138,7 +138,7 @@ const transformToolcog = (
       | "defineTools"
       | "definePrompt"
       | "prompt"
-      | "embed"
+      | "defineEmbedding"
       | "defineIdiom"
       | "defineIdioms"
       | "defineIndex"
@@ -156,7 +156,7 @@ const transformToolcog = (
           defineTools: intrinsicTypes.defineTools,
           definePrompt: intrinsicTypes.definePrompt,
           prompt: intrinsicTypes.prompt,
-          embed: intrinsicTypes.embed,
+          defineEmbedding: intrinsicTypes.defineEmbedding,
           defineIdiom: intrinsicTypes.defineIdiom,
           defineIdioms: intrinsicTypes.defineIdioms,
         },
@@ -404,14 +404,19 @@ const transformToolcog = (
         );
       }
 
-      // Transform `embed` intrinsics.
+      // Transform `defineEmbedding` intrinsics.
       if (
-        intrinsicTypes.embed !== undefined &&
-        isFunctionCallExpression(ts, checker, node, intrinsicTypes.embed)
+        intrinsicTypes.defineEmbedding !== undefined &&
+        isFunctionCallExpression(
+          ts,
+          checker,
+          node,
+          intrinsicTypes.defineEmbedding,
+        )
       ) {
         needsEmbedder ||= standalone || !ts.isStringLiteral(node.arguments[0]!);
         needsEmbeddings = true;
-        node = embedExpression(
+        node = defineEmbeddingExpression(
           ts,
           factory,
           checker,
@@ -521,7 +526,7 @@ const transformToolcog = (
         intrinsicTypes.defineTools,
         intrinsicTypes.definePrompt,
         intrinsicTypes.prompt,
-        intrinsicTypes.embed,
+        intrinsicTypes.defineEmbedding,
         intrinsicTypes.defineIdiom,
         intrinsicTypes.defineIdioms,
         intrinsicTypes.defineIndex,

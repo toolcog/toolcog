@@ -59,6 +59,8 @@ export { definePromptExpression } from "./intrinsics/define-prompt.ts";
 
 export { promptExpression } from "./intrinsics/prompt.ts";
 
+export { defineEmbeddingExpression } from "./intrinsics/define-embedding.ts";
+
 export { defineIdiomExpression } from "./intrinsics/define-idiom.ts";
 
 export { defineIdiomsExpression } from "./intrinsics/define-idioms.ts";

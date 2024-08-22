@@ -64,4 +64,25 @@ interface Embedder {
   ): Promise<EmbedderResult<T>>;
 }
 
+const defineEmbedding: {
+  <T extends string | readonly string[]>(
+    embeds: T,
+    options?: EmbedderOptions,
+  ): Promise<EmbedderResult<T>>;
+
+  /** @internal */
+  readonly brand: unique symbol;
+} = Object.assign(
+  <T extends string | readonly string[]>(
+    embeds: T,
+    options?: EmbedderOptions,
+  ): Promise<EmbedderResult<T>> => {
+    throw new Error("Uncompiled embedding");
+  },
+  {
+    brand: Symbol("toolcog.defineEmbedding"),
+  } as const,
+) as typeof defineEmbedding;
+
 export type { EmbedderConfig, EmbedderOptions, EmbedderResult, Embedder };
+export { defineEmbedding };

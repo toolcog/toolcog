@@ -12,8 +12,14 @@
     },
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["package.json", "tsconfig.json", "rollup.config.js", "src/**"],
-      "outputs": ["dist/**"],
+      "inputs": [
+        "package.json",
+        "tsconfig.json",
+        "rollup.config.js",
+        ".toolcog/cache.yaml",
+        "src/**"
+      ],
+      "outputs": ["dist/**", "toolcog-manifest.yaml"],
       "outputLogs": "new-only",
       "passThroughEnv": ["OPENAI_API_KEY"]
     },
