@@ -1,16 +1,14 @@
-import type { Embedding } from "./embedding.ts";
+import type { Embeddings } from "./embedding.ts";
 
 /**
- * A set of embeddings associated with a value.
+ * A collection of embeddings associated with a value.
  */
 interface Idiom<T> {
+  (): Embeddings;
+
   readonly id: string;
 
   readonly value: T;
-
-  readonly embeds: readonly string[];
-
-  readonly embeddings: readonly Embedding[];
 }
 
 type Idioms<T extends readonly unknown[]> =
@@ -28,6 +26,10 @@ type AnyIdiom = Idiom<unknown>;
 
 /** @internal */
 type AnyIdioms = Idioms<readonly unknown[]>;
+
+interface IdiomResolver {
+  (id: string, value: unknown): Embeddings | undefined;
+}
 
 const defineIdiom: {
   <const T>(value: T): Idiom<T>;
@@ -57,5 +59,5 @@ const defineIdioms: {
   } as const,
 ) as typeof defineIdioms;
 
-export type { Idiom, Idioms, AnyIdiom, AnyIdioms };
+export type { Idiom, Idioms, AnyIdiom, AnyIdioms, IdiomResolver };
 export { defineIdiom, defineIdioms };

@@ -1,11 +1,7 @@
-import type { FunctionSchema } from "./schema.ts";
-import type { GenerativeModel } from "./generative.ts";
-import type {
-  ToolSource,
-  InstructionsSource,
-  GeneratorConfig,
-  GeneratorOptions,
-} from "./generator.ts";
+import type { Schema } from "@toolcog/util/json";
+import type { ToolSource } from "./tool.ts";
+import type { InstructionsSource, GenerativeFunction } from "./generative.ts";
+import type { GeneratorConfig, GeneratorOptions } from "./generator.ts";
 
 interface PromptConfig extends GeneratorConfig {
   tools?: readonly ToolSource[] | null | undefined;
@@ -16,7 +12,7 @@ interface PromptConfig extends GeneratorConfig {
 interface PromptOptions extends GeneratorOptions {
   tools?: readonly ToolSource[] | null | undefined;
 
-  instructions?: InstructionsSource;
+  instructions?: InstructionsSource | undefined;
 }
 
 /** @internal */
@@ -36,18 +32,22 @@ type PromptReturnType<F extends (...args: any[]) => unknown> = Promise<
 
 interface PromptFunction<
   F extends (...args: any[]) => unknown = (...args: any[]) => unknown,
-> {
+> extends GenerativeFunction {
   (...args: PromptParameters<F>): PromptReturnType<F>;
 
   readonly id: string;
 
-  readonly model: GenerativeModel | undefined;
+  readonly name: string;
 
-  readonly tools: readonly ToolSource[];
+  readonly description: string | undefined;
+
+  readonly parameters: Schema | undefined;
+
+  readonly returns: Schema | undefined;
 
   readonly instructions: InstructionsSource;
 
-  readonly function: FunctionSchema & { readonly name: string };
+  readonly tools: readonly ToolSource[];
 }
 
 const definePrompt: {

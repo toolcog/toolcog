@@ -1,11 +1,11 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
 import { valueToExpression } from "../utils/literals.ts";
 import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
 import { getNodeId, getNodeIdentifier } from "../node-id.ts";
 import { signatureToSchema } from "../schema.ts";
-import type { ToolcogManifest } from "../manifest.ts";
 
 const definePromptExpression = (
   ts: typeof import("typescript"),
@@ -13,7 +13,7 @@ const definePromptExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
-  manifest: ToolcogManifest,
+  moduleDef: ModuleDef,
   generatorExpression: ts.Expression,
   contextToolsExpression: ts.Expression | undefined,
   callExpression: ts.CallExpression,
@@ -40,7 +40,7 @@ const definePromptExpression = (
     }) ?? "";
 
   if (
-    promptId in manifest.prompts ||
+    promptId in moduleDef.prompts ||
     promptId.length === 0 ||
     promptId.endsWith(":")
   ) {
@@ -48,7 +48,7 @@ const definePromptExpression = (
     let conflictCount = 0;
     while (true) {
       promptId = baseId + "#" + conflictCount;
-      if (!(promptId in manifest.prompts)) {
+      if (!(promptId in moduleDef.prompts)) {
         break;
       }
       conflictCount += 1;
@@ -71,13 +71,22 @@ const definePromptExpression = (
     );
   }
 
+  const functionSchema = signatureToSchema(
+    ts,
+    checker,
+    addDiagnostic,
+    functionSignature,
+    promptId.replace(/[^a-zA-Z0-9_-]/g, "_"),
+    comment,
+    callExpression,
+  );
+
   // Define and destructure the config parameter.
 
   let configParameterDeclaration: ts.ParameterDeclaration | undefined;
 
-  let modelIdentifier: ts.Identifier | undefined;
-  let toolsIdentifier: ts.Identifier | undefined;
   let instructionsIdentifier: ts.Identifier | undefined;
+  let toolsIdentifier: ts.Identifier | undefined;
   let defaultsIdentifier: ts.Identifier | undefined;
   let generatorConfigIdentifier: ts.Identifier | undefined;
 
@@ -94,9 +103,8 @@ const definePromptExpression = (
       undefined, // initializer
     );
 
-    modelIdentifier = factory.createIdentifier("model");
-    toolsIdentifier = factory.createIdentifier("tools");
     instructionsIdentifier = factory.createIdentifier("instructions");
+    toolsIdentifier = factory.createIdentifier("tools");
     defaultsIdentifier = factory.createIdentifier("defaults");
     generatorConfigIdentifier = factory.createIdentifier("generatorConfig");
 
@@ -109,19 +117,13 @@ const definePromptExpression = (
               factory.createBindingElement(
                 undefined, // dotDotDotToken
                 undefined, // propertyName
-                modelIdentifier,
+                instructionsIdentifier,
                 undefined, // initializer
               ),
               factory.createBindingElement(
                 undefined, // dotDotDotToken
                 undefined, // propertyName
                 toolsIdentifier,
-                undefined, // initializer
-              ),
-              factory.createBindingElement(
-                undefined, // dotDotDotToken
-                undefined, // propertyName
-                instructionsIdentifier,
                 undefined, // initializer
               ),
               factory.createBindingElement(
@@ -231,10 +233,9 @@ const definePromptExpression = (
       argumentAssignments.push(
         factory.createPropertyAssignment(
           parameterDeclaration.name,
-          factory.createArrayLiteralExpression(
-            [factory.createSpreadElement(parameterIdentifier)],
-            false, // multiLine
-          ),
+          factory.createArrayLiteralExpression([
+            factory.createSpreadElement(parameterIdentifier),
+          ]),
         ),
       );
     }
@@ -271,39 +272,17 @@ const definePromptExpression = (
         factory.createPropertyAccessExpression(functionIdentifier, "id"),
       ),
 
-      factory.createSpreadAssignment(
-        factory.createParenthesizedExpression(
-          factory.createConditionalExpression(
-            factory.createBinaryExpression(
-              factory.createPropertyAccessExpression(
-                functionIdentifier,
-                "model",
-              ),
-              factory.createToken(ts.SyntaxKind.ExclamationEqualsEqualsToken),
-              factory.createVoidZero(),
-            ),
-            undefined, // questionToken
-            factory.createObjectLiteralExpression(
-              [
-                factory.createPropertyAssignment(
-                  "model",
-                  factory.createPropertyAccessExpression(
-                    functionIdentifier,
-                    "model",
-                  ),
-                ),
-              ],
-              false,
-            ),
-            undefined, // colonToken
-            factory.createVoidZero(),
-          ),
+      factory.createPropertyAssignment(
+        "parameters",
+        factory.createPropertyAccessExpression(
+          functionIdentifier,
+          "parameters",
         ),
       ),
 
       factory.createPropertyAssignment(
-        "tools",
-        factory.createPropertyAccessExpression(functionIdentifier, "tools"),
+        "returns",
+        factory.createPropertyAccessExpression(functionIdentifier, "returns"),
       ),
 
       factory.createSpreadAssignment(
@@ -318,18 +297,15 @@ const definePromptExpression = (
               factory.createVoidZero(),
             ),
             undefined, // questionToken
-            factory.createObjectLiteralExpression(
-              [
-                factory.createPropertyAssignment(
+            factory.createObjectLiteralExpression([
+              factory.createPropertyAssignment(
+                "instructions",
+                factory.createPropertyAccessExpression(
+                  functionIdentifier,
                   "instructions",
-                  factory.createPropertyAccessExpression(
-                    functionIdentifier,
-                    "instructions",
-                  ),
                 ),
-              ],
-              false,
-            ),
+              ),
+            ]),
             undefined, // colonToken
             factory.createVoidZero(),
           ),
@@ -337,8 +313,8 @@ const definePromptExpression = (
       ),
 
       factory.createPropertyAssignment(
-        "function",
-        factory.createPropertyAccessExpression(functionIdentifier, "function"),
+        "tools",
+        factory.createPropertyAccessExpression(functionIdentifier, "tools"),
       ),
 
       ...(generatorConfigIdentifier !== undefined ?
@@ -443,20 +419,108 @@ const definePromptExpression = (
     ),
   );
 
-  // Define the model property.
+  // Define the name property.
 
-  let modelExpression: ts.Expression;
-  if (modelIdentifier !== undefined) {
-    modelExpression = modelIdentifier;
-  } else {
-    modelExpression = factory.createVoidZero();
+  let nameAssignment: ts.Statement | undefined;
+  if (functionSchema.name !== undefined) {
+    nameAssignment = factory.createExpressionStatement(
+      factory.createCallExpression(
+        factory.createPropertyAccessExpression(
+          factory.createIdentifier("Object"),
+          "defineProperty",
+        ),
+        undefined, // typeArguments
+        [
+          functionIdentifier,
+          factory.createStringLiteral("name"),
+          factory.createObjectLiteralExpression(
+            [
+              factory.createPropertyAssignment(
+                "value",
+                factory.createStringLiteral(functionSchema.name),
+              ),
+              factory.createPropertyAssignment(
+                "writable",
+                factory.createFalse(),
+              ),
+              factory.createPropertyAssignment(
+                "enumerable",
+                factory.createFalse(),
+              ),
+              factory.createPropertyAssignment(
+                "configurable",
+                factory.createTrue(),
+              ),
+            ],
+            true, // multiLine
+          ),
+        ],
+      ),
+    );
   }
 
-  const modelAssignment = factory.createExpressionStatement(
+  // Define the description property.
+
+  const descriptionAssignment = factory.createExpressionStatement(
     factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(functionIdentifier, "model"),
+      factory.createPropertyAccessExpression(functionIdentifier, "description"),
       factory.createToken(ts.SyntaxKind.EqualsToken),
-      modelExpression,
+      functionSchema.description !== undefined ?
+        factory.createStringLiteral(functionSchema.description)
+      : factory.createVoidZero(),
+    ),
+  );
+
+  // Define the parameters property.
+
+  const parametersAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(functionIdentifier, "parameters"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      valueToExpression(ts, factory, functionSchema.parameters, callExpression),
+    ),
+  );
+
+  // Define the returns property.
+
+  const returnsAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(functionIdentifier, "returns"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      valueToExpression(ts, factory, functionSchema.returns, callExpression),
+    ),
+  );
+
+  // Define the instructions property.
+
+  let instructions = comment?.tags.instructions;
+  if (instructions === undefined) {
+    instructions = comment?.description;
+  }
+
+  let instructionsExpression: ts.Expression;
+  if (instructionsIdentifier !== undefined && instructions !== undefined) {
+    instructionsExpression = factory.createBinaryExpression(
+      instructionsIdentifier,
+      factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+      factory.createStringLiteral(instructions),
+    );
+  } else if (instructionsIdentifier !== undefined) {
+    instructionsExpression = instructionsIdentifier;
+  } else if (instructions !== undefined) {
+    instructionsExpression = factory.createStringLiteral(instructions);
+  } else {
+    instructionsExpression = factory.createVoidZero();
+  }
+
+  const instructionsAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(
+        functionIdentifier,
+        "instructions",
+      ),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      instructionsExpression,
     ),
   );
 
@@ -500,71 +564,11 @@ const definePromptExpression = (
     ),
   );
 
-  // Define the instructions property.
+  // Add the prompt to the module manifest.
 
-  let instructions = comment?.tags.instructions;
-  if (instructions === undefined) {
-    instructions = comment?.description;
-  }
-
-  let instructionsExpression: ts.Expression;
-  if (instructionsIdentifier !== undefined && instructions !== undefined) {
-    instructionsExpression = factory.createBinaryExpression(
-      instructionsIdentifier,
-      factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
-      factory.createStringLiteral(instructions),
-    );
-  } else if (instructionsIdentifier !== undefined) {
-    instructionsExpression = instructionsIdentifier;
-  } else if (instructions !== undefined) {
-    instructionsExpression = factory.createStringLiteral(instructions);
-  } else {
-    instructionsExpression = factory.createVoidZero();
-  }
-
-  const instructionsAssignment = factory.createExpressionStatement(
-    factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(
-        functionIdentifier,
-        "instructions",
-      ),
-      factory.createToken(ts.SyntaxKind.EqualsToken),
-      instructionsExpression,
-    ),
-  );
-
-  // Define the function property.
-
-  const functionSchema = signatureToSchema(
-    ts,
-    checker,
-    addDiagnostic,
-    functionSignature,
-    promptId.replace(/[^a-zA-Z0-9_-]/g, "_"),
-    comment,
-    callExpression,
-  );
-
-  const functionExpression = valueToExpression(
-    ts,
-    factory,
-    functionSchema,
-    callExpression,
-  );
-
-  const functionAssignment = factory.createExpressionStatement(
-    factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(functionIdentifier, "function"),
-      factory.createToken(ts.SyntaxKind.EqualsToken),
-      functionExpression,
-    ),
-  );
-
-  // Add the prompt to the manifest.
-
-  manifest.prompts[promptId] = {
+  moduleDef.prompts[promptId] = {
+    ...functionSchema,
     instructions,
-    function: functionSchema,
   };
 
   // Create and return an IIFE wrapper.
@@ -591,10 +595,12 @@ const definePromptExpression = (
           : []),
           generativeFunctionDeclaration,
           idAssignment,
-          modelAssignment,
-          toolsAssignment,
+          ...(nameAssignment !== undefined ? [nameAssignment] : []),
+          descriptionAssignment,
+          parametersAssignment,
+          returnsAssignment,
           instructionsAssignment,
-          functionAssignment,
+          toolsAssignment,
           factory.createReturnStatement(functionIdentifier),
         ],
         true, // multiLine

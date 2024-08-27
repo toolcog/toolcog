@@ -6,6 +6,9 @@ import "@toolcog/node/quiet";
 import "@toolcog/node/register";
 
 const runtime = await Runtime.create({
+  embedder: {
+    model: "text-embedding-3-small",
+  },
   generator: {
     system: Runtime.systemPrompt(),
   },

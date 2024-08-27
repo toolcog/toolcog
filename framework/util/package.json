@@ -31,6 +31,16 @@
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     },
+    "./json": {
+      "types": "./dist/json.d.ts",
+      "import": "./dist/json.js",
+      "require": "./dist/json.cjs"
+    },
+    "./cache": {
+      "types": "./dist/cache.d.ts",
+      "import": "./dist/cache.js",
+      "require": "./dist/cache.cjs"
+    },
     "./queue": {
       "types": "./dist/queue.d.ts",
       "import": "./dist/queue.js",

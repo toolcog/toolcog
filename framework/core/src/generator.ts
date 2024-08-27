@@ -1,40 +1,22 @@
-import type { FunctionSchema } from "./schema.ts";
-import type { Tool } from "./tool.ts";
-import type {
-  GenerativeModel,
-  GenerativeConfig,
-  GenerativeOptions,
-} from "./generative.ts";
-
-type ToolSource =
-  | ((args: unknown) => Promise<Tool | undefined> | Tool | undefined)
-  | Promise<Tool | undefined>
-  | Tool
-  | undefined;
-
-type InstructionsSource =
-  | ((args: unknown) => Promise<string | undefined> | string | undefined)
-  | Promise<string | undefined>
-  | string
-  | undefined;
+import type { Schema } from "@toolcog/util/json";
+import type { Tool, ToolSource } from "./tool.ts";
+import type { GenerativeModel, InstructionsSource } from "./generative.ts";
 
 /**
  * Options for configuring a {@link Generator} function.
  *
- * Note that additional model-specific configuration may be available
- * depending on the particular plugins you use. Generator plugins augment
- * the {@link GenerativeConfig} interface, which this interface extends.
+ * Note that generator plugins may augment this type with additional options.
  */
-interface GeneratorConfig extends GenerativeConfig {
-  /**
-   * The default model the generator should use.
-   */
-  model?: GenerativeModel | undefined;
-
+interface GeneratorConfig {
   /**
    * The default set of tools the generator should use.
    */
   tools?: readonly ToolSource[] | null | undefined;
+
+  /**
+   * The default model the generator should use.
+   */
+  model?: GenerativeModel | undefined;
 
   /**
    * The default system prompt the generator should use
@@ -46,17 +28,25 @@ interface GeneratorConfig extends GenerativeConfig {
 /**
  * Options for controlling a {@link Generator} call.
  *
- * Note that additional model-specific options may be available
- * depending on the particular plugins you use. Generator plugins augment
- * the {@link GenerativeOptions} interface, which this interface extends.
+ * Note that generator plugins may augment this type with additional options.
  */
-interface GeneratorOptions extends GenerativeOptions {
+interface GeneratorOptions {
   id?: string | undefined;
 
   /**
-   * The model the generator should use to generate the response.
+   * A schema that describes the arguments to the generator call.
    */
-  model?: GenerativeModel | undefined;
+  parameters?: Schema | undefined;
+
+  /**
+   * A schema that describes the value the generator must generate.
+   */
+  returns?: Schema | undefined;
+
+  /**
+   * Instructions the generator should follow when generating the response.
+   */
+  instructions?: InstructionsSource | undefined;
 
   /**
    * The tools the generator should use when generating the response.
@@ -64,20 +54,14 @@ interface GeneratorOptions extends GenerativeOptions {
   tools?: readonly ToolSource[] | null | undefined;
 
   /**
+   * The model the generator should use to generate the response.
+   */
+  model?: GenerativeModel | undefined;
+
+  /**
    * The system prompt the generator should use when generating the response.
    */
   system?: string | undefined;
-
-  /**
-   * Instructions the generator should follow when generating the response.
-   */
-  instructions?: InstructionsSource;
-
-  /**
-   * A schema that describes the parameters to the generator call,
-   * and the return type with which that the generator must respond.
-   */
-  function?: FunctionSchema | undefined;
 
   /**
    * An abort signal that can be used to cancel the generator call.
@@ -139,11 +123,5 @@ const resolveInstructions = async (
   return await instructions;
 };
 
-export type {
-  ToolSource,
-  InstructionsSource,
-  GeneratorConfig,
-  GeneratorOptions,
-  Generator,
-};
+export type { GeneratorConfig, GeneratorOptions, Generator };
 export { resolveTool, resolveTools, resolveInstructions };

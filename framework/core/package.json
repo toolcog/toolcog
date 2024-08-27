@@ -26,6 +26,9 @@
       "require": "./dist/lib.cjs"
     }
   },
+  "dependencies": {
+    "@toolcog/util": "workspace:*"
+  },
   "devDependencies": {
     "eslint": "catalog:build",
     "prettier": "catalog:build",

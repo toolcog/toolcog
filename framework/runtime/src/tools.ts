@@ -1,23 +1,23 @@
 import { AsyncContext } from "@toolcog/util/async";
-import type { Tool } from "@toolcog/core";
+import type { ToolSource } from "@toolcog/core";
 
-const toolsVariable = new AsyncContext.Variable<Tool[]>({
+const toolsVariable = new AsyncContext.Variable<ToolSource[]>({
   name: "toolcog.tools",
 });
 
-const currentTools = (): Tool[] => {
+const currentTools = (): ToolSource[] => {
   return toolsVariable.get() ?? [];
 };
 
 const withTools = <F extends (...args: any[]) => unknown>(
-  tools: Tool[],
+  tools: ToolSource[],
   func: F,
   ...args: Parameters<F>
 ): ReturnType<F> => {
   return toolsVariable.run(tools, func, ...args);
 };
 
-const useTool = <const T extends Tool>(tool: T): T => {
+const useTool = <const T extends ToolSource>(tool: T): T => {
   const currentTools = toolsVariable.get();
   if (currentTools === undefined) {
     throw new Error("No current tools scope");
@@ -26,7 +26,7 @@ const useTool = <const T extends Tool>(tool: T): T => {
   return tool;
 };
 
-const useTools = <const T extends readonly Tool[]>(tools: T): T => {
+const useTools = <const T extends readonly ToolSource[]>(tools: T): T => {
   const currentTools = toolsVariable.get();
   if (currentTools === undefined) {
     throw new Error("No current tools scope");

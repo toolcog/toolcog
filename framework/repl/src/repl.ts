@@ -117,7 +117,7 @@ class Repl {
 
     this.#scanner = ts.createScanner(
       this.#languageVersion,
-      false,
+      false, // skipTrivia
       this.#languageVariant,
     );
     this.#printer = ts.createPrinter();
@@ -168,7 +168,7 @@ class Repl {
                 standalone: true,
                 keepIntrinsicImports: true,
               },
-              undefined,
+              undefined, // extras
               this.#languageServiceHost,
             ),
             this.#postprocessor,
@@ -296,12 +296,11 @@ class Repl {
       "import {\n" +
         "  defineTool,\n" +
         "  defineTools,\n" +
-        "  definePrompt,\n" +
-        "  prompt,\n" +
-        "  defineEmbedding,\n" +
         "  defineIdiom,\n" +
         "  defineIdioms,\n" +
         "  defineIndex,\n" +
+        "  definePrompt,\n" +
+        "  prompt,\n" +
         '} from "@toolcog/core";\n' +
         "import {\n" +
         "  currentTools,\n" +

@@ -1,4 +1,4 @@
-import type { FunctionSchema } from "./schema.ts";
+import type { Schema } from "@toolcog/util/json";
 
 interface Tool<
   F extends (...args: any[]) => unknown = (...args: any[]) => unknown,
@@ -7,7 +7,13 @@ interface Tool<
 
   readonly id: string;
 
-  readonly function: FunctionSchema & { readonly name: string };
+  readonly name: string;
+
+  readonly description: string | undefined;
+
+  readonly parameters: Schema | undefined;
+
+  readonly returns: Schema | undefined;
 }
 
 type Tools<F extends readonly ((...args: any[]) => unknown)[]> =
@@ -41,6 +47,12 @@ type AnyTool = Tool;
 /** @internal */
 type AnyTools = Tools<readonly ((...args: any[]) => unknown)[]>;
 
+type ToolSource =
+  | ((args: unknown) => Promise<Tool | undefined> | Tool | undefined)
+  | Promise<Tool | undefined>
+  | Tool
+  | undefined;
+
 const defineTool: {
   <const F extends (...args: any[]) => unknown>(func: F): Tool<F>;
 
@@ -73,5 +85,5 @@ const defineTools: {
   } as const,
 ) as typeof defineTools;
 
-export type { Tool, Tools, AnyTool, AnyTools };
+export type { Tool, Tools, AnyTool, AnyTools, ToolSource };
 export { defineTool, defineTools };

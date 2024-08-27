@@ -1,4 +1,5 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
 import { valueToExpression } from "../utils/literals.ts";
 import { Diagnostics } from "../diagnostics.ts";
@@ -12,6 +13,7 @@ const promptExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
+  moduleDef: ModuleDef,
   generatorExpression: ts.Expression,
   contextToolsExpression: ts.Expression | undefined,
   callExpression: ts.CallExpression,
@@ -35,11 +37,28 @@ const promptExpression = (
     optionsExpression = callExpression.arguments[1];
   }
 
-  const callId = getNodeId(ts, callExpression, {
-    package: true,
-    module: true,
-    getCommonSourceDirectory,
-  });
+  let promptId =
+    getNodeId(ts, callExpression, {
+      package: true,
+      module: true,
+      getCommonSourceDirectory,
+    }) ?? "";
+
+  if (
+    promptId in moduleDef.prompts ||
+    promptId.length === 0 ||
+    promptId.endsWith(":")
+  ) {
+    const baseId = promptId;
+    let conflictCount = 0;
+    while (true) {
+      promptId = baseId + "#" + conflictCount;
+      if (!(promptId in moduleDef.prompts)) {
+        break;
+      }
+      conflictCount += 1;
+    }
+  }
 
   const comment = getComment(ts, checker, callExpression);
   if (comment === undefined) {
@@ -51,34 +70,50 @@ const promptExpression = (
     );
   }
 
-  // Define options for the generator call.
-
   const functionSchema = callSiteToSchema(
     ts,
     checker,
     addDiagnostic,
     argumentsExpression,
     returnType,
-    callId?.replace(/[^a-zA-Z0-9_-]/g, "_"),
+    promptId.replace(/[^a-zA-Z0-9_-]/g, "_"),
     comment,
     callExpression,
   );
 
-  const functionExpression = valueToExpression(
-    ts,
-    factory,
-    functionSchema,
-    callExpression,
-  );
+  // Define the options for the generator call.
 
+  let parametersExpression: ts.Expression | undefined;
+  if (functionSchema.parameters !== undefined) {
+    parametersExpression = valueToExpression(
+      ts,
+      factory,
+      functionSchema.parameters,
+      callExpression,
+    );
+  }
+
+  let returnsExpression: ts.Expression | undefined;
+  if (functionSchema.returns !== undefined) {
+    returnsExpression = valueToExpression(
+      ts,
+      factory,
+      functionSchema.returns,
+      callExpression,
+    );
+  }
+
+  let instructions: string | undefined;
   if (instructionsExpression === undefined) {
-    let instructions = comment?.tags.instructions;
+    instructions = comment?.tags.instructions;
     if (instructions === undefined) {
       instructions = comment?.description;
     }
     if (instructions !== undefined) {
       instructionsExpression = factory.createStringLiteral(instructions);
     }
+  } else if (ts.isStringLiteral(instructionsExpression)) {
+    instructions = instructionsExpression.text;
   }
 
   let toolsExpression: ts.Expression | undefined;
@@ -91,20 +126,33 @@ const promptExpression = (
   }
 
   const optionsAssignments: ts.ObjectLiteralElementLike[] = [
-    ...(toolsExpression !== undefined ?
-      [factory.createPropertyAssignment("tools", toolsExpression)]
+    ...(parametersExpression !== undefined ?
+      [factory.createPropertyAssignment("parameters", parametersExpression)]
+    : []),
+
+    ...(returnsExpression !== undefined ?
+      [factory.createPropertyAssignment("returns", returnsExpression)]
     : []),
 
     ...(instructionsExpression !== undefined ?
       [factory.createPropertyAssignment("instructions", instructionsExpression)]
     : []),
 
-    factory.createPropertyAssignment("function", functionExpression),
+    ...(toolsExpression !== undefined ?
+      [factory.createPropertyAssignment("tools", toolsExpression)]
+    : []),
 
     ...(optionsExpression !== undefined ?
       [factory.createSpreadAssignment(optionsExpression)]
     : []),
   ];
+
+  // Add the prompt to the module manifest.
+
+  moduleDef.prompts[promptId] = {
+    ...functionSchema,
+    instructions,
+  };
 
   // Define the generator call.
 

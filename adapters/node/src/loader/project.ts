@@ -90,10 +90,10 @@ class ProjectLoader {
     } as const satisfies ts.CustomTransformers;
 
     const emitResult = program.emit(
-      undefined,
-      undefined,
-      undefined,
-      false,
+      undefined, // targetSourceFile
+      undefined, // writeFile
+      undefined, // cancellationToken
+      false, // emitOnlyDtsFiles
       transformers,
     );
 

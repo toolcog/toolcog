@@ -1,5 +1,13 @@
 import type ts from "typescript";
 import typescript from "typescript";
+import type { Manifest } from "@toolcog/runtime";
+import {
+  resolveManifestFile,
+  parseManifest,
+  formatManifest,
+  createManifest,
+  createModuleDef,
+} from "@toolcog/runtime";
 import { isFunctionCallExpression } from "./utils/functions.ts";
 import { resolveModuleExportTypes } from "./utils/modules.ts";
 import type { ImportSymbols } from "./utils/imports.ts";
@@ -8,21 +16,14 @@ import {
   removeImportsWithTypes,
   insertNamedImport,
 } from "./utils/imports.ts";
-import { resolveToolcogConfigFile, readToolcogConfig } from "./config.ts";
-import {
-  resolveToolcogManifest,
-  formatToolcogManifest,
-  createToolcogManifest,
-} from "./manifest.ts";
-import { resolveToolcogModule } from "./module.ts";
+import { getNodeId } from "./node-id.ts";
+import { defineIdiomExpression } from "./intrinsics/define-idiom.ts";
+import { defineIdiomsExpression } from "./intrinsics/define-idioms.ts";
+import { defineIndexExpression } from "./intrinsics/define-index.ts";
 import { defineToolExpression } from "./intrinsics/define-tool.ts";
 import { defineToolsExpression } from "./intrinsics/define-tools.ts";
 import { definePromptExpression } from "./intrinsics/define-prompt.ts";
 import { promptExpression } from "./intrinsics/prompt.ts";
-import { defineEmbeddingExpression } from "./intrinsics/define-embedding.ts";
-import { defineIdiomExpression } from "./intrinsics/define-idiom.ts";
-import { defineIdiomsExpression } from "./intrinsics/define-idioms.ts";
-import { defineIndexExpression } from "./intrinsics/define-index.ts";
 
 interface ToolcogTransformerConfig {
   generatorImportName?: string | undefined;
@@ -34,23 +35,23 @@ interface ToolcogTransformerConfig {
   indexerImportName?: string | undefined;
   indexerModuleName?: string | undefined;
 
+  idiomResolverImportName?: string | undefined;
+  idiomResolverModuleName?: string | undefined;
+
   contextToolsImportName?: string | undefined;
   contextToolsModuleName?: string | undefined;
 
-  embeddingModel?: string | undefined;
-  embeddingModels?: string[] | undefined;
+  keepIntrinsicImports?: boolean | undefined;
 
   standalone?: boolean | undefined;
 
-  keepIntrinsicImports?: boolean | undefined;
+  manifestFile?: string | undefined;
 }
-
-const defaultEmbeddingModel = "text-embedding-3-small";
 
 const transformToolcog = (
   ts: typeof import("typescript"),
   context: ts.TransformationContext,
-  host: ts.ModuleResolutionHost,
+  host: ts.ModuleResolutionHost & { writeFile: ts.WriteFileCallback },
   program: ts.Program,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   config: ToolcogTransformerConfig | undefined,
@@ -67,13 +68,13 @@ const transformToolcog = (
   const indexerImportName = config?.indexerImportName ?? "index";
   const indexerModuleName = config?.indexerModuleName ?? "@toolcog/runtime";
 
+  const idiomResolverImportName =
+    config?.idiomResolverImportName ?? "resolveIdiom";
+  const idiomResolverModuleName =
+    config?.idiomResolverModuleName ?? "@toolcog/runtime";
+
   const contextToolsImportName = config?.contextToolsImportName;
   const contextToolsModuleName = config?.contextToolsModuleName;
-
-  const embeddingsImportName = "embeddings";
-  const idiomsImportName = "idioms";
-
-  const standalone = config?.standalone ?? false;
 
   const keepIntrinsicImports = config?.keepIntrinsicImports ?? false;
 
@@ -88,17 +89,18 @@ const transformToolcog = (
       "AnyTools",
       "AnyIdiom",
       "AnyIdioms",
+      "defineIdiom",
+      "defineIdioms",
+      "defineIndex",
       "defineTool",
       "defineTools",
       "definePrompt",
       "prompt",
-      "defineEmbedding",
-      "defineIdiom",
-      "defineIdioms",
-      "defineIndex",
     ],
     "@toolcog/core",
   );
+
+  const standalone = config?.standalone ?? false;
 
   const transformSourceFile = (sourceFile: ts.SourceFile): ts.SourceFile => {
     let generatorExpression: ts.Identifier | undefined;
@@ -113,35 +115,22 @@ const transformToolcog = (
     let hasIndexerImport = false as boolean;
     let needsIndexer = false as boolean;
 
+    let idiomResolverExpression: ts.Identifier | undefined;
+    let hasIdiomResolverImport = false as boolean;
+    let needsIdiomResolver = false as boolean;
+
     let contextToolsExpression: ts.Identifier | undefined;
     let hasContextToolsImport = false as boolean;
     let needsContextTools = false as boolean;
 
-    let embeddingsExpression: ts.Identifier | undefined;
-    let hasEmbeddingsImport = false as boolean;
-    let needsEmbeddings = false as boolean;
-
-    let idiomsExpression: ts.Identifier | undefined;
-    let hasIdiomsImport = false as boolean;
-    let needsIdioms = false as boolean;
-
-    let manifestFileName: string | undefined;
-    let manifestModuleName: string | undefined;
-
-    if (!standalone) {
-      manifestFileName = resolveToolcogManifest(ts, program, sourceFile);
-      manifestModuleName = resolveToolcogModule(ts, program, sourceFile);
-    }
-
     let intrinsicImports = Object.create(null) as ImportSymbols<
+      | "defineIdiom"
+      | "defineIdioms"
+      | "defineIndex"
       | "defineTool"
       | "defineTools"
       | "definePrompt"
       | "prompt"
-      | "defineEmbedding"
-      | "defineIdiom"
-      | "defineIdioms"
-      | "defineIndex"
     >;
 
     // Preprocess import declarations.
@@ -152,13 +141,13 @@ const transformToolcog = (
         checker,
         node,
         {
+          defineIdiom: intrinsicTypes.defineIdiom,
+          defineIdioms: intrinsicTypes.defineIdioms,
+          defineIndex: intrinsicTypes.defineIndex,
           defineTool: intrinsicTypes.defineTool,
           defineTools: intrinsicTypes.defineTools,
           definePrompt: intrinsicTypes.definePrompt,
           prompt: intrinsicTypes.prompt,
-          defineEmbedding: intrinsicTypes.defineEmbedding,
-          defineIdiom: intrinsicTypes.defineIdiom,
-          defineIdioms: intrinsicTypes.defineIdioms,
         },
         intrinsicImports,
       );
@@ -198,25 +187,22 @@ const transformToolcog = (
           }
         }
 
-        // Check for a context defineTools import.
+        // Check for an idiom resolver import.
+        if (node.moduleSpecifier.text === idiomResolverModuleName) {
+          for (const element of node.importClause.namedBindings.elements) {
+            if (element.name.text === idiomResolverImportName) {
+              idiomResolverExpression = element.propertyName ?? element.name;
+              hasIdiomResolverImport = true;
+            }
+          }
+        }
+
+        // Check for a context tools import.
         if (node.moduleSpecifier.text === contextToolsModuleName) {
           for (const element of node.importClause.namedBindings.elements) {
             if (element.name.text === contextToolsImportName) {
               contextToolsExpression = element.propertyName ?? element.name;
               hasContextToolsImport = true;
-            }
-          }
-        }
-
-        // Check for manifest imports.
-        if (node.moduleSpecifier.text === manifestModuleName) {
-          for (const element of node.importClause.namedBindings.elements) {
-            if (element.name.text === embeddingsImportName) {
-              embeddingsExpression = element.propertyName ?? element.name;
-              hasEmbeddingsImport = true;
-            } else if (element.name.text === idiomsImportName) {
-              idiomsExpression = element.propertyName ?? element.name;
-              hasIdiomsImport = true;
             }
           }
         }
@@ -242,20 +228,6 @@ const transformToolcog = (
     }
     if (!hasIntrinsicImports) {
       return sourceFile;
-    }
-
-    // Load toolcog config file.
-
-    const toolcogConfigFile = resolveToolcogConfigFile(sourceFile);
-    const toolcogConfig = readToolcogConfig(ts, toolcogConfigFile);
-
-    const embeddingModel =
-      toolcogConfig?.embedder?.model ??
-      config?.embeddingModel ??
-      defaultEmbeddingModel;
-    const embeddingModels = config?.embeddingModels ?? [];
-    if (!embeddingModels.includes(embeddingModel)) {
-      embeddingModels.unshift(embeddingModel);
     }
 
     // Generate intrinsic import names.
@@ -284,6 +256,14 @@ const transformToolcog = (
       );
     }
 
+    if (idiomResolverExpression === undefined) {
+      idiomResolverExpression = factory.createUniqueName(
+        idiomResolverImportName,
+        ts.GeneratedIdentifierFlags.ReservedInNestedScopes |
+          ts.GeneratedIdentifierFlags.Optimistic,
+      );
+    }
+
     if (
       contextToolsExpression === undefined &&
       contextToolsImportName !== undefined &&
@@ -296,31 +276,104 @@ const transformToolcog = (
       );
     }
 
-    if (embeddingsExpression === undefined && !standalone) {
-      embeddingsExpression = factory.createUniqueName(
-        embeddingsImportName,
-        ts.GeneratedIdentifierFlags.ReservedInNestedScopes |
-          ts.GeneratedIdentifierFlags.Optimistic,
-      );
-    }
-
-    if (idiomsExpression === undefined && !standalone) {
-      idiomsExpression = factory.createUniqueName(
-        idiomsImportName,
-        ts.GeneratedIdentifierFlags.ReservedInNestedScopes |
-          ts.GeneratedIdentifierFlags.Optimistic,
-      );
-    }
-
     // Initialize the manifest.
+    const manifestFile = resolveManifestFile(
+      ts,
+      program.getCompilerOptions(),
+      program.getCommonSourceDirectory,
+      config?.manifestFile,
+    );
+    let manifest: Manifest;
+    if (manifestFile !== undefined && host.fileExists(manifestFile)) {
+      manifest = parseManifest(host.readFile(manifestFile)!);
+    } else {
+      manifest = createManifest();
+    }
 
-    const manifest = createToolcogManifest(manifestModuleName);
-    manifest.embeddingModel = embeddingModel;
-    manifest.embeddingModels = embeddingModels;
+    const moduleId = getNodeId(ts, sourceFile, {
+      package: true,
+      module: true,
+      getCommonSourceDirectory: program.getCommonSourceDirectory,
+    })!;
+    const moduleDef = createModuleDef();
+    manifest.modules[moduleId] = moduleDef;
 
     // Transform the source file.
-
     const transformNode = (node: ts.Node): ts.Node => {
+      // Transform `defineIdiom` intrinsics.
+      if (
+        intrinsicTypes.AnyIdiom !== undefined &&
+        intrinsicTypes.defineIdiom !== undefined &&
+        isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineIdiom)
+      ) {
+        needsIdiomResolver = true;
+        const valueExpression = node.arguments[0]!;
+        node = defineIdiomExpression(
+          ts,
+          factory,
+          checker,
+          addDiagnostic,
+          program.getCommonSourceDirectory,
+          moduleDef,
+          intrinsicTypes.AnyIdiom,
+          idiomResolverExpression,
+          valueExpression,
+          checker.getTypeAtLocation(valueExpression),
+          valueExpression,
+        );
+      }
+
+      // Transform `defineIdioms` intrinsics.
+      if (
+        intrinsicTypes.AnyIdiom !== undefined &&
+        intrinsicTypes.AnyIdioms !== undefined &&
+        intrinsicTypes.defineIdioms !== undefined &&
+        isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineIdioms)
+      ) {
+        needsIdiomResolver = true;
+        const valuesExpression = node.arguments[0]!;
+        node = defineIdiomsExpression(
+          ts,
+          factory,
+          checker,
+          addDiagnostic,
+          program.getCommonSourceDirectory,
+          moduleDef,
+          intrinsicTypes.AnyIdiom,
+          intrinsicTypes.AnyIdioms,
+          idiomResolverExpression,
+          valuesExpression,
+          checker.getTypeAtLocation(valuesExpression),
+          valuesExpression,
+        );
+      }
+
+      // Transform `defineIndex` intrinsics.
+      if (
+        intrinsicTypes.AnyIdiom !== undefined &&
+        intrinsicTypes.AnyIdioms !== undefined &&
+        intrinsicTypes.defineIndex !== undefined &&
+        isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineIndex)
+      ) {
+        needsEmbedder = true;
+        needsIndexer = true;
+        needsIdiomResolver = true;
+        node = defineIndexExpression(
+          ts,
+          factory,
+          checker,
+          addDiagnostic,
+          program.getCommonSourceDirectory,
+          moduleDef,
+          intrinsicTypes.AnyIdiom,
+          intrinsicTypes.AnyIdioms,
+          idiomResolverExpression,
+          embedderExpression!,
+          indexerExpression!,
+          node,
+        );
+      }
+
       // Transform `defineTool` intrinsics.
       if (
         intrinsicTypes.AnyTool !== undefined &&
@@ -334,7 +387,7 @@ const transformToolcog = (
           checker,
           addDiagnostic,
           program.getCommonSourceDirectory,
-          manifest,
+          moduleDef,
           intrinsicTypes.AnyTool,
           funcExpression,
           checker.getTypeAtLocation(funcExpression),
@@ -356,7 +409,7 @@ const transformToolcog = (
           checker,
           addDiagnostic,
           program.getCommonSourceDirectory,
-          manifest,
+          moduleDef,
           intrinsicTypes.AnyTool,
           intrinsicTypes.AnyTools,
           funcsExpression,
@@ -378,7 +431,7 @@ const transformToolcog = (
           checker,
           addDiagnostic,
           program.getCommonSourceDirectory,
-          manifest,
+          moduleDef,
           generatorExpression!,
           contextToolsExpression,
           node,
@@ -398,113 +451,9 @@ const transformToolcog = (
           checker,
           addDiagnostic,
           program.getCommonSourceDirectory,
+          moduleDef,
           generatorExpression!,
           contextToolsExpression,
-          node,
-        );
-      }
-
-      // Transform `defineEmbedding` intrinsics.
-      if (
-        intrinsicTypes.defineEmbedding !== undefined &&
-        isFunctionCallExpression(
-          ts,
-          checker,
-          node,
-          intrinsicTypes.defineEmbedding,
-        )
-      ) {
-        needsEmbedder ||= standalone || !ts.isStringLiteral(node.arguments[0]!);
-        needsEmbeddings = true;
-        node = defineEmbeddingExpression(
-          ts,
-          factory,
-          checker,
-          addDiagnostic,
-          program.getCommonSourceDirectory,
-          manifest,
-          embeddingsExpression,
-          embedderExpression!,
-          node,
-        );
-      }
-
-      // Transform `defineIdiom` intrinsics.
-      if (
-        intrinsicTypes.AnyIdiom !== undefined &&
-        intrinsicTypes.defineIdiom !== undefined &&
-        isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineIdiom)
-      ) {
-        needsEmbeddings = true;
-        needsIdioms = true;
-        const valueExpression = node.arguments[0]!;
-        node = defineIdiomExpression(
-          ts,
-          factory,
-          checker,
-          addDiagnostic,
-          program.getCommonSourceDirectory,
-          manifest,
-          intrinsicTypes.AnyIdiom,
-          embeddingsExpression,
-          idiomsExpression,
-          valueExpression,
-          checker.getTypeAtLocation(valueExpression),
-          valueExpression,
-        );
-      }
-
-      // Transform `defineIdioms` intrinsics.
-      if (
-        intrinsicTypes.AnyIdiom !== undefined &&
-        intrinsicTypes.AnyIdioms !== undefined &&
-        intrinsicTypes.defineIdioms !== undefined &&
-        isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineIdioms)
-      ) {
-        needsEmbeddings = true;
-        needsIdioms = true;
-        const valuesExpression = node.arguments[0]!;
-        node = defineIdiomsExpression(
-          ts,
-          factory,
-          checker,
-          addDiagnostic,
-          program.getCommonSourceDirectory,
-          manifest,
-          intrinsicTypes.AnyIdiom,
-          intrinsicTypes.AnyIdioms,
-          embeddingsExpression,
-          idiomsExpression,
-          valuesExpression,
-          checker.getTypeAtLocation(valuesExpression),
-          valuesExpression,
-        );
-      }
-
-      // Transform `defineIndex` intrinsics.
-      if (
-        intrinsicTypes.AnyIdiom !== undefined &&
-        intrinsicTypes.AnyIdioms !== undefined &&
-        intrinsicTypes.defineIndex !== undefined &&
-        isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineIndex)
-      ) {
-        needsEmbedder = true;
-        needsIndexer = true;
-        needsEmbeddings = true;
-        needsIdioms = true;
-        node = defineIndexExpression(
-          ts,
-          factory,
-          checker,
-          addDiagnostic,
-          program.getCommonSourceDirectory,
-          manifest,
-          intrinsicTypes.AnyIdiom,
-          intrinsicTypes.AnyIdioms,
-          embeddingsExpression,
-          idiomsExpression,
-          embedderExpression!,
-          indexerExpression!,
           node,
         );
       }
@@ -522,14 +471,13 @@ const transformToolcog = (
 
       // Remove intrinsic imports.
       return removeImportsWithTypes(ts, factory, checker, node, [
+        intrinsicTypes.defineIdiom,
+        intrinsicTypes.defineIdioms,
+        intrinsicTypes.defineIndex,
         intrinsicTypes.defineTool,
         intrinsicTypes.defineTools,
         intrinsicTypes.definePrompt,
         intrinsicTypes.prompt,
-        intrinsicTypes.defineEmbedding,
-        intrinsicTypes.defineIdiom,
-        intrinsicTypes.defineIdioms,
-        intrinsicTypes.defineIndex,
       ]);
     };
     sourceFile = ts.visitEachChild(sourceFile, postprocessNode, context);
@@ -570,7 +518,19 @@ const transformToolcog = (
       );
     }
 
-    // Inject context defineTools import, if needed.
+    // Inject idiom resolver import, if needed.
+    if (!hasIdiomResolverImport && needsIdiomResolver && !standalone) {
+      sourceFile = insertNamedImport(
+        ts,
+        factory,
+        sourceFile,
+        factory.createIdentifier(idiomResolverImportName),
+        idiomResolverExpression,
+        idiomResolverModuleName,
+      );
+    }
+
+    // Inject context tools import, if needed.
     if (
       !hasContextToolsImport &&
       needsContextTools &&
@@ -587,40 +547,10 @@ const transformToolcog = (
       );
     }
 
-    // Inject embeddings import, if needed.
-    if (!hasEmbeddingsImport && needsEmbeddings && !standalone) {
-      sourceFile = insertNamedImport(
-        ts,
-        factory,
-        sourceFile,
-        factory.createIdentifier(embeddingsImportName),
-        embeddingsExpression!,
-        manifestModuleName!,
-      );
-    }
-
-    // Inject idioms import, if needed.
-    if (!hasIdiomsImport && needsIdioms && !standalone) {
-      sourceFile = insertNamedImport(
-        ts,
-        factory,
-        sourceFile,
-        factory.createIdentifier(idiomsImportName),
-        idiomsExpression!,
-        manifestModuleName!,
-      );
-    }
-
-    // Emit the manifest file.
-    if (!standalone) {
+    // Update the manifest file.
+    if (!standalone && manifestFile !== undefined) {
       context.onEmitNode(ts.EmitHint.SourceFile, sourceFile, () => {
-        program.writeFile(
-          manifestFileName!,
-          formatToolcogManifest(manifest),
-          false, // writeByteOrderMark
-          undefined, // onError
-          [sourceFile],
-        );
+        host.writeFile(manifestFile, formatManifest(manifest), false);
       });
     }
 
@@ -633,24 +563,37 @@ const transformToolcog = (
 const toolcogTransformer = (
   program: ts.Program,
   config?: ToolcogTransformerConfig,
-  // import("ts-patch").TransformerExtras
   extras?: {
+    // import("ts-patch").TransformerExtras
     readonly ts: typeof import("typescript");
     readonly addDiagnostic: (diagnostic: ts.Diagnostic) => number;
   },
-  host?: ts.ModuleResolutionHost,
+  host?: ts.ModuleResolutionHost & { writeFile?: ts.WriteFileCallback },
 ): ts.TransformerFactory<ts.SourceFile> => {
   return (context: ts.TransformationContext): ts.Transformer<ts.SourceFile> => {
     const ts = extras?.ts ?? typescript;
     if (host === undefined) {
       host = ts.sys;
     }
+    if (host.writeFile === undefined) {
+      host = {
+        ...host,
+        writeFile: ts.sys.writeFile,
+      };
+    }
 
     const addDiagnostic = (extras?.addDiagnostic ?? context.addDiagnostic) as (
       diagnostic: ts.Diagnostic,
     ) => void;
 
-    return transformToolcog(ts, context, host, program, addDiagnostic, config);
+    return transformToolcog(
+      ts,
+      context,
+      host as ts.ModuleResolutionHost & { writeFile: ts.WriteFileCallback },
+      program,
+      addDiagnostic,
+      config,
+    );
   };
 };
 

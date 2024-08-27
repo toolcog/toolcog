@@ -85,7 +85,7 @@ interface ResponseBlock {
   /**
    * The return value of the tool function.
    */
-  readonly result: unknown;
+  readonly result: string;
 }
 
 /**

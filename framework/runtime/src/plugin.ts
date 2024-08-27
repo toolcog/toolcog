@@ -1,10 +1,10 @@
 import type {
-  GeneratorOptions,
-  Generator,
   EmbedderOptions,
   Embedder,
   IndexerOptions,
   Indexer,
+  GeneratorOptions,
+  Generator,
 } from "@toolcog/core";
 
 interface Plugin {
@@ -12,15 +12,15 @@ interface Plugin {
 
   readonly version?: string;
 
-  readonly generator?: (
-    options?: GeneratorOptions,
-  ) => Promise<Generator | undefined>;
-
   readonly embedder?: (
     options?: EmbedderOptions,
   ) => Promise<Embedder | undefined>;
 
   readonly indexer?: (options: IndexerOptions) => Promise<Indexer | undefined>;
+
+  readonly generator?: (
+    options?: GeneratorOptions,
+  ) => Promise<Generator | undefined>;
 }
 
 type PluginSource =

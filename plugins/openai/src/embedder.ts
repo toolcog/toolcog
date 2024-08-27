@@ -5,7 +5,7 @@ import type {
   EmbeddingVector,
   EmbedderConfig,
   EmbedderOptions,
-  EmbedderResult,
+  Embedded,
   Embedder,
 } from "@toolcog/core";
 
@@ -16,13 +16,13 @@ declare module "@toolcog/core" {
     "text-embedding-3-large": unknown;
   }
 
-  interface EmbeddingConfig {
+  interface EmbedderConfig {
     dimensions?: number | undefined;
 
     batchSize?: number | undefined;
   }
 
-  interface EmbeddingOptions {
+  interface EmbedderOptions {
     dimensions?: number | undefined;
 
     batchSize?: number | undefined;
@@ -56,7 +56,7 @@ const embedder = (options?: OpenAIEmbedderOptions): Embedder | undefined => {
     }
   } else if (
     options?.openai !== undefined ||
-    (typeof process !== "undefined" && process.env.OPENAI_API_KEY)
+    (typeof process !== "undefined" && process.env.OPENAI_API_KEY !== undefined)
   ) {
     return embed;
   }
@@ -65,9 +65,9 @@ const embedder = (options?: OpenAIEmbedderOptions): Embedder | undefined => {
 };
 
 const embed = (async <T extends string | readonly string[]>(
-  embeds: T,
+  texts: T,
   options?: OpenAIEmbedderOptions,
-): Promise<EmbedderResult<T>> => {
+): Promise<Embedded<T>> => {
   const client =
     options?.openai instanceof OpenAI ?
       options.openai
@@ -82,11 +82,11 @@ const embed = (async <T extends string | readonly string[]>(
   const batchSize = options?.batchSize ?? defaultBatchSize;
 
   const batches: string[][] = [];
-  if (typeof embeds === "string") {
-    batches.push([embeds]);
+  if (typeof texts === "string") {
+    batches.push([texts]);
   } else {
-    for (let i = 0; i < embeds.length; i += batchSize) {
-      batches.push(embeds.slice(i, i + batchSize));
+    for (let i = 0; i < texts.length; i += batchSize) {
+      batches.push(texts.slice(i, i + batchSize));
     }
   }
 
@@ -120,9 +120,9 @@ const embed = (async <T extends string | readonly string[]>(
   }
 
   return (
-    typeof embeds === "string" ?
+    typeof texts === "string" ?
       embeddings[0]!
-    : embeddings) as EmbedderResult<T>;
+    : embeddings) as Embedded<T>;
 }) satisfies Embedder;
 
 export type { OpenAIEmbedderConfig, OpenAIEmbedderOptions };

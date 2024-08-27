@@ -1,4 +1,5 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
 import { moveLeadingComments } from "../utils/comments.ts";
 import { valueToExpression } from "../utils/literals.ts";
@@ -7,7 +8,6 @@ import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
 import { getNodeTypeId } from "../node-id.ts";
 import { signatureToSchema } from "../schema.ts";
-import type { ToolcogManifest } from "../manifest.ts";
 
 const defineToolExpression = (
   ts: typeof import("typescript"),
@@ -15,7 +15,7 @@ const defineToolExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
-  manifest: ToolcogManifest,
+  moduleDef: ModuleDef,
   toolType: ts.Type,
   funcExpression: ts.Expression,
   funcType: ts.Type,
@@ -41,12 +41,16 @@ const defineToolExpression = (
       getCommonSourceDirectory,
     }) ?? "";
 
-  if (toolId in manifest.tools || toolId.length === 0 || toolId.endsWith(":")) {
+  if (
+    toolId in moduleDef.tools ||
+    toolId.length === 0 ||
+    toolId.endsWith(":")
+  ) {
     const baseId = toolId;
     let conflictCount = 0;
     while (true) {
       toolId = baseId + "#" + conflictCount;
-      if (!(toolId in manifest.tools)) {
+      if (!(toolId in moduleDef.tools)) {
         break;
       }
       conflictCount += 1;
@@ -64,6 +68,16 @@ const defineToolExpression = (
       Diagnostics.CommentNeededToDescribeToolToLLM,
     );
   }
+
+  const toolSchema = signatureToSchema(
+    ts,
+    checker,
+    addDiagnostic,
+    signature,
+    toolId.replace(/[^a-zA-Z0-9_-]/g, "_"),
+    comment,
+    errorNode,
+  );
 
   // Define the func parameter.
 
@@ -87,30 +101,75 @@ const defineToolExpression = (
     ),
   );
 
-  // Define the function property.
+  // Define the name property.
 
-  const functionSchema = signatureToSchema(
-    ts,
-    checker,
-    addDiagnostic,
-    signature,
-    toolId.replace(/[^a-zA-Z0-9_-]/g, "_"),
-    comment,
-    errorNode,
-  );
+  let nameAssignment: ts.Statement | undefined;
+  if (toolSchema.name !== undefined) {
+    nameAssignment = factory.createExpressionStatement(
+      factory.createCallExpression(
+        factory.createPropertyAccessExpression(
+          factory.createIdentifier("Object"),
+          "defineProperty",
+        ),
+        undefined, // typeArguments
+        [
+          toolIdentifier,
+          factory.createStringLiteral("name"),
+          factory.createObjectLiteralExpression(
+            [
+              factory.createPropertyAssignment(
+                "value",
+                factory.createStringLiteral(toolSchema.name),
+              ),
+              factory.createPropertyAssignment(
+                "writable",
+                factory.createFalse(),
+              ),
+              factory.createPropertyAssignment(
+                "enumerable",
+                factory.createFalse(),
+              ),
+              factory.createPropertyAssignment(
+                "configurable",
+                factory.createTrue(),
+              ),
+            ],
+            true, // multiLine
+          ),
+        ],
+      ),
+    );
+  }
 
-  const functionExpression = valueToExpression(
-    ts,
-    factory,
-    functionSchema,
-    errorNode,
-  );
+  // Define the description property.
 
-  const functionAssignment = factory.createExpressionStatement(
+  const descriptionAssignment = factory.createExpressionStatement(
     factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(toolIdentifier, "function"),
+      factory.createPropertyAccessExpression(toolIdentifier, "description"),
       factory.createToken(ts.SyntaxKind.EqualsToken),
-      functionExpression,
+      toolSchema.description !== undefined ?
+        factory.createStringLiteral(toolSchema.description)
+      : factory.createVoidZero(),
+    ),
+  );
+
+  // Define the parameters property.
+
+  const parametersAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(toolIdentifier, "parameters"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      valueToExpression(ts, factory, toolSchema.parameters, errorNode),
+    ),
+  );
+
+  // Define the returns property.
+
+  const returnsAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(toolIdentifier, "returns"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      valueToExpression(ts, factory, toolSchema.returns, errorNode),
     ),
   );
 
@@ -140,9 +199,11 @@ const defineToolExpression = (
     ),
   );
 
-  // Add the tool to the manifest.
+  // Add the tool to the module module manifest.
 
-  manifest.tools[toolId] = { function: functionSchema };
+  moduleDef.tools[toolId] = {
+    ...toolSchema,
+  };
 
   // Create and return an IIFE wrapper.
 
@@ -157,7 +218,10 @@ const defineToolExpression = (
         [
           toolFunctionDeclaration,
           idAssignment,
-          functionAssignment,
+          ...(nameAssignment !== undefined ? [nameAssignment] : []),
+          descriptionAssignment,
+          parametersAssignment,
+          returnsAssignment,
           factory.createReturnStatement(toolIdentifier),
         ],
         true, // multiLine

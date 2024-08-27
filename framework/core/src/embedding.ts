@@ -1,10 +1,11 @@
 /**
- * Each key of this type represents a known embedding model name.
+ * Each key of this type represents the name of a known embedding model.
  * Embedder plugins augment this type to add supported model names.
  *
- * Use the {@link EmbeddingModel} type, which references the keys of this type,
- * to refer to strings that represent embedding model names. The indirection
- * through this type is necessary because type aliases cannot be augmented.
+ * Use the {@link EmbeddingModel} type for strings that should represent
+ * embedding model names. The `EmbeddingModel` type extracts the keys of
+ * this type. The indirection through this type is necessary because type
+ * aliases cannot be augmented.
  */
 interface EmbeddingModelNames {}
 
@@ -13,19 +14,6 @@ interface EmbeddingModelNames {}
  */
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type EmbeddingModel = keyof EmbeddingModelNames | (string & {});
-
-/**
- * Options for configuring an embedding model, such as API keys and API client
- * parameters. Embedder plugins augment this type with supported options.
- */
-interface EmbeddingConfig {}
-
-/**
- * Options for controlling an embedding model request, such as an abort signal
- * for cancelling the request. Generator plugins augment this type with
- * supported options.
- */
-interface EmbeddingOptions {}
 
 /**
  * The type of an embedding vector. Embedding vectors are stored as float
@@ -41,16 +29,78 @@ type EmbeddingDistance = (a: EmbeddingVector, b: EmbeddingVector) => number;
 /**
  * A set of embedding vectors keyed by the model that generated each vector.
  */
-interface Embedding {
-  readonly [model: EmbeddingModel]: EmbeddingVector;
+interface Embedding<V = EmbeddingVector> {
+  [model: EmbeddingModel]: V;
 }
+
+/**
+ * A set of embeddings keyed by the embedded text.
+ */
+interface Embeddings<V = EmbeddingVector> {
+  [text: string]: Embedding<V>;
+}
+
+const decodeEmbeddingVector = (vector: Buffer): EmbeddingVector => {
+  return new Float32Array(
+    vector.buffer,
+    vector.byteOffset,
+    vector.byteLength / 4,
+  );
+};
+
+const encodeEmbeddingVector = (vector: EmbeddingVector): Buffer => {
+  return Buffer.from(vector.buffer);
+};
+
+const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {
+  return Object.fromEntries(
+    Object.entries(embedding).map(([model, vector]) => {
+      return [model, decodeEmbeddingVector(vector)] as const;
+    }),
+  );
+};
+
+const encodeEmbedding = (embedding: Embedding): Embedding<Buffer> => {
+  return Object.fromEntries(
+    Object.entries(embedding)
+      .map(([model, vector]) => {
+        return [model, encodeEmbeddingVector(vector)] as const;
+      })
+      .sort((a, b) => a[0].localeCompare(b[0])),
+  );
+};
+
+const decodeEmbeddings = (embeddings: Embeddings<Buffer>): Embeddings => {
+  return Object.fromEntries(
+    Object.entries(embeddings).map(([text, embedding]) => {
+      return [text, decodeEmbedding(embedding)] as const;
+    }),
+  );
+};
+
+const encodeEmbeddings = (embeddings: Embeddings): Embeddings<Buffer> => {
+  return Object.fromEntries(
+    Object.entries(embeddings)
+      .map(([text, embedding]) => {
+        return [text, encodeEmbedding(embedding)] as const;
+      })
+      .sort((a, b) => a[0].localeCompare(b[0])),
+  );
+};
 
 export type {
   EmbeddingModelNames,
   EmbeddingModel,
-  EmbeddingConfig,
-  EmbeddingOptions,
   EmbeddingVector,
   EmbeddingDistance,
   Embedding,
+  Embeddings,
+};
+export {
+  decodeEmbeddingVector,
+  encodeEmbeddingVector,
+  decodeEmbedding,
+  encodeEmbedding,
+  decodeEmbeddings,
+  encodeEmbeddings,
 };

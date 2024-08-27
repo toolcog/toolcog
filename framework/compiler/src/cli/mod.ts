@@ -1,5 +1,10 @@
-export type { GenerateCommandOptions } from "./generate.ts";
-export { runGenerateCommand, createGenerateCommand } from "./generate.ts";
+export type { InventoryGenerateCommandOptions } from "./inventory-generate.ts";
+export {
+  runInventoryGenerateCommand,
+  createInventoryGenerateCommand,
+} from "./inventory-generate.ts";
+
+export { createInventoryCommand } from "./inventory.ts";
 
 export { createCompilerCommand } from "./compiler.ts";
 

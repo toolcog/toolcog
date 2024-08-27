@@ -1,40 +1,48 @@
 import { definePrompt } from "@toolcog/core";
 
-// Make a David Letterman style top-10 list about the given subject.
-//
-// @param subject - The subject of the top-10 list.
-// @returns The top-10 list.
+/**
+ * Make a David Letterman style top-10 list about the given subject.
+ *
+ * @param subject - The subject of the top-10 list.
+ * @returns The top-10 list.
+ */
 const makeList = definePrompt<(subject: string) => string[]>();
 
-// Give feedback on the given David Letterman style top-10 list.
-// Evaluate each item for wit, novelty, and brevity. Give critical
-// feedback, not just faint praise.
-//
-// @param list - The top-10 list to review.
-// @returns Feedback about ways to improve the top-10 list.
+/**
+ * Give feedback on the given David Letterman style top-10 list.
+ * Evaluate each item for wit, novelty, and brevity. Give critical
+ * feedback, not just faint praise.
+ *
+ * @param list - The top-10 list to review.
+ * @returns Feedback about ways to improve the top-10 list.
+ */
 const reviewList = definePrompt<(list: string[]) => string>();
 
-// Improve the given David Letterman style top-10 list by incorporating
-// the provided feedback. Produce an updated top-10 list with the feedback.
-// Do not include any feedback in the new list.
-//
-// @param list - The top-10 list to improve.
-// @param feedback - The feedback to incorporate into the top-10 list.
-// @returns An improved top-10 list.
+/**
+ * Improve the given David Letterman style top-10 list by incorporating
+ * the provided feedback. Produce an updated top-10 list with the feedback.
+ * Do not include any feedback in the new list.
+ *
+ * @param list - The top-10 list to improve.
+ * @param feedback - The feedback to incorporate into the top-10 list.
+ * @returns An improved top-10 list.
+ */
 const improveList =
   definePrompt<(list: string[], feedback: string) => string[]>();
 
-// Score how well an improved David Letterman style top-10 list incorporated
-// feedback from the original top-10 list. The score should be a number
-// between 1 and 10. Assign a score of 5 or above if the improved list
-// is indisputably funnier than the origin. Penalize new lists that
-// are not concise and quippy enough.
-//
-// @param list - The original top-10 list.
-// @param feedback - The feedback on the original top-10 list.
-// @param improvedList - The new and improved top-10 list,
-//        incorporating the given feedback.
-// @returns A number between 1 and 10 rating the level of improvement.
+/**
+ * Score how well an improved David Letterman style top-10 list incorporated
+ * feedback from the original top-10 list. The score should be a number
+ * between 1 and 10. Assign a score of 5 or above if the improved list
+ * is indisputably funnier than the origin. Penalize new lists that
+ * are not concise and quippy enough.
+ *
+ * @param list - The original top-10 list.
+ * @param feedback - The feedback on the original top-10 list.
+ * @param improvedList - The new and improved top-10 list incorporating
+ * the given feedback.
+ * @returns A number between 1 and 10 rating the level of improvement.
+ */
 const scoreImprovements =
   definePrompt<
     (originalList: string[], feedback: string, improvedList: string[]) => number

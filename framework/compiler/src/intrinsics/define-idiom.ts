@@ -1,10 +1,10 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
 import { moveLeadingComments } from "../utils/comments.ts";
 import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
 import { getNodeTypeId } from "../node-id.ts";
-import type { ToolcogManifest } from "../manifest.ts";
 
 const defineIdiomExpression = (
   ts: typeof import("typescript"),
@@ -12,10 +12,9 @@ const defineIdiomExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
-  manifest: ToolcogManifest,
+  moduleDef: ModuleDef,
   idiomType: ts.Type,
-  embeddingsExpression: ts.Expression | undefined,
-  idiomsExpression: ts.Expression | undefined,
+  idiomResolverExpression: ts.Expression | undefined,
   valueExpression: ts.Expression,
   valueType: ts.Type,
   errorNode: ts.Node,
@@ -39,7 +38,7 @@ const defineIdiomExpression = (
     }) ?? "";
 
   if (
-    idiomId in manifest.idioms ||
+    idiomId in moduleDef.idioms ||
     idiomId.length === 0 ||
     idiomId.endsWith(":")
   ) {
@@ -47,7 +46,7 @@ const defineIdiomExpression = (
     let conflictCount = 0;
     while (true) {
       idiomId = baseId + "#" + conflictCount;
-      if (!(idiomId in manifest.idioms)) {
+      if (!(idiomId in moduleDef.idioms)) {
         break;
       }
       conflictCount += 1;
@@ -82,34 +81,17 @@ const defineIdiomExpression = (
     undefined, // initializer
   );
 
-  // Define the embeddings parameter.
+  // Define the idiom resolver parameter.
 
-  let embeddingsParameterName: ts.Identifier | undefined;
-  let embeddingsParameterDeclaration: ts.ParameterDeclaration | undefined;
+  let idiomResolverParameterName: ts.Identifier | undefined;
+  let idiomResolverParameterDeclaration: ts.ParameterDeclaration | undefined;
 
-  if (embeddingsExpression !== undefined) {
-    embeddingsParameterName = factory.createIdentifier("embeddings");
-    embeddingsParameterDeclaration = factory.createParameterDeclaration(
+  if (idiomResolverExpression !== undefined) {
+    idiomResolverParameterName = factory.createIdentifier("idiomResolver");
+    idiomResolverParameterDeclaration = factory.createParameterDeclaration(
       undefined, // modifiers
       undefined, // dotDotDotToken
-      embeddingsParameterName,
-      undefined, // questionToken
-      undefined, // type
-      undefined, // initializer
-    );
-  }
-
-  // Define the idioms parameter.
-
-  let idiomsParameterName: ts.Identifier | undefined;
-  let idiomsParameterDeclaration: ts.ParameterDeclaration | undefined;
-
-  if (idiomsExpression !== undefined) {
-    idiomsParameterName = factory.createIdentifier("idioms");
-    idiomsParameterDeclaration = factory.createParameterDeclaration(
-      undefined, // modifiers
-      undefined, // dotDotDotToken
-      idiomsParameterName,
+      idiomResolverParameterName,
       undefined, // questionToken
       undefined, // type
       undefined, // initializer
@@ -136,86 +118,67 @@ const defineIdiomExpression = (
     ),
   );
 
-  // Define the embeds property.
+  // Define the embeddings variable.
 
   const embeds = comment?.embeds ?? [];
   if (embeds.length === 0 && comment?.description !== undefined) {
     embeds.push(comment.description);
   }
 
-  let embedsPropertyExpression: ts.Expression;
-  if (idiomsParameterName !== undefined) {
-    embedsPropertyExpression = factory.createPropertyAccessExpression(
-      factory.createElementAccessExpression(
-        idiomsParameterName,
-        factory.createPropertyAccessExpression(idiomIdentifier, "id"),
-      ),
-      "embeds",
-    );
-  } else {
-    embedsPropertyExpression = factory.createArrayLiteralExpression(
-      embeds.map((embed) => factory.createStringLiteral(embed)),
-      true, // multiLine
-    );
-  }
+  const embeddingsObjectLiteral = factory.createObjectLiteralExpression(
+    embeds.map((text) => {
+      return factory.createPropertyAssignment(
+        factory.createStringLiteral(text),
+        factory.createObjectLiteralExpression(),
+      );
+    }),
+    true, // multiLine
+  );
 
-  const embedsAssignment = factory.createExpressionStatement(
-    factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(idiomIdentifier, "embeds"),
-      factory.createToken(ts.SyntaxKind.EqualsToken),
-      embedsPropertyExpression,
+  const embeddingsVariableName = factory.createIdentifier("embeddings");
+  const embeddingsVariableDeclaration = factory.createVariableStatement(
+    undefined, // modifiers
+    factory.createVariableDeclarationList(
+      [
+        factory.createVariableDeclaration(
+          embeddingsVariableName,
+          undefined, // exclamationToken
+          undefined, // type
+          embeddingsObjectLiteral,
+        ),
+      ],
+      ts.NodeFlags.Const,
     ),
   );
 
-  // Define the embeddings property.
+  // Define the idiom function.
 
-  const embedParameterName = factory.createIdentifier("embed");
-  const embedParameterDeclaration = factory.createParameterDeclaration(
-    undefined, // modifiers
-    undefined, // dotDotDotToken
-    embedParameterName,
-    undefined, // questionToken
-    undefined, // type
-    undefined, // initializer
-  );
-
-  let embedLookupExpression: ts.Expression;
-  if (embeddingsParameterName !== undefined) {
-    embedLookupExpression = factory.createElementAccessExpression(
-      embeddingsParameterName,
-      embedParameterName,
+  let embeddingsExpression: ts.Expression;
+  if (idiomResolverParameterName !== undefined) {
+    embeddingsExpression = factory.createBinaryExpression(
+      factory.createCallExpression(
+        idiomResolverParameterName,
+        undefined, // typeArguments
+        [
+          factory.createPropertyAccessExpression(idiomIdentifier, "id"),
+          factory.createPropertyAccessExpression(idiomIdentifier, "value"),
+        ],
+      ),
+      factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
+      embeddingsVariableName,
     );
   } else {
-    embedLookupExpression = factory.createObjectLiteralExpression();
+    embeddingsExpression = embeddingsVariableName;
   }
 
-  const embeddingMapperFunction = factory.createArrowFunction(
+  const idiomFunction = factory.createArrowFunction(
     undefined, // modifiers
     undefined, // typeParameters
-    [embedParameterDeclaration],
+    [], // parameters
     undefined, // type
-    factory.createToken(ts.SyntaxKind.EqualsGreaterThanToken),
-    embedLookupExpression,
+    undefined, // equalsGreaterThanToken
+    embeddingsExpression,
   );
-
-  const embeddingsPropertyExpression = factory.createCallExpression(
-    factory.createPropertyAccessExpression(
-      factory.createPropertyAccessExpression(idiomIdentifier, "embeds"),
-      "map",
-    ),
-    undefined, // typeArguments
-    [embeddingMapperFunction],
-  );
-
-  const embeddingsAssignment = factory.createExpressionStatement(
-    factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(idiomIdentifier, "embeddings"),
-      factory.createToken(ts.SyntaxKind.EqualsToken),
-      embeddingsPropertyExpression,
-    ),
-  );
-
-  // Define the idiom object.
 
   const idiomDeclaration = factory.createVariableStatement(
     undefined, // modifiers
@@ -225,16 +188,16 @@ const defineIdiomExpression = (
           idiomIdentifier,
           undefined, // exclamationToken
           undefined, // type
-          factory.createObjectLiteralExpression(),
+          idiomFunction,
         ),
       ],
       ts.NodeFlags.Const,
     ),
   );
 
-  // Add the idiom to the manifest.
+  // Add the idiom to the module manifest.
 
-  manifest.idioms[idiomId] = { embeds };
+  moduleDef.idioms[idiomId] = { embeds };
 
   // Create and return an IIFE wrapper.
 
@@ -244,22 +207,18 @@ const defineIdiomExpression = (
       undefined, // typeParameters,
       [
         valueParameterDeclaration,
-        ...(embeddingsParameterDeclaration !== undefined ?
-          [embeddingsParameterDeclaration]
-        : []),
-        ...(idiomsParameterDeclaration !== undefined ?
-          [idiomsParameterDeclaration]
+        ...(idiomResolverParameterDeclaration !== undefined ?
+          [idiomResolverParameterDeclaration]
         : []),
       ],
       undefined, // type
       undefined, // equalsGreaterThanToken,
       factory.createBlock(
         [
+          embeddingsVariableDeclaration,
           idiomDeclaration,
           idAssignment,
           valueAssignment,
-          embedsAssignment,
-          embeddingsAssignment,
           factory.createReturnStatement(idiomIdentifier),
         ],
         true, // multiLine
@@ -268,8 +227,9 @@ const defineIdiomExpression = (
     undefined, // typeArguments
     [
       valueExpression,
-      ...(embeddingsExpression !== undefined ? [embeddingsExpression] : []),
-      ...(idiomsExpression !== undefined ? [idiomsExpression] : []),
+      ...(idiomResolverExpression !== undefined ?
+        [idiomResolverExpression]
+      : []),
     ],
   );
 

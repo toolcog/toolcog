@@ -1,4 +1,4 @@
-import type { EmbeddingModel, EmbeddingVector } from "./embedding.ts";
+import type { EmbeddingVector } from "./embedding.ts";
 import type { EmbedderConfig, EmbedderOptions, Embedder } from "./embedder.ts";
 import type { Idioms } from "./idiom.ts";
 
@@ -29,8 +29,6 @@ interface Index<T extends readonly unknown[]> {
   ): Promise<T[number][]>;
 
   readonly id: string | undefined;
-
-  readonly model: EmbeddingModel | undefined;
 
   readonly embedder: Embedder | undefined;
 

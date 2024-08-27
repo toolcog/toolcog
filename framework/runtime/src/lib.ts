@@ -21,8 +21,50 @@ export { currentTools, withTools, useTool, useTools } from "./tools.ts";
 
 export { cosineDistance, indexer } from "./indexer.ts";
 
+export type {
+  IdiomDef,
+  IndexDef,
+  ToolDef,
+  PromptDef,
+  ModuleDef,
+  Manifest,
+} from "./manifest.ts";
+export {
+  manifestFileName,
+  resolveManifestFile,
+  parseManifest,
+  formatManifest,
+  createManifest,
+  createModuleDef,
+} from "./manifest.ts";
+
+export type {
+  IdiomInventory,
+  Inventory,
+  InventorySource,
+} from "./inventory.ts";
+export {
+  inventoryFileName,
+  parseInventory,
+  formatInventory,
+  createInventory,
+  resolveInventory,
+} from "./inventory.ts";
+
 export type { RuntimeConfigSource, RuntimeConfig } from "./runtime.ts";
-export { Runtime, generate, embed, index } from "./runtime.ts";
+export { Runtime, embed, index, generate, resolveIdiom } from "./runtime.ts";
 
 export type { JobInfo, JobEvents } from "./job.ts";
 export { Job } from "./job.ts";
+
+export type { Precache } from "./precache.ts";
+export {
+  precacheFileName,
+  resolvePrecacheFile,
+  parsePrecache,
+  formatPrecache,
+  createPrecache,
+} from "./precache.ts";
+
+export type { PrefetchInventoryOptions } from "./prefetch.ts";
+export { prefetchInventory } from "./prefetch.ts";

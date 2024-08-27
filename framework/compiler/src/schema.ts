@@ -1,5 +1,9 @@
 import type ts from "typescript";
-import type { SchemaDefinition, Schema, FunctionSchema } from "@toolcog/core";
+import type {
+  SchemaDefinition,
+  Schema,
+  FunctionSchema,
+} from "@toolcog/util/json";
 import { abort } from "./utils/errors.ts";
 import { Diagnostics } from "./diagnostics.ts";
 import type { Comment } from "./comment.ts";
@@ -382,7 +386,7 @@ const signatureToSchema = (
     ...(parametersSchema !== undefined ?
       { parameters: parametersSchema }
     : undefined),
-    return: returnSchema,
+    returns: returnSchema,
   };
 };
 

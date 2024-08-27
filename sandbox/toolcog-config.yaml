@@ -1,4 +1,0 @@
-generator:
-  model: gpt-4o-mini
-embedder:
-  model: text-embedding-3-small

@@ -1,8 +1,9 @@
 import type { ClientOptions } from "openai";
 import { OpenAI } from "openai";
+import type { Schema } from "@toolcog/util/json";
+import { formatJson } from "@toolcog/util/json";
 import { Dispatcher } from "@toolcog/util/task";
 import type {
-  Schema,
   Tool,
   GeneratorConfig,
   GeneratorOptions,
@@ -44,7 +45,7 @@ declare module "@toolcog/core" {
     "gpt-3.5-turbo-16k-0613": unknown;
   }
 
-  interface GenerativeConfig {
+  interface GeneratorConfig {
     openai?: OpenAI | ClientOptions | undefined;
 
     stream?: boolean | undefined;
@@ -74,7 +75,7 @@ declare module "@toolcog/core" {
     user?: string | undefined;
   }
 
-  interface GenerativeOptions {
+  interface GeneratorOptions {
     openai?: OpenAI | ClientOptions | undefined;
 
     stream?: boolean | undefined;
@@ -123,7 +124,7 @@ const generator = (options?: OpenAIGeneratorOptions): Generator | undefined => {
     }
   } else if (
     options?.openai !== undefined ||
-    (typeof process !== "undefined" && process.env.OPENAI_API_KEY)
+    (typeof process !== "undefined" && process.env.OPENAI_API_KEY !== undefined)
   ) {
     return generate;
   }
@@ -156,16 +157,46 @@ const generate = (async (
     instructions = await resolveInstructions(options?.instructions, args);
   }
 
-  const jsonMode =
-    options?.jsonMode ??
-    (model.startsWith("gpt-3.5") ||
-      model === "gpt-4" ||
-      model.startsWith("gpt-4-") ||
-      model === "gpt-4o" ||
-      model === "gpt-4o-2024-05-13");
+  let jsonMode = options?.jsonMode;
+  if (jsonMode === undefined) {
+    switch (model) {
+      case "gpt-4o":
+      case "gpt-4o-2024-05-13":
+        jsonMode = true;
+        break;
+      case "gpt-4o-2024-08-06":
+      case "gpt-4o-mini":
+      case "gpt-4o-mini-2024-07-18":
+        jsonMode = false;
+        break;
+      case "gpt-4-turbo":
+      case "gpt-4-turbo-2024-04-09":
+      case "gpt-4-0125-preview":
+      case "gpt-4-turbo-preview":
+      case "gpt-4-1106-preview":
+      case "gpt-4-vision-preview":
+      case "gpt-4":
+      case "gpt-4-0314":
+      case "gpt-4-0613":
+      case "gpt-4-32k":
+      case "gpt-4-32k-0314":
+      case "gpt-4-32k-0613":
+      case "gpt-3.5-turbo":
+      case "gpt-3.5-turbo-16k":
+      case "gpt-3.5-turbo-0301":
+      case "gpt-3.5-turbo-0613":
+      case "gpt-3.5-turbo-1106":
+      case "gpt-3.5-turbo-0125":
+      case "gpt-3.5-turbo-16k-0613":
+        jsonMode = true;
+        break;
+      default:
+        jsonMode = false;
+    }
+  }
 
-  const parametersSchema = options?.function?.parameters;
-  const returnSchema = options?.function?.return;
+  const parametersSchema = options?.parameters;
+  const returnSchema = options?.returns;
 
   let resultSchema: Schema | undefined;
   let outputSchema: Schema | undefined;
@@ -187,20 +218,23 @@ const generate = (async (
     | OpenAI.ResponseFormatJSONObject
     | OpenAI.ResponseFormatJSONSchema
     | undefined;
+  let responseSchema: OpenAI.ResponseFormatJSONSchema.JSONSchema | undefined;
+
   if (jsonMode) {
     responseFormat = {
       type: "json_object",
     };
   } else if (outputSchema !== undefined) {
+    responseSchema = {
+      name: "return",
+      ...(outputSchema.description !== undefined ?
+        { description: outputSchema.description }
+      : undefined),
+      schema: outputSchema as Record<string, unknown>,
+    };
     responseFormat = {
       type: "json_schema",
-      json_schema: {
-        name: "return",
-        ...(outputSchema.description !== undefined ?
-          { description: outputSchema.description }
-        : undefined),
-        schema: outputSchema as Record<string, unknown>,
-      },
+      json_schema: responseSchema,
     };
   }
 
@@ -351,7 +385,7 @@ const generate = (async (
         const toolFunction = toolCall.function;
 
         const tool = tools?.find((tool) =>
-          tool.function.name === toolFunction.name ? tool : undefined,
+          tool.name === toolFunction.name ? tool : undefined,
         );
         if (tool === undefined) {
           throw new Error("Unknown tool " + JSON.stringify(toolFunction.name));
@@ -413,16 +447,14 @@ const toOpenAITool = (tool: Tool): OpenAI.ChatCompletionTool => {
   return {
     type: "function",
     function: {
-      name: tool.function.name,
+      name: tool.name,
 
-      ...(tool.function.description !== undefined ?
-        { description: tool.function.description }
+      ...(tool.description !== undefined ?
+        { description: tool.description }
       : undefined),
 
-      ...(tool.function.parameters !== undefined ?
-        {
-          parameters: tool.function.parameters as OpenAI.FunctionParameters,
-        }
+      ...(tool.parameters !== undefined ?
+        { parameters: tool.parameters as OpenAI.FunctionParameters }
       : undefined),
     },
   };
@@ -462,8 +494,7 @@ const toOpenAIMessage = (
         messages.push({
           role: "tool",
           tool_call_id: block.id,
-          content:
-            block.result !== undefined ? JSON.stringify(block.result) : "",
+          content: block.result,
         });
       }
     }
@@ -610,8 +641,8 @@ const fromOpenAIMessage = (
         id: message.tool_call_id,
         result:
           typeof message.content === "string" && message.content.length !== 0 ?
-            JSON.parse(message.content)
-          : undefined,
+            message.content
+          : "",
       });
     }
 
@@ -751,8 +782,7 @@ const createPrompt = (
 };
 
 const parseToolArguments = (tool: Tool, args: string): unknown[] => {
-  const functionSchema = tool.function;
-  const parametersSchema = functionSchema.parameters;
+  const parametersSchema = tool.parameters;
   const parameters = parametersSchema?.properties;
   if (parameters === undefined) {
     return [];
@@ -769,7 +799,7 @@ const parseToolArguments = (tool: Tool, args: string): unknown[] => {
       "Malformed arguments " +
         JSON.stringify(args) +
         " for tool " +
-        JSON.stringify(functionSchema.name),
+        JSON.stringify(tool.name),
       { cause },
     );
   }
@@ -782,7 +812,7 @@ const parseToolArguments = (tool: Tool, args: string): unknown[] => {
       "Invalid arguments " +
         JSON.stringify(parsedArgs) +
         " for tool " +
-        JSON.stringify(functionSchema.name),
+        JSON.stringify(tool.name),
     );
   }
 
@@ -793,10 +823,6 @@ const parseToolArguments = (tool: Tool, args: string): unknown[] => {
   });
 };
 
-const formatToolResult = (tool: Tool, result: unknown): string => {
-  return result !== undefined ? JSON.stringify(result) : "";
-};
-
 const callTool = async (tool: Tool, args: string): Promise<string> => {
   const toolArguments = parseToolArguments(tool, args);
 
@@ -804,7 +830,7 @@ const callTool = async (tool: Tool, args: string): Promise<string> => {
     tool.call(undefined, ...toolArguments),
   );
 
-  return formatToolResult(tool, toolResult);
+  return formatJson(toolResult, tool.returns);
 };
 
 export type { OpenAIGeneratorConfig, OpenAIGeneratorOptions };

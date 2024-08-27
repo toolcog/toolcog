@@ -48,7 +48,7 @@ const lists: TodoList[] = [
 ];
 
 /**
- * Gets the names of all of the user's existing to-do lists.
+ * Get the names of all of the user's existing to-do lists.
  *
  * @embed Get the names of my to-do lists.
  * @returns An array of to-do list names.
@@ -58,7 +58,7 @@ export const getTodoLists = defineTool((): string[] => {
 });
 
 /**
- * Creates a new to-do list.
+ * Create a new to-do list.
  *
  * @embed Create a new to-do list.
  * @param listName - The name of the list to create.
@@ -72,7 +72,7 @@ export const createTodoList = defineTool((listName: string): void => {
 });
 
 /**
- * Deletes an existing to-do list.
+ * Delete an existing to-do list.
  *
  * @embed Delete a to-do list.
  * @param listName - The name of the list to delete.
@@ -85,7 +85,7 @@ export const deleteTodoList = defineTool((listName: string): void => {
 });
 
 /**
- * Gets the current state of the items on a particular to-do list.
+ * Get the current state of the items on a particular to-do list.
  * The names of all existing lists can be retrieved by calling the
  * `getTodoLists` function.
  *
@@ -101,7 +101,7 @@ export const getTodos = defineTool(
 );
 
 /**
- * Adds a new unchecked item to an existing to-do list. If a new item isn't
+ * Add a new unchecked item to an existing to-do list. If a new item isn't
  * a good fit for any of the user's existing to-do lists, first create a new,
  * more appropriate list by calling `createTodoList`, and then add the item
  * to that new list.
@@ -120,7 +120,7 @@ export const createTodo = defineTool((listName: string, item: string): void => {
 });
 
 /**
- * Updates an existing item on a to-do list.
+ * Update an existing item on a to-do list.
  *
  * @embed Update my to-do list.
  * @embed I'm done.
@@ -142,7 +142,7 @@ export const updateTodo = defineTool(
 );
 
 /**
- * Removes an existing item from a to-do list.
+ * Remove an existing item from a to-do list.
  *
  * @embed Remove an item from my to-do list.
  * @param listName - The name of the to-do list from which to remove an item.

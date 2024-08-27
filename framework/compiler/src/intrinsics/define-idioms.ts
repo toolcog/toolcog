@@ -1,7 +1,7 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
 import { Diagnostics } from "../diagnostics.ts";
-import type { ToolcogManifest } from "../manifest.ts";
 import { defineIdiomExpression } from "./define-idiom.ts";
 
 const defineIdiomsExpression = (
@@ -10,11 +10,10 @@ const defineIdiomsExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
-  manifest: ToolcogManifest,
+  moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomsType: ts.Type,
-  embeddingsExpression: ts.Expression | undefined,
-  idiomsExpression: ts.Expression | undefined,
+  idiomResolverExpression: ts.Expression | undefined,
   valuesExpression: ts.Expression,
   valuesType: ts.Type,
   errorNode: ts.Node,
@@ -57,10 +56,9 @@ const defineIdiomsExpression = (
           checker,
           addDiagnostic,
           getCommonSourceDirectory,
-          manifest,
+          moduleDef,
           idiomType,
-          embeddingsExpression,
-          idiomsExpression,
+          idiomResolverExpression,
           element,
           checker.getTypeAtLocation(element),
           element,
@@ -99,10 +97,9 @@ const defineIdiomsExpression = (
         checker,
         addDiagnostic,
         getCommonSourceDirectory,
-        manifest,
+        moduleDef,
         idiomType,
-        embeddingsExpression,
-        idiomsExpression,
+        idiomResolverExpression,
         factory.createElementAccessExpression(valuesExpression, index),
         checker.getTypeOfSymbolAtLocation(property, valuesExpression),
         errorNode,

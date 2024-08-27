@@ -112,7 +112,7 @@ interface FunctionSchema {
   readonly name?: string | undefined;
   readonly description?: string | undefined;
   readonly parameters?: Schema | undefined;
-  readonly return?: Schema | undefined;
+  readonly returns?: Schema | undefined;
 }
 
 export type {

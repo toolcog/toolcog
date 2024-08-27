@@ -38,5 +38,5 @@
       "whatwg-url": "catalog:plugins"
     }
   },
-  "packageManager": "pnpm@9.7.1"
+  "packageManager": "pnpm@9.9.0"
 }

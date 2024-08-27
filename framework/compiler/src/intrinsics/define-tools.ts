@@ -1,7 +1,7 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
 import { Diagnostics } from "../diagnostics.ts";
-import type { ToolcogManifest } from "../manifest.ts";
 import { defineToolExpression } from "./define-tool.ts";
 
 const defineToolsExpression = (
@@ -10,7 +10,7 @@ const defineToolsExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
-  manifest: ToolcogManifest,
+  moduleDef: ModuleDef,
   toolType: ts.Type,
   toolsType: ts.Type,
   funcsExpression: ts.Expression,
@@ -54,7 +54,7 @@ const defineToolsExpression = (
           checker,
           addDiagnostic,
           getCommonSourceDirectory,
-          manifest,
+          moduleDef,
           toolType,
           element,
           checker.getTypeAtLocation(element),
@@ -93,7 +93,7 @@ const defineToolsExpression = (
         checker,
         addDiagnostic,
         getCommonSourceDirectory,
-        manifest,
+        moduleDef,
         toolType,
         factory.createElementAccessExpression(funcsExpression, index),
         checker.getTypeOfSymbolAtLocation(property, funcsExpression),

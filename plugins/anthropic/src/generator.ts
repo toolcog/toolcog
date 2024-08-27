@@ -1,8 +1,9 @@
 import type { ClientOptions } from "@anthropic-ai/sdk";
 import { Anthropic } from "@anthropic-ai/sdk";
+import type { Schema } from "@toolcog/util/json";
+import { formatJson } from "@toolcog/util/json";
 import { Dispatcher } from "@toolcog/util/task";
 import type {
-  Schema,
   Tool,
   GeneratorConfig,
   GeneratorOptions,
@@ -26,7 +27,7 @@ declare module "@toolcog/core" {
     "claude-instant-1.2": unknown;
   }
 
-  interface GenerativeConfig {
+  interface GeneratorConfig {
     anthropic?: Anthropic | ClientOptions | undefined;
 
     stream?: boolean | undefined;
@@ -44,7 +45,7 @@ declare module "@toolcog/core" {
     top_p?: number | undefined;
   }
 
-  interface GenerativeOptions {
+  interface GeneratorOptions {
     anthropic?: Anthropic | ClientOptions | undefined;
 
     stream?: boolean | undefined;
@@ -87,7 +88,8 @@ const generator = (
     }
   } else if (
     options?.anthropic !== undefined ||
-    (typeof process !== "undefined" && process.env.ANTHROPIC_API_KEY)
+    (typeof process !== "undefined" &&
+      process.env.ANTHROPIC_API_KEY !== undefined)
   ) {
     return generate;
   }
@@ -120,8 +122,8 @@ const generate = (async (
     instructions = await resolveInstructions(options?.instructions, args);
   }
 
-  const parametersSchema = options?.function?.parameters;
-  const returnSchema = options?.function?.return;
+  const parametersSchema = options?.parameters;
+  const returnSchema = options?.returns;
 
   let resultSchema: Schema | undefined;
   let outputSchema: Schema | undefined;
@@ -283,7 +285,7 @@ const generate = (async (
         }
 
         const tool = tools?.find((tool) =>
-          tool.function.name === block.name ? tool : undefined,
+          tool.name === block.name ? tool : undefined,
         );
         if (tool === undefined) {
           throw new Error("Unknown tool " + JSON.stringify(block.name));
@@ -369,13 +371,13 @@ const generate = (async (
 
 const toAnthropicTool = (tool: Tool): Anthropic.Tool => {
   return {
-    name: tool.function.name,
+    name: tool.name,
 
-    ...(tool.function.description !== undefined ?
-      { description: tool.function.description }
+    ...(tool.description !== undefined ?
+      { description: tool.description }
     : undefined),
 
-    input_schema: (tool.function.parameters as
+    input_schema: (tool.parameters as
       | Anthropic.Tool.InputSchema
       | undefined) ?? { type: "object" },
   };
@@ -421,7 +423,7 @@ const toAnthropicMessage = (message: Message): Anthropic.MessageParam => {
       content.push({
         type: "tool_result",
         tool_use_id: block.id,
-        content: block.result !== undefined ? JSON.stringify(block.result) : "",
+        content: block.result,
       });
     }
   }
@@ -457,8 +459,8 @@ const fromAnthropicMessage = (message: Anthropic.MessageParam): Message => {
         id: block.tool_use_id,
         result:
           typeof block.content === "string" && block.content.length !== 0 ?
-            JSON.parse(block.content)
-          : undefined,
+            block.content
+          : "",
       });
     }
   }
@@ -574,8 +576,7 @@ const createPrompt = (
 };
 
 const parseToolArguments = (tool: Tool, args: unknown): unknown[] => {
-  const functionSchema = tool.function;
-  const parametersSchema = functionSchema.parameters;
+  const parametersSchema = tool.parameters;
   const parameters = parametersSchema?.properties;
   if (parameters === undefined) {
     return [];
@@ -591,7 +592,7 @@ const parseToolArguments = (tool: Tool, args: unknown): unknown[] => {
       "Invalid arguments " +
         JSON.stringify(parsedArgs) +
         " for tool " +
-        JSON.stringify(functionSchema.name),
+        JSON.stringify(tool.name),
     );
   }
 
@@ -602,10 +603,6 @@ const parseToolArguments = (tool: Tool, args: unknown): unknown[] => {
   });
 };
 
-const formatToolResult = (tool: Tool, result: unknown): string => {
-  return result !== undefined ? JSON.stringify(result) : "";
-};
-
 const callTool = async (tool: Tool, args: unknown): Promise<string> => {
   const toolArguments = parseToolArguments(tool, args);
 
@@ -613,7 +610,7 @@ const callTool = async (tool: Tool, args: unknown): Promise<string> => {
     tool.call(undefined, ...toolArguments),
   );
 
-  return formatToolResult(tool, toolResult);
+  return formatJson(toolResult, tool.returns);
 };
 
 export type { AnthropicGeneratorConfig, AnthropicGeneratorOptions };

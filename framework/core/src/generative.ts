@@ -1,12 +1,14 @@
-import type { FunctionSchema } from "./schema.ts";
+import type { Schema } from "@toolcog/util/json";
+import type { ToolSource } from "./tool.ts";
 
 /**
- * Each key of this type represents a known generative model name.
+ * Each key of this type represents the name of a known generative model.
  * Generator plugins augment this type to add supported model names.
  *
- * Use the {@link GenerativeModel} type, which references the keys of this type,
- * to refer to strings that represent generative model names. The indirection
- * through this type is necessary because type aliases cannot be augmented.
+ * Use the {@link GenerativeModel} type for strings that should represent
+ * generative model names. The `GenerativeModel` type extracts the keys of
+ * this type. The indirection through this type is necessary because type
+ * aliases cannot be augmented.
  */
 interface GenerativeModelNames {}
 
@@ -16,31 +18,31 @@ interface GenerativeModelNames {}
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type GenerativeModel = keyof GenerativeModelNames | (string & {});
 
-/**
- * Options for configuring a generative model, such as API keys and API client
- * parameters. Generator plugins augment this type with supported options.
- */
-interface GenerativeConfig {}
-
-/**
- * Options for controlling a generative model request, such as an abort signal
- * for cancelling the request. Generator plugins augment this type with
- * supported options.
- */
-interface GenerativeOptions {}
+type InstructionsSource =
+  | ((args: unknown) => Promise<string | undefined> | string | undefined)
+  | Promise<string | undefined>
+  | string
+  | undefined;
 
 interface GenerativeFunction {
   readonly id: string;
 
-  readonly model: GenerativeModel | undefined;
+  readonly name: string;
 
-  readonly function: FunctionSchema & { readonly name: string };
+  readonly description: string | undefined;
+
+  readonly parameters: Schema | undefined;
+
+  readonly returns: Schema | undefined;
+
+  readonly instructions: InstructionsSource;
+
+  readonly tools: readonly ToolSource[];
 }
 
 export type {
   GenerativeModelNames,
   GenerativeModel,
-  GenerativeConfig,
-  GenerativeOptions,
+  InstructionsSource,
   GenerativeFunction,
 };

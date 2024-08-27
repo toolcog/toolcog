@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tspc --watch",
-    "build": "tspc && toolcog-compiler generate --manifest --cache",
+    "build": "tspc && toolcog-compiler inventory generate --precache --manifest dist/toolcog-manifest.yaml --yaml --js",
     "clean": "rimraf .turbo dist",
     "clean-all": "rimraf .turbo dist node_modules"
   },

@@ -16,7 +16,7 @@
         "package.json",
         "tsconfig.json",
         "rollup.config.js",
-        ".toolcog/cache.yaml",
+        ".toolcog/precache.yaml",
         "src/**"
       ],
       "outputs": ["dist/**", "toolcog-manifest.yaml"],

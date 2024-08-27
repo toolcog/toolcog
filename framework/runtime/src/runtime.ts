@@ -1,57 +1,67 @@
 import { AsyncContext } from "@toolcog/util/async";
 import type {
-  GeneratorConfig,
-  GeneratorOptions,
-  Generator,
+  Embeddings,
   EmbedderConfig,
   EmbedderOptions,
-  EmbedderResult,
+  Embedded,
   Embedder,
   Idioms,
+  IdiomResolver,
   Index,
   IndexerConfig,
   IndexerOptions,
   Indexer,
+  GeneratorConfig,
+  GeneratorOptions,
+  Generator,
 } from "@toolcog/core";
 import type { Plugin, PluginSource } from "./plugin.ts";
 import { resolvePlugins } from "./plugin.ts";
-import { indexer as defaultIndexer } from "./indexer.ts";
+import { indexer } from "./indexer.ts";
+import type { Inventory, InventorySource } from "./inventory.ts";
+import { createInventory, resolveInventory } from "./inventory.ts";
 
 interface RuntimeConfigSource {
-  generator?: GeneratorConfig | undefined;
+  plugins?: PluginSource[] | null | undefined;
 
   embedder?: EmbedderConfig | undefined;
 
   indexer?: IndexerConfig | undefined;
 
-  plugins?: PluginSource[] | null | undefined;
+  generator?: GeneratorConfig | undefined;
+
+  inventory?: InventorySource | undefined;
 }
 
 interface RuntimeConfig {
-  generator?: GeneratorConfig | undefined;
+  plugins?: Plugin[] | null | undefined;
 
   embedder?: EmbedderConfig | undefined;
 
   indexer?: IndexerConfig | undefined;
 
-  plugins?: Plugin[] | null | undefined;
+  generator?: GeneratorConfig | undefined;
+
+  inventory?: Inventory | undefined;
 }
 
 class Runtime {
-  readonly #generatorConfig: GeneratorConfig;
+  readonly #plugins: Plugin[];
   readonly #embedderConfig: EmbedderConfig;
   readonly #indexerConfig: IndexerConfig;
-  readonly #plugins: Plugin[];
+  readonly #generatorConfig: GeneratorConfig;
+  readonly #inventory: Inventory;
 
   constructor(config?: RuntimeConfig) {
-    this.#generatorConfig = config?.generator ?? {};
+    this.#plugins = config?.plugins ?? [];
     this.#embedderConfig = config?.embedder ?? {};
     this.#indexerConfig = config?.indexer ?? {};
-    this.#plugins = config?.plugins ?? [];
+    this.#generatorConfig = config?.generator ?? {};
+    this.#inventory = config?.inventory ?? createInventory();
   }
 
-  get generatorConfig(): GeneratorConfig {
-    return this.#generatorConfig;
+  get plugins(): Plugin[] {
+    return this.#plugins;
   }
 
   get embedderConfig(): EmbedderConfig {
@@ -62,8 +72,27 @@ class Runtime {
     return this.#indexerConfig;
   }
 
-  get plugins(): Plugin[] {
-    return this.#plugins;
+  get generatorConfig(): GeneratorConfig {
+    return this.#generatorConfig;
+  }
+
+  get inventory(): Inventory {
+    return this.#inventory;
+  }
+
+  embedderOptions(options: EmbedderOptions | undefined): EmbedderOptions {
+    return {
+      ...this.embedderConfig,
+      ...options,
+    };
+  }
+
+  indexerOptions(options: IndexerOptions | undefined): IndexerOptions {
+    return {
+      ...this.embedderConfig,
+      ...this.indexerConfig,
+      ...options,
+    };
   }
 
   generatorOptions(options: GeneratorOptions | undefined): GeneratorOptions {
@@ -79,31 +108,6 @@ class Runtime {
         { tools: [...this.generatorConfig.tools, ...options.tools] }
       : undefined),
     };
-  }
-
-  embedderOptions(options: EmbedderOptions | undefined): EmbedderOptions {
-    return {
-      ...this.embedderConfig,
-      ...options,
-    };
-  }
-
-  indexerOptions(options: IndexerOptions | undefined): IndexerOptions {
-    return {
-      ...this.indexerConfig,
-      ...options,
-    };
-  }
-
-  async generator(options?: GeneratorOptions): Promise<Generator> {
-    const plugins = this.plugins;
-    for (const plugin of plugins) {
-      const generator = await plugin.generator?.(options);
-      if (generator !== undefined) {
-        return generator;
-      }
-    }
-    throw new Error("No generator");
   }
 
   async embedder(options?: EmbedderOptions): Promise<Embedder> {
@@ -125,22 +129,27 @@ class Runtime {
         return indexer;
       }
     }
-    return defaultIndexer;
+    return indexer;
   }
 
-  async generate(args: unknown, options?: GeneratorOptions): Promise<unknown> {
-    options = this.generatorOptions(options);
-    const generator = await this.generator(options);
-    return await generator(args, options);
+  async generator(options?: GeneratorOptions): Promise<Generator> {
+    const plugins = this.plugins;
+    for (const plugin of plugins) {
+      const generator = await plugin.generator?.(options);
+      if (generator !== undefined) {
+        return generator;
+      }
+    }
+    throw new Error("No generator");
   }
 
   async embed<T extends string | readonly string[]>(
-    embeds: T,
+    texts: T,
     options?: EmbedderOptions,
-  ): Promise<EmbedderResult<T>> {
+  ): Promise<Embedded<T>> {
     options = this.embedderOptions(options);
     const embedder = await this.embedder(options);
-    return await embedder(embeds, options);
+    return await embedder(texts, options);
   }
 
   async index<T extends readonly unknown[]>(
@@ -152,6 +161,16 @@ class Runtime {
     return await indexer(idioms, options);
   }
 
+  async generate(args: unknown, options?: GeneratorOptions): Promise<unknown> {
+    options = this.generatorOptions(options);
+    const generator = await this.generator(options);
+    return await generator(args, options);
+  }
+
+  resolveIdiom(id: string, value: unknown): Embeddings | undefined {
+    return this.inventory.idioms[id]?.embeddings;
+  }
+
   static systemPrompt(): string {
     return "You are an AI function embedded in a computer program.";
   }
@@ -160,10 +179,11 @@ class Runtime {
     config?: RuntimeConfigSource,
   ): Promise<RuntimeConfig> {
     return {
-      generator: config?.generator,
+      plugins: await resolvePlugins(config?.plugins),
       embedder: config?.embedder,
       indexer: config?.indexer,
-      plugins: await resolvePlugins(config?.plugins),
+      generator: config?.generator,
+      inventory: await resolveInventory(config?.inventory),
     };
   }
 
@@ -198,20 +218,12 @@ class Runtime {
   }
 }
 
-const generate: Generator = (
-  args: unknown,
-  options?: GeneratorOptions,
-): Promise<unknown> => {
-  const runtime = Runtime.current();
-  return runtime.generate(args, options);
-};
-
 const embed: Embedder = <T extends string | readonly string[]>(
-  embeds: T,
+  texts: T,
   options?: EmbedderOptions,
-): Promise<EmbedderResult<T>> => {
+): Promise<Embedded<T>> => {
   const runtime = Runtime.current();
-  return runtime.embed(embeds, options);
+  return runtime.embed(texts, options);
 };
 
 const index: Indexer = <T extends readonly unknown[]>(
@@ -222,5 +234,21 @@ const index: Indexer = <T extends readonly unknown[]>(
   return runtime.index(idioms, options);
 };
 
+const generate: Generator = (
+  args: unknown,
+  options?: GeneratorOptions,
+): Promise<unknown> => {
+  const runtime = Runtime.current();
+  return runtime.generate(args, options);
+};
+
+const resolveIdiom: IdiomResolver = (
+  id: string,
+  value: unknown,
+): Embeddings | undefined => {
+  const runtime = Runtime.current();
+  return runtime.resolveIdiom(id, value);
+};
+
 export type { RuntimeConfigSource, RuntimeConfig };
-export { Runtime, generate, embed, index };
+export { Runtime, embed, index, generate, resolveIdiom };

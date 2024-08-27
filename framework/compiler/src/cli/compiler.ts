@@ -1,10 +1,10 @@
 import { Command } from "commander";
-import { createGenerateCommand } from "./generate.ts";
+import { createInventoryCommand } from "./inventory.ts";
 
 const createCompilerCommand = (name: string): Command => {
   return new Command(name)
     .description("Toolcog compiler")
-    .addCommand(createGenerateCommand("generate"));
+    .addCommand(createInventoryCommand("inventory"));
 };
 
 export { createCompilerCommand };

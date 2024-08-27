@@ -232,6 +232,7 @@ const createLoaderHost = (
     return moduleResolutionCache;
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   compilerHost.resolveModuleNames = (
     moduleNames: string[],
     containingFile: string,
@@ -282,6 +283,7 @@ const createLoaderHost = (
   //  reusedNames: readonly ts.StringLiteralLike[] | undefined,
   //): readonly ts.ResolvedModuleWithFailedLookupLocations[] => {};
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   compilerHost.resolveTypeReferenceDirectives = (
     typeReferenceDirectiveNames: string[] | readonly ts.FileReference[],
     containingFile: string,

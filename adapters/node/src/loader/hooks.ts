@@ -7,23 +7,13 @@ import type {
   LoadHook,
 } from "node:module";
 import {
-  dirname,
   resolve as resolvePath,
   parse as parsePath,
   format as formatPath,
 } from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import ts from "typescript";
-import {
-  resolveToolcogCache,
-  readToolcogCache,
-  isToolcogManifestFile,
-  parseToolcogManifest,
-  isToolcogModuleFile,
-  unresolveToolcogModule,
-  generateToolcogModule,
-  toolcogTransformer,
-} from "@toolcog/compiler";
+import { toolcogTransformer } from "@toolcog/compiler";
 import { loadConfigFile } from "./config.ts";
 import { ProjectLoader } from "./project.ts";
 
@@ -70,10 +60,6 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       context?: ResolveHookContext,
     ) => ResolveFnOutput | Promise<ResolveFnOutput>,
   ): Promise<ResolveFnOutput> => {
-    if (isToolcogModuleFile(specifier)) {
-      return resolveToolcogModule(specifier, context);
-    }
-
     if (!/\.m?tsx?$/.test(specifier)) {
       try {
         return await Promise.resolve(nextResolve(specifier, context));
@@ -127,10 +113,6 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       context?: LoadHookContext,
     ) => LoadFnOutput | Promise<LoadFnOutput>,
   ): LoadFnOutput | Promise<LoadFnOutput> => {
-    if (isToolcogModuleFile(url)) {
-      return loadToolcogModule(url, context, nextLoad);
-    }
-
     if (!/\.m?tsx?$/.test(url)) {
       return nextLoad(url, context);
     }
@@ -192,68 +174,6 @@ const createModuleHooks = (): { resolve: ResolveHook; load: LoadHook } => {
       shortCircuit: true,
       format: moduleFormat,
       source: output,
-    };
-  };
-
-  const resolveToolcogModule = (
-    specifier: string,
-    context: ResolveHookContext,
-  ): ResolveFnOutput => {
-    const parentDir =
-      context.parentURL !== undefined ?
-        dirname(fileURLToPath(context.parentURL))
-      : "";
-    const modulePath = resolvePath(parentDir, specifier);
-    return {
-      shortCircuit: true,
-      url: pathToFileURL(modulePath).toString(),
-    };
-  };
-
-  const loadToolcogModule = async (
-    url: string,
-    context: LoadHookContext,
-    nextLoad: (
-      url: string,
-      context?: LoadHookContext,
-    ) => LoadFnOutput | Promise<LoadFnOutput>,
-  ): Promise<LoadFnOutput> => {
-    const modulePath = fileURLToPath(url);
-    const sourcePath = unresolveToolcogModule(modulePath);
-
-    const project = resolveProject(sourcePath);
-    const compiledProject = project.compile();
-
-    const compiledSource = compiledProject.getCompiledSource(sourcePath);
-    if (compiledSource === undefined) {
-      return nextLoad(url, context);
-    }
-
-    const manifestFile = compiledSource.findEmittedFile(isToolcogManifestFile);
-    if (manifestFile === undefined) {
-      return nextLoad(url, context);
-    }
-
-    const sourceFile = project.program.getSourceFile(sourcePath);
-    const cacheFile = resolveToolcogCache(sourceFile);
-    const cache = await readToolcogCache(cacheFile);
-
-    const manifest = parseToolcogManifest(manifestFile[1]);
-
-    const moduleSourceFile = await generateToolcogModule(
-      ts,
-      ts.factory,
-      manifest,
-      cache,
-    );
-    if (moduleSourceFile === undefined) {
-      return nextLoad(url, context);
-    }
-
-    return {
-      shortCircuit: true,
-      format: "module",
-      source: ts.createPrinter().printFile(moduleSourceFile),
     };
   };
 

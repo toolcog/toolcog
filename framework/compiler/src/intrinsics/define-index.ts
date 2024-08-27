@@ -1,6 +1,6 @@
 import type ts from "typescript";
+import type { ModuleDef } from "@toolcog/runtime";
 import { getNodeId } from "../node-id.ts";
-import type { ToolcogManifest } from "../manifest.ts";
 import { defineIdiomsExpression } from "./define-idioms.ts";
 
 const defineIndexExpression = (
@@ -9,17 +9,14 @@ const defineIndexExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   getCommonSourceDirectory: (() => string) | undefined,
-  manifest: ToolcogManifest,
+  moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomsType: ts.Type,
-  embeddingsExpression: ts.Expression | undefined,
-  idiomsExpression: ts.Expression | undefined,
+  idiomResolverExpression: ts.Expression | undefined,
   embedderExpression: ts.Expression,
   indexerExpression: ts.Expression,
   callExpression: ts.CallExpression,
 ): ts.Expression => {
-  ts.Debug.assert(manifest.embeddingModel !== undefined);
-
   const valuesExpression = callExpression.arguments[0]!;
   const indexerOptionsExpression = callExpression.arguments[1];
 
@@ -35,7 +32,7 @@ const defineIndexExpression = (
     }) ?? "";
 
   if (
-    indexId in manifest.indexes ||
+    indexId in moduleDef.indexes ||
     indexId.length === 0 ||
     indexId.endsWith(":")
   ) {
@@ -43,7 +40,7 @@ const defineIndexExpression = (
     let conflictCount = 0;
     while (true) {
       indexId = baseId + "#" + conflictCount;
-      if (!(indexId in manifest.indexes)) {
+      if (!(indexId in moduleDef.indexes)) {
         break;
       }
       conflictCount += 1;
@@ -155,10 +152,6 @@ const defineIndexExpression = (
             factory.createPropertyAccessExpression(indexIdentifier, "id"),
           ),
           factory.createPropertyAssignment(
-            "model",
-            factory.createPropertyAccessExpression(indexIdentifier, "model"),
-          ),
-          factory.createPropertyAssignment(
             "embedder",
             factory.createPropertyAccessExpression(indexIdentifier, "embedder"),
           ),
@@ -250,25 +243,6 @@ const defineIndexExpression = (
     ),
   );
 
-  // Define the model property.
-
-  const modelAssignment = factory.createExpressionStatement(
-    factory.createBinaryExpression(
-      factory.createPropertyAccessExpression(indexIdentifier, "model"),
-      factory.createToken(ts.SyntaxKind.EqualsToken),
-      indexerOptionsParameterName !== undefined ?
-        factory.createBinaryExpression(
-          factory.createPropertyAccessExpression(
-            indexerOptionsParameterName,
-            "model",
-          ),
-          factory.createToken(ts.SyntaxKind.QuestionQuestionToken),
-          factory.createStringLiteral(manifest.embeddingModel),
-        )
-      : factory.createStringLiteral(manifest.embeddingModel),
-    ),
-  );
-
   // Define the embedder property.
 
   const embedderAssignment = factory.createExpressionStatement(
@@ -308,20 +282,19 @@ const defineIndexExpression = (
     checker,
     addDiagnostic,
     getCommonSourceDirectory,
-    manifest,
+    moduleDef,
     idiomType,
     idiomsType,
-    embeddingsExpression,
-    idiomsExpression,
+    idiomResolverExpression,
     valuesExpression,
     valuesType,
     valuesExpression,
     idioms,
   );
 
-  // Add the index to the manifest.
+  // Add the index to the module manifest.
 
-  manifest.indexes[indexId] = { idioms };
+  moduleDef.indexes[indexId] = { idioms };
 
   // Create and return an IIFE wrapper.
 
@@ -344,7 +317,6 @@ const defineIndexExpression = (
           indexInitVariableDeclaration,
           indexFunctionDeclaration,
           idAssignment,
-          modelAssignment,
           embedderAssignment,
           idiomsAssignment,
           factory.createReturnStatement(indexIdentifier),

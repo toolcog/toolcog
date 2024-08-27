@@ -61,7 +61,8 @@
     "@toolcog/repl": "workspace:*",
     "@toolcog/runtime": "workspace:*",
     "@types/node": "catalog:default",
-    "commander": "catalog:default"
+    "commander": "catalog:default",
+    "fast-glob": "catalog:default"
   },
   "optionalDependencies": {
     "@toolcog/anthropic": "workspace:*",

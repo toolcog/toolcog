@@ -1,18 +1,11 @@
-import type {
-  EmbeddingModel,
-  EmbeddingConfig,
-  EmbeddingOptions,
-  EmbeddingVector,
-} from "./embedding.ts";
+import type { EmbeddingModel, EmbeddingVector } from "./embedding.ts";
 
 /**
  * Options for configuring an {@link Embedder} function.
  *
- * Note that additional model-specific configuration may be available
- * depending on the particular plugins you use. Embedding plugins augment
- * the {@link EmbeddingConfig} interface, which this interface extends.
+ * Note that embedder plugins may augment this type with additional options.
  */
-interface EmbedderConfig extends EmbeddingConfig {
+interface EmbedderConfig {
   /**
    * The default model the embedder should use.
    */
@@ -22,11 +15,9 @@ interface EmbedderConfig extends EmbeddingConfig {
 /**
  * Options for controlling an {@link Embedder} call.
  *
- * Note that additional model-specific options may be available
- * depending on the particular plugins you use. Embedding plugins augment
- * the {@link EmbeddingOptions} interfaces, which this interface extends.
+ * Note that embedder plugins may augment this type with additional options.
  */
-interface EmbedderOptions extends EmbeddingOptions {
+interface EmbedderOptions {
   /**
    * The model the embedder should use to generate embedding vectors.
    */
@@ -39,11 +30,11 @@ interface EmbedderOptions extends EmbeddingOptions {
 }
 
 /**
- * The return type of an {@link Embedder} call. If the argument is a single
- * string, a single embedding vector is returned. If the argument is an array
- * of strings, an array of embedding vectors is returned.
+ * The return type of an {@link Embedder} call. If the argument is a string,
+ * an embedding vector is returned. If the argument is an array of strings,
+ * an array of embedding vectors is returned.
  */
-type EmbedderResult<
+type Embedded<
   T extends string | readonly string[] = string | readonly string[],
 > =
   T extends string ? EmbeddingVector
@@ -53,36 +44,15 @@ type EmbedderResult<
 
 /**
  * A function that returns an {@link EmbeddingVector} for each provided string.
- * If the `embeds` argument is a single string, then a single embedding vector
- * is returned. If the `embeds` argument is an array of strings, then an array
- * of embedding vectors is returned.
+ * If the `embed` argument is a string, then an embedding vector is returned.
+ * If the `embed` argument is an array of strings, then an array of embedding
+ * vectors is returned.
  */
 interface Embedder {
   <T extends string | readonly string[]>(
-    embeds: T,
+    embed: T,
     options?: EmbedderOptions,
-  ): Promise<EmbedderResult<T>>;
+  ): Promise<Embedded<T>>;
 }
 
-const defineEmbedding: {
-  <T extends string | readonly string[]>(
-    embeds: T,
-    options?: EmbedderOptions,
-  ): Promise<EmbedderResult<T>>;
-
-  /** @internal */
-  readonly brand: unique symbol;
-} = Object.assign(
-  <T extends string | readonly string[]>(
-    embeds: T,
-    options?: EmbedderOptions,
-  ): Promise<EmbedderResult<T>> => {
-    throw new Error("Uncompiled embedding");
-  },
-  {
-    brand: Symbol("toolcog.defineEmbedding"),
-  } as const,
-) as typeof defineEmbedding;
-
-export type { EmbedderConfig, EmbedderOptions, EmbedderResult, Embedder };
-export { defineEmbedding };
+export type { EmbedderConfig, EmbedderOptions, Embedded, Embedder };
