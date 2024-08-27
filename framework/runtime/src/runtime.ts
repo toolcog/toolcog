@@ -198,9 +198,7 @@ class Runtime {
   static current(): Runtime {
     const runtime = this.#current.get();
     if (runtime === undefined) {
-      throw new Error(
-        "No toolcog runtime is defined in the current execution context",
-      );
+      throw new Error("Not in a toolcog runtime context");
     }
     return runtime;
   }

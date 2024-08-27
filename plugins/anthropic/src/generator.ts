@@ -11,8 +11,7 @@ import type {
 } from "@toolcog/core";
 import { resolveTools, resolveInstructions } from "@toolcog/core";
 import type { MessageBlock, Message } from "@toolcog/runtime";
-import { Thread } from "@toolcog/runtime";
-import { Job } from "@toolcog/runtime";
+import { AgentContext, Job } from "@toolcog/runtime";
 import { createMessage } from "./client.ts";
 
 declare module "@toolcog/core" {
@@ -30,8 +29,6 @@ declare module "@toolcog/core" {
   interface GeneratorConfig {
     anthropic?: Anthropic | ClientOptions | undefined;
 
-    stream?: boolean | undefined;
-
     max_tokens?: number | undefined;
 
     metadata?: Anthropic.MessageCreateParams.Metadata;
@@ -47,8 +44,6 @@ declare module "@toolcog/core" {
 
   interface GeneratorOptions {
     anthropic?: Anthropic | ClientOptions | undefined;
-
-    stream?: boolean | undefined;
 
     max_tokens?: number | undefined;
 
@@ -162,11 +157,11 @@ const generate = (async (
 
   let toolChoice = options?.tool_choice;
 
-  const thread = await Thread.getOrCreate();
+  const context = AgentContext.getOrCreate();
 
   const system = options?.system;
 
-  const messages = thread.messages.map(toAnthropicMessage);
+  const messages = context.messages.map(toAnthropicMessage);
   const initialMessageCount = messages.length;
 
   const prompt = createPrompt(
@@ -197,7 +192,7 @@ const generate = (async (
 
       ...(anthropicTools !== undefined ? { tools: anthropicTools } : undefined),
 
-      stream: options?.stream ?? true,
+      stream: options?.stream ?? false,
 
       max_tokens: options?.max_tokens ?? 8192,
       ...(options?.metadata !== undefined ?
@@ -216,7 +211,7 @@ const generate = (async (
 
     let message: Anthropic.Message | undefined;
 
-    await Job.run(model, async (job) => {
+    await Job.spawn(model, async (job) => {
       const response = await dispatcher.enqueue(
         () => createMessage(client, request, { signal }),
         { signal },
@@ -279,9 +274,8 @@ const generate = (async (
           throw new Error("Unknown tool " + JSON.stringify(block.name));
         }
 
-        const toolResult = Job.run(tool.id, async (toolJob) => {
-          const toolThread = await Thread.create();
-          return Thread.run(toolThread, async () => {
+        const toolResult = Job.spawn(tool.id, async (toolJob) => {
+          return AgentContext.spawn(undefined, async () => {
             const result = await callTool(tool, block.input);
 
             toolJob.finish(result);
@@ -329,7 +323,7 @@ const generate = (async (
     }
 
     for (let i = initialMessageCount; i < messages.length; i += 1) {
-      thread.addMessage(fromAnthropicMessage(messages[i]!));
+      context.addMessage(fromAnthropicMessage(messages[i]!));
     }
 
     if (returnSchema === undefined) {

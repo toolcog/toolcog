@@ -12,15 +12,6 @@ export type {
   Message,
 } from "./message.ts";
 
-export { Thread, TemporaryThread } from "./thread.ts";
-
-export type { Plugin, PluginSource } from "./plugin.ts";
-export { resolvePlugin, resolvePlugins } from "./plugin.ts";
-
-export { currentTools, withTools, useTool, useTools } from "./tools.ts";
-
-export { cosineDistance, indexer } from "./indexer.ts";
-
 export type {
   IdiomDef,
   IndexDef,
@@ -51,8 +42,16 @@ export {
   resolveInventory,
 } from "./inventory.ts";
 
+export { cosineDistance, indexer } from "./indexer.ts";
+
+export type { Plugin, PluginSource } from "./plugin.ts";
+export { resolvePlugin, resolvePlugins } from "./plugin.ts";
+
 export type { RuntimeConfigSource, RuntimeConfig } from "./runtime.ts";
 export { Runtime, embed, index, generate, resolveIdiom } from "./runtime.ts";
+
+export type { AgentContextOptions, AgentContextEvents } from "./agent.ts";
+export { AgentContext, currentTools, useTool, useTools } from "./agent.ts";
 
 export type { JobInfo, JobEvents } from "./job.ts";
 export { Job } from "./job.ts";

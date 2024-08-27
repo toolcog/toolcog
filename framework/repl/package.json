@@ -1,7 +1,7 @@
 {
   "name": "@toolcog/repl",
   "version": "0.0.1",
-  "description": "Toolcog read-eval-print-loop",
+  "description": "Toolcog read-eval-print loop",
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",

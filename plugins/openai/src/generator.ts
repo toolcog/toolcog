@@ -11,8 +11,7 @@ import type {
 } from "@toolcog/core";
 import { resolveTools, resolveInstructions } from "@toolcog/core";
 import type { AssistantBlock, UserBlock, Message } from "@toolcog/runtime";
-import { Thread } from "@toolcog/runtime";
-import { Job } from "@toolcog/runtime";
+import { AgentContext, Job } from "@toolcog/runtime";
 import type { ChatCompletion } from "./client.ts";
 import { createChatCompletion } from "./client.ts";
 
@@ -48,8 +47,6 @@ declare module "@toolcog/core" {
   interface GeneratorConfig {
     openai?: OpenAI | ClientOptions | undefined;
 
-    stream?: boolean | undefined;
-
     jsonMode?: boolean | undefined;
 
     frequency_penalty?: number | undefined;
@@ -77,8 +74,6 @@ declare module "@toolcog/core" {
 
   interface GeneratorOptions {
     openai?: OpenAI | ClientOptions | undefined;
-
-    stream?: boolean | undefined;
 
     jsonMode?: boolean | undefined;
 
@@ -245,7 +240,7 @@ const generate = (async (
       tools.map(toOpenAITool)
     : undefined;
 
-  const thread = await Thread.getOrCreate();
+  const context = AgentContext.getOrCreate();
 
   const systemMessage: OpenAI.ChatCompletionSystemMessageParam | undefined =
     options?.system !== undefined ?
@@ -254,7 +249,7 @@ const generate = (async (
 
   const messages = [
     ...(systemMessage !== undefined ? [systemMessage] : []),
-    ...thread.messages.flatMap(toOpenAIMessage),
+    ...context.messages.flatMap(toOpenAIMessage),
   ];
   const initialMessageCount = messages.length;
 
@@ -283,8 +278,8 @@ const generate = (async (
 
       ...(openAITools !== undefined ? { tools: openAITools } : undefined),
 
-      stream: options?.stream ?? true,
-      ...((options?.stream ?? true) ?
+      stream: options?.stream ?? false,
+      ...((options?.stream ?? false) ?
         {
           stream_options: {
             include_usage: true,
@@ -326,7 +321,7 @@ const generate = (async (
 
     let response: ChatCompletion | undefined;
 
-    await Job.run(model, async (job) => {
+    await Job.spawn(model, async (job) => {
       const completion = await dispatcher.enqueue(
         () => createChatCompletion(client, request, { signal }),
         { signal },
@@ -379,9 +374,8 @@ const generate = (async (
           throw new Error("Unknown tool " + JSON.stringify(toolFunction.name));
         }
 
-        const toolResult = Job.run(tool.id, async (toolJob) => {
-          const toolThread = await Thread.create();
-          return Thread.run(toolThread, async () => {
+        const toolResult = Job.spawn(tool.id, async (toolJob) => {
+          return AgentContext.spawn(undefined, async () => {
             const result = await callTool(tool, toolFunction.arguments);
 
             toolJob.finish(result);
@@ -405,7 +399,7 @@ const generate = (async (
     for (const message of messages
       .slice(initialMessageCount)
       .reduce(fromOpenAIMessage, [])) {
-      thread.addMessage(message);
+      context.addMessage(message);
     }
 
     if (returnSchema === undefined) {

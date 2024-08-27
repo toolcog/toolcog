@@ -38,7 +38,7 @@ catalogs:
     ts-expose-internals: ^5.5
     ts-patch: ^3.2.1
     tslib: ^2.6
-    turbo: ^2.0
+    turbo: ^2.1
     typescript: ^5.5
     typescript-eslint: ^8.3
     vitest: ^2.0

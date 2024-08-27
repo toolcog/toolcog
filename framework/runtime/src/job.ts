@@ -244,7 +244,15 @@ class Job extends Emitter<JobEvents> {
     return Job.#current.get() ?? null;
   }
 
-  static async run<R>(
+  static run<F extends (...args: any[]) => unknown>(
+    job: Job | null | undefined,
+    func: F,
+    ...args: Parameters<F>
+  ): ReturnType<F> {
+    return this.#current.run(job ?? undefined, func, ...args);
+  }
+
+  static async spawn<R>(
     info: JobInfo | string | undefined,
     func: (job: Job) => R,
   ): Promise<Awaited<R>> {

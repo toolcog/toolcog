@@ -5,8 +5,7 @@ import glob from "fast-glob";
 import type { RuntimeConfigSource } from "@toolcog/runtime";
 import {
   Runtime,
-  Thread,
-  withTools,
+  AgentContext,
   inventoryFileName,
   parseInventory,
 } from "@toolcog/runtime";
@@ -84,43 +83,45 @@ const runNodeCommand = async (
   }
 
   await Runtime.run(runtime, async () => {
-    // Evaluate all input in a contiguous conversation thread.
-    const thread = await Thread.create();
-    await Thread.run(thread, async () => {
-      // Evaluate input in a tools scope.
-      await withTools([], async () => {
-        // Run script, if not evaluating non-interactive code.
-        if (scriptFile !== undefined && (code === undefined || interactive)) {
-          const scriptPath = resolvePath(process.cwd(), scriptFile);
-          await import(scriptPath);
-          return;
+    // Evaluate input in an agent context.
+    await AgentContext.spawn(undefined, async () => {
+      // Run script, if not evaluating non-interactive code.
+      if (scriptFile !== undefined && (code === undefined || interactive)) {
+        const scriptPath = resolvePath(process.cwd(), scriptFile);
+        await import(scriptPath);
+        return;
+      }
+
+      // Instantiate a REPL to evaluate code.
+      const repl = new Repl();
+
+      // Evaluate the builtin prelude.
+      await repl.evalPrelude();
+
+      // Check if a code argument was provided.
+      if (code !== undefined) {
+        // Evaluate the code argument.
+        const bindings = await repl.evalCode(code);
+        // Check if the result should be printed.
+        if (print) {
+          // Print the result variable.
+          repl.output.write(repl.formatValue(bindings._1) + "\n");
+        }
+      }
+
+      // Check if the REPL should be run.
+      if (interactive || (code === undefined && process.stdin.isTTY)) {
+        // Stream responses when running the REPL.
+        if (runtime !== null && runtime.generatorConfig.stream == undefined) {
+          runtime.generatorConfig.stream = true;
         }
 
-        // Instantiate a REPL to evaluate code.
-        const repl = new Repl();
+        // Print the REPL banner.
+        repl.printBanner();
 
-        // Evaluate the builtin prelude.
-        await repl.evalPrelude();
-
-        // Check if a code argument was provided.
-        if (code !== undefined) {
-          // Evaluate the code argument.
-          const bindings = await repl.evalCode(code);
-          // Check if the result should be printed.
-          if (print) {
-            // Print the result variable.
-            repl.output.write(repl.formatValue(bindings._1) + "\n");
-          }
-        }
-
-        // Check if the REPL should be run.
-        if (interactive || (code === undefined && process.stdin.isTTY)) {
-          // Print the REPL banner.
-          repl.printBanner();
-          // Run the REPL session.
-          await repl.run();
-        }
-      });
+        // Run the REPL session.
+        await repl.run();
+      }
     });
   });
 };

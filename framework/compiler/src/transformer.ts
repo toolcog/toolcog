@@ -26,20 +26,11 @@ import { definePromptExpression } from "./intrinsics/define-prompt.ts";
 import { promptExpression } from "./intrinsics/prompt.ts";
 
 interface ToolcogTransformerConfig {
-  generatorImportName?: string | undefined;
-  generatorModuleName?: string | undefined;
-
-  embedderImportName?: string | undefined;
-  embedderModuleName?: string | undefined;
-
-  indexerImportName?: string | undefined;
-  indexerModuleName?: string | undefined;
-
-  idiomResolverImportName?: string | undefined;
-  idiomResolverModuleName?: string | undefined;
-
-  contextToolsImportName?: string | undefined;
-  contextToolsModuleName?: string | undefined;
+  generatorImport?: [import: string, module: string] | undefined;
+  embedderImport?: [import: string, module: string] | undefined;
+  indexerImport?: [import: string, module: string] | undefined;
+  idiomResolverImport?: [import: string, module: string] | undefined;
+  contextToolsImport?: [import: string, module: string] | false | undefined;
 
   keepIntrinsicImports?: boolean | undefined;
 
@@ -59,22 +50,27 @@ const transformToolcog = (
   const factory = context.factory;
   const checker = program.getTypeChecker();
 
-  const generatorImportName = config?.generatorImportName ?? "generate";
-  const generatorModuleName = config?.generatorModuleName ?? "@toolcog/runtime";
+  const [generatorImportName, generatorModuleName] =
+    config?.generatorImport ?? ["generate", "@toolcog/runtime"];
 
-  const embedderImportName = config?.embedderImportName ?? "embed";
-  const embedderModuleName = config?.embedderModuleName ?? "@toolcog/runtime";
+  const [embedderImportName, embedderModuleName] = config?.embedderImport ?? [
+    "embed",
+    "@toolcog/runtime",
+  ];
 
-  const indexerImportName = config?.indexerImportName ?? "index";
-  const indexerModuleName = config?.indexerModuleName ?? "@toolcog/runtime";
+  const [indexerImportName, indexerModuleName] = config?.indexerImport ?? [
+    "index",
+    "@toolcog/runtime",
+  ];
 
-  const idiomResolverImportName =
-    config?.idiomResolverImportName ?? "resolveIdiom";
-  const idiomResolverModuleName =
-    config?.idiomResolverModuleName ?? "@toolcog/runtime";
+  const [idiomResolverImportName, idiomResolverModuleName] =
+    config?.idiomResolverImport ?? ["resolveIdiom", "@toolcog/runtime"];
 
-  const contextToolsImportName = config?.contextToolsImportName;
-  const contextToolsModuleName = config?.contextToolsModuleName;
+  const [contextToolsImportName, contextToolsModuleName] =
+    config?.contextToolsImport === undefined ?
+      ["currentTools", "@toolcog/runtime"]
+    : config.contextToolsImport === false ? [undefined, undefined]
+    : config.contextToolsImport;
 
   const keepIntrinsicImports = config?.keepIntrinsicImports ?? false;
 
@@ -267,6 +263,7 @@ const transformToolcog = (
     if (
       contextToolsExpression === undefined &&
       contextToolsImportName !== undefined &&
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       contextToolsModuleName !== undefined
     ) {
       contextToolsExpression = factory.createUniqueName(
@@ -535,6 +532,7 @@ const transformToolcog = (
       !hasContextToolsImport &&
       needsContextTools &&
       contextToolsImportName !== undefined &&
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       contextToolsModuleName !== undefined
     ) {
       sourceFile = insertNamedImport(

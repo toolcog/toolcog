@@ -12,7 +12,7 @@ import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
 import { stylize } from "@toolcog/util/tty";
 import { toolcogTransformer } from "@toolcog/compiler";
-import { Job, currentTools, generate } from "@toolcog/runtime";
+import { Job, generate, currentTools } from "@toolcog/runtime";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
@@ -163,8 +163,6 @@ class Repl {
             toolcogTransformer(
               this.#languageService.getProgram()!,
               {
-                contextToolsImportName: "currentTools",
-                contextToolsModuleName: "@toolcog/runtime",
                 standalone: true,
                 keepIntrinsicImports: true,
               },
@@ -303,13 +301,12 @@ class Repl {
         "  prompt,\n" +
         '} from "@toolcog/core";\n' +
         "import {\n" +
-        "  currentTools,\n" +
-        "  withTools,\n" +
-        "  useTool,\n" +
-        "  useTools,\n" +
         "  generate,\n" +
         "  embed,\n" +
         "  index,\n" +
+        "  currentTools,\n" +
+        "  useTool,\n" +
+        "  useTools,\n" +
         '} from "@toolcog/runtime";\n',
     );
     // Un-increment the turn count.
@@ -582,7 +579,7 @@ class Repl {
   }
 
   async #runLang(input: string): Promise<unknown> {
-    return await Job.run(undefined, async (root) => {
+    return await Job.spawn(undefined, async (root) => {
       // Print job updates.
       const finished = reportJobs(
         { root },
@@ -628,7 +625,7 @@ class Repl {
   }
 
   async #runCode(input: string): Promise<Record<string, unknown> | undefined> {
-    return await Job.run(undefined, async (root) => {
+    return await Job.spawn(undefined, async (root) => {
       // Print job updates.
       const finished = reportJobs(
         { root },

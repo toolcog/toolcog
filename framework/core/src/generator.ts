@@ -23,6 +23,11 @@ interface GeneratorConfig {
    * when generating the response.
    */
   system?: string | undefined;
+
+  /**
+   * Whether or not the generator should stream responses by default.
+   */
+  stream?: boolean | undefined;
 }
 
 /**
@@ -62,6 +67,11 @@ interface GeneratorOptions {
    * The system prompt the generator should use when generating the response.
    */
   system?: string | undefined;
+
+  /**
+   * Whether or not the generator should stream responses.
+   */
+  stream?: boolean | undefined;
 
   /**
    * An abort signal that can be used to cancel the generator call.
