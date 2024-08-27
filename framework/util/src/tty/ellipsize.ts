@@ -1,8 +1,18 @@
-import { getCharacterWidth } from "./width.ts";
+import { stripAnsi } from "./ansi.ts";
+import { getCharacterWidth, getStringWidth } from "./width.ts";
 
-const ellipsizeStart = (text: string, maxWidth: number): string => {
-  if (maxWidth <= 3) {
-    return text.length <= maxWidth ? text : "...".slice(0, maxWidth);
+const ellipsizeStart = (
+  text: string,
+  maxWidth: number,
+  ellipsis: string = "...",
+): string => {
+  const ellipsisWidth = getStringWidth(ellipsis);
+  if (maxWidth <= ellipsisWidth) {
+    if (text.length <= maxWidth) {
+      return text;
+    } else {
+      return stripAnsi(ellipsis).slice(0, maxWidth);
+    }
   }
 
   let textWidth = 0;
@@ -28,7 +38,7 @@ const ellipsizeStart = (text: string, maxWidth: number): string => {
     }
 
     const characterWidth = getCharacterWidth(codePoint);
-    if (textWidth + characterWidth >= maxWidth - 3) {
+    if (textWidth + characterWidth >= maxWidth - ellipsisWidth) {
       break;
     }
 
@@ -36,12 +46,21 @@ const ellipsizeStart = (text: string, maxWidth: number): string => {
     index = prevIndex;
   }
 
-  return index === -1 ? text : "..." + text.slice(index);
+  return index === -1 ? text : ellipsis + text.slice(index);
 };
 
-const ellipsizeEnd = (text: string, maxWidth: number): string => {
-  if (maxWidth <= 3) {
-    return text.length <= maxWidth ? text : "...".slice(0, maxWidth);
+const ellipsizeEnd = (
+  text: string,
+  maxWidth: number,
+  ellipsis: string = "...",
+): string => {
+  const ellipsisWidth = getStringWidth(ellipsis);
+  if (maxWidth <= ellipsisWidth) {
+    if (text.length <= maxWidth) {
+      return text;
+    } else {
+      return stripAnsi(ellipsis).slice(0, maxWidth);
+    }
   }
 
   let textWidth = 0;
@@ -67,7 +86,7 @@ const ellipsizeEnd = (text: string, maxWidth: number): string => {
     }
 
     const characterWidth = getCharacterWidth(codePoint);
-    if (textWidth + characterWidth > maxWidth - 3) {
+    if (textWidth + characterWidth > maxWidth - ellipsisWidth) {
       break;
     }
 
@@ -75,18 +94,19 @@ const ellipsizeEnd = (text: string, maxWidth: number): string => {
     index = nextIndex;
   }
 
-  return index === text.length ? text : text.slice(0, index) + "...";
+  return index === text.length ? text : text.slice(0, index) + ellipsis;
 };
 
 const ellipsize = (
   text: string,
   maxWidth: number,
   direction?: number,
+  ellipsis: string = "...",
 ): string => {
   if (direction === undefined || direction >= 0) {
-    return ellipsizeEnd(text, maxWidth);
+    return ellipsizeEnd(text, maxWidth, ellipsis);
   } else {
-    return ellipsizeStart(text, maxWidth);
+    return ellipsizeStart(text, maxWidth, ellipsis);
   }
 };
 

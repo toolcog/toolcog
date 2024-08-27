@@ -216,40 +216,28 @@ const generate = (async (
 
     let message: Anthropic.Message | undefined;
 
-    await Job.run(
-      {
-        icon: "≡",
-        title: model,
-        status: "...",
-      },
-      async (job) => {
-        const response = await dispatcher.enqueue(
-          () => createMessage(client, request, { signal }),
-          { signal },
-        );
+    await Job.run(model, async (job) => {
+      const response = await dispatcher.enqueue(
+        () => createMessage(client, request, { signal }),
+        { signal },
+      );
 
-        for await (message of response) {
-          let content = "";
-          for (const block of message.content) {
-            if (block.type !== "text") {
-              continue;
-            }
-            content += block.text;
+      for await (message of response) {
+        let content = "";
+        for (const block of message.content) {
+          if (block.type !== "text") {
+            continue;
           }
-          job.update({
-            status: content,
-            ellipsize: -1,
-          });
+          content += block.text;
         }
-
-        const tokenCount = message?.usage.output_tokens ?? "unknown";
         job.update({
-          status: tokenCount === 1 ? "<1 token>" : `<${tokenCount} tokens>`,
-          ellipsize: 1,
+          output: content,
+          ellipsize: -1,
         });
-        job.finish();
-      },
-    );
+      }
+
+      job.finish();
+    });
 
     // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
     if (message === undefined || message.stop_reason === null) {
@@ -291,26 +279,20 @@ const generate = (async (
           throw new Error("Unknown tool " + JSON.stringify(block.name));
         }
 
-        const toolResult = Job.run(
-          {
-            icon: "⚙",
-            title: tool.id,
-          },
-          async (toolJob) => {
-            const toolThread = await Thread.create();
-            return Thread.run(toolThread, async () => {
-              const result = await callTool(tool, block.input);
+        const toolResult = Job.run(tool.id, async (toolJob) => {
+          const toolThread = await Thread.create();
+          return Thread.run(toolThread, async () => {
+            const result = await callTool(tool, block.input);
 
-              toolJob.finish(result);
+            toolJob.finish(result);
 
-              return {
-                type: "tool_result",
-                tool_use_id: block.id,
-                content: result,
-              } satisfies Anthropic.ToolResultBlockParam;
-            });
-          },
-        );
+            return {
+              type: "tool_result",
+              tool_use_id: block.id,
+              content: result,
+            } satisfies Anthropic.ToolResultBlockParam;
+          });
+        });
 
         toolResults.push(toolResult);
       }

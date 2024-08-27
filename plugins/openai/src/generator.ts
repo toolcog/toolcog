@@ -326,40 +326,28 @@ const generate = (async (
 
     let response: ChatCompletion | undefined;
 
-    await Job.run(
-      {
-        icon: "≡",
-        title: model,
-        status: "...",
-      },
-      async (job) => {
-        const completion = await dispatcher.enqueue(
-          () => createChatCompletion(client, request, { signal }),
-          { signal },
-        );
+    await Job.run(model, async (job) => {
+      const completion = await dispatcher.enqueue(
+        () => createChatCompletion(client, request, { signal }),
+        { signal },
+      );
 
-        for await (response of completion) {
-          const choice = response.choices[0];
-          if (choice === undefined) {
-            continue;
-          }
-
-          if (choice.message.content !== null) {
-            job.update({
-              status: choice.message.content,
-              ellipsize: -1,
-            });
-          }
+      for await (response of completion) {
+        const choice = response.choices[0];
+        if (choice === undefined) {
+          continue;
         }
 
-        const tokenCount = response?.usage?.completion_tokens ?? "unknown";
-        job.update({
-          status: tokenCount === 1 ? "<1 token>" : `<${tokenCount} tokens>`,
-          ellipsize: 1,
-        });
-        job.finish();
-      },
-    );
+        if (choice.message.content !== null) {
+          job.update({
+            output: choice.message.content,
+            ellipsize: -1,
+          });
+        }
+      }
+
+      job.finish();
+    });
 
     const choice = response?.choices[0];
     // eslint-disable-next-line @typescript-eslint/prefer-optional-chain
@@ -391,26 +379,20 @@ const generate = (async (
           throw new Error("Unknown tool " + JSON.stringify(toolFunction.name));
         }
 
-        const toolResult = Job.run(
-          {
-            icon: "⚙",
-            title: tool.id,
-          },
-          async (toolJob) => {
-            const toolThread = await Thread.create();
-            return Thread.run(toolThread, async () => {
-              const result = await callTool(tool, toolFunction.arguments);
+        const toolResult = Job.run(tool.id, async (toolJob) => {
+          const toolThread = await Thread.create();
+          return Thread.run(toolThread, async () => {
+            const result = await callTool(tool, toolFunction.arguments);
 
-              toolJob.finish(result);
+            toolJob.finish(result);
 
-              return {
-                role: "tool",
-                tool_call_id: toolCall.id,
-                content: result,
-              } satisfies OpenAI.ChatCompletionToolMessageParam;
-            });
-          },
-        );
+            return {
+              role: "tool",
+              tool_call_id: toolCall.id,
+              content: result,
+            } satisfies OpenAI.ChatCompletionToolMessageParam;
+          });
+        });
 
         toolResults.push(toolResult);
       }

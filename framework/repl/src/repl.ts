@@ -10,13 +10,13 @@ import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
 import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
-import { stylize, wrapText } from "@toolcog/util/tty";
+import { stylize } from "@toolcog/util/tty";
 import { toolcogTransformer } from "@toolcog/compiler";
 import { Job, currentTools, generate } from "@toolcog/runtime";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
-import { reportStatus } from "./report-status.ts";
+import { reportJobs } from "./report-jobs.ts";
 
 class ReplCompilerError extends Error {
   readonly diagnostics: readonly ts.Diagnostic[];
@@ -581,10 +581,10 @@ class Repl {
     return line;
   }
 
-  async #runLang(input: string): Promise<void> {
-    await Job.run({ title: "Prompt" }, async (root) => {
-      // Print job status updates.
-      const finished = reportStatus(
+  async #runLang(input: string): Promise<unknown> {
+    return await Job.run(undefined, async (root) => {
+      // Print job updates.
+      const finished = reportJobs(
         { root },
         {
           input: this.#input,
@@ -604,21 +604,8 @@ class Repl {
         await finished;
       }
 
-      // Print the natural language input completion to the output stream.
-      if (typeof output === "string") {
-        this.printText(this.#style.green(output + EOL));
-      } else {
-        this.printValue(output);
-      }
+      return output;
     });
-  }
-
-  printText(text: string): void {
-    const outputCols = this.outputCols;
-    if (outputCols !== undefined) {
-      text = wrapText(text, outputCols - 1);
-    }
-    this.#output.write(text);
   }
 
   async evalLang(input: string): Promise<unknown> {
@@ -640,10 +627,10 @@ class Repl {
     }
   }
 
-  async #runCode(input: string): Promise<void> {
-    await Job.run(undefined, async (root) => {
-      // Print job status updates.
-      const finished = reportStatus(
+  async #runCode(input: string): Promise<Record<string, unknown> | undefined> {
+    return await Job.run(undefined, async (root) => {
+      // Print job updates.
+      const finished = reportJobs(
         { root },
         {
           input: this.#input,
@@ -671,6 +658,8 @@ class Repl {
 
       // Print all newly declared bindings to the output stream.
       this.printBindings(bindings);
+
+      return bindings;
     });
   }
 

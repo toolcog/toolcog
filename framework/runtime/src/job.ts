@@ -2,9 +2,8 @@ import { Emitter } from "@toolcog/util/emit";
 import { AsyncContext } from "@toolcog/util/async";
 
 interface JobInfo {
-  icon?: string | undefined;
   title?: string | undefined;
-  status?: string | undefined;
+  output?: string | undefined;
   ellipsize?: number | undefined;
 }
 
@@ -25,9 +24,8 @@ class Job extends Emitter<JobEvents> {
   #firstChild: Job | null;
   #lastChild: Job | null;
 
-  #icon: string | undefined;
   #title: string | undefined;
-  #status: string | undefined;
+  #output: string | undefined;
   #ellipsize: number | undefined;
   #finished: boolean;
 
@@ -44,9 +42,8 @@ class Job extends Emitter<JobEvents> {
     this.#firstChild = null;
     this.#lastChild = null;
 
-    this.#icon = info?.icon;
     this.#title = info?.title;
-    this.#status = info?.status;
+    this.#output = info?.output;
     this.#ellipsize = info?.ellipsize;
     this.#finished = false;
   }
@@ -146,16 +143,12 @@ class Job extends Emitter<JobEvents> {
     }
   }
 
-  get icon(): string | undefined {
-    return this.#icon;
-  }
-
   get title(): string | undefined {
     return this.#title;
   }
 
-  get status(): string | undefined {
-    return this.#status;
+  get output(): string | undefined {
+    return this.#output;
   }
 
   get ellipsize(): number | undefined {
@@ -172,16 +165,13 @@ class Job extends Emitter<JobEvents> {
     }
 
     if (typeof info === "string") {
-      this.#status = info;
+      this.#output = info;
     } else {
-      if ("icon" in info) {
-        this.#icon = info.icon;
-      }
       if ("title" in info) {
         this.#title = info.title;
       }
-      if ("status" in info) {
-        this.#status = info.status;
+      if ("output" in info) {
+        this.#output = info.output;
       }
       if ("ellipsize" in info) {
         this.#ellipsize = info.ellipsize;
@@ -255,9 +245,12 @@ class Job extends Emitter<JobEvents> {
   }
 
   static async run<R>(
-    info: JobInfo | undefined,
+    info: JobInfo | string | undefined,
     func: (job: Job) => R,
   ): Promise<Awaited<R>> {
+    if (typeof info === "string") {
+      info = { title: info };
+    }
     const parent = Job.#current.get();
     const job = parent !== undefined ? parent.fork(info) : new Job(null, info);
     try {
