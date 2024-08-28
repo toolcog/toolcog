@@ -10,25 +10,33 @@ import { constants, runInThisContext } from "node:vm";
 import ts from "typescript";
 import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
-import { stylize } from "@toolcog/util/tty";
+import { stylize, wrapText } from "@toolcog/util/tty";
 import { toolcogTransformer } from "@toolcog/compiler";
-import { Job, generate, currentTools } from "@toolcog/runtime";
+import { AgentContext, Job, generate, currentTools } from "@toolcog/runtime";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
 import { reportJobs } from "./report-jobs.ts";
 
-class ReplCompilerError extends Error {
-  readonly diagnostics: readonly ts.Diagnostic[];
+interface ReplImport {
+  readonly name: string;
+  readonly type?: string | undefined;
+  readonly description?: string | undefined;
+}
 
-  constructor(
-    message: string,
-    diagnostics: readonly ts.Diagnostic[],
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.diagnostics = diagnostics;
-  }
+interface ReplImports {
+  readonly module: string;
+  readonly description?: string | undefined;
+  readonly typeImports: readonly ReplImport[];
+  readonly valueImports: readonly ReplImport[];
+}
+
+interface ReplCommand {
+  readonly description?: string | undefined;
+  readonly action: (
+    argument: string | undefined,
+    repl: Repl,
+  ) => Promise<void> | void;
 }
 
 interface ReplOptions {
@@ -37,6 +45,10 @@ interface ReplOptions {
 
   terminal?: boolean | undefined;
   styled?: boolean | undefined;
+
+  imports?: ReplImports[] | undefined;
+
+  commands?: Record<string, ReplCommand> | undefined;
 
   historyFile?: string | undefined;
   historySize?: number | undefined;
@@ -56,6 +68,10 @@ class Repl {
   readonly #terminal: boolean | undefined;
   readonly #styled: boolean;
   readonly #style: Style;
+
+  readonly #imports: readonly ReplImports[];
+
+  readonly #commands: Record<string, ReplCommand>;
 
   readonly #historyFile: string;
   readonly #historySize: number;
@@ -96,6 +112,20 @@ class Repl {
       (this.#terminal === true ||
         (this.#output as Partial<NodeJS.WriteStream>).isTTY === true);
     this.#style = stylize(this.#styled);
+
+    this.#imports = [
+      this.coreImports,
+      this.runtimeImports,
+      ...(options?.imports !== undefined ? options.imports : []),
+    ];
+
+    this.#commands = {
+      reset: this.resetCommand,
+      break: this.breakCommand,
+      exit: this.exitCommand,
+      help: this.helpCommand,
+      ...options?.commands,
+    };
 
     this.#historyFile =
       options?.historyFile ??
@@ -266,6 +296,19 @@ class Repl {
     return this.#style;
   }
 
+  get imports(): readonly ReplImports[] {
+    return this.#imports;
+  }
+
+  defineCommand(keyword: string, command: ReplCommand | undefined): void {
+    if (command !== undefined) {
+      this.#commands[keyword] = command;
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+      delete this.#commands[keyword];
+    }
+  }
+
   initialPrompt(turn: number): string {
     return this.#style.green(turn + "> ");
   }
@@ -274,41 +317,57 @@ class Repl {
     return this.#style.green("| ".padStart(turn.toString().length + 2, " "));
   }
 
-  printBanner(): void {
-    this.#output.write(`Welcome to Toolcog v${this.version}`);
-    this.#output.write(" (");
-    this.#output.write(`Node.js ${process.version}`);
-    this.#output.write(", ");
-    this.#output.write(`TypeScript v${ts.version}`);
-    this.#output.write(")");
-    this.#output.write(EOL);
+  formatBanner(): string {
+    const outputCols = this.outputCols;
+    let banner = "";
+    banner += "Welcome to Toolcog v" + this.version;
+    banner += " (";
+    banner += "Node.js " + process.version;
+    banner += ", ";
+    banner += "TypeScript v" + ts.version;
+    banner += ").";
+    banner += EOL;
+    banner += "Evaluate TypeScript code, define LLM tools, and chat with AI. ";
+    banner += "Type /help to learn more.";
+    if (outputCols !== undefined) {
+      banner = wrapText(banner, outputCols - 1);
+    }
+    return banner;
+  }
 
-    this.#output.write('Type ".help" for more information.');
-    this.#output.write(EOL);
-    this.#output.write(EOL);
+  printBanner(): void {
+    this.#output.write(this.formatBanner() + EOL + EOL);
+  }
+
+  get preludeSource(): string {
+    const importDeclarations = this.#imports
+      .map((imports) => {
+        const types = imports.typeImports
+          .map((typeImport) => typeImport.name)
+          .join(", ");
+        const typeImports =
+          types.length !== 0 ?
+            `import type { ${types} } from "${imports.module}";\n`
+          : "";
+
+        const values = imports.valueImports
+          .map((valueImport) => valueImport.name)
+          .join(", ");
+        const valueImports =
+          values.length !== 0 ?
+            `import { ${values} } from "${imports.module}";\n`
+          : "";
+
+        return typeImports + valueImports;
+      })
+      .join("");
+
+    return importDeclarations;
   }
 
   async evalPrelude(): Promise<void> {
-    // Import toolcog intrinsics.
-    await this.evalCode(
-      "import {\n" +
-        "  defineTool,\n" +
-        "  defineTools,\n" +
-        "  defineIdiom,\n" +
-        "  defineIdioms,\n" +
-        "  defineIndex,\n" +
-        "  definePrompt,\n" +
-        "  prompt,\n" +
-        '} from "@toolcog/core";\n' +
-        "import {\n" +
-        "  generate,\n" +
-        "  embed,\n" +
-        "  index,\n" +
-        "  currentTools,\n" +
-        "  useTool,\n" +
-        "  useTools,\n" +
-        '} from "@toolcog/runtime";\n',
-    );
+    // Evaluate the prelude.
+    await this.evalCode(this.preludeSource);
     // Un-increment the turn count.
     this.#turnCount -= 1;
   }
@@ -351,7 +410,7 @@ class Repl {
   }
 
   async run(): Promise<void> {
-    repl: while (true) {
+    while (true) {
       // Initialize the readline interface.
       const readline = await this.#createInterface();
 
@@ -393,28 +452,32 @@ class Repl {
         return readlineEmit.call(readline, event, ...args);
       };
 
-      let inputType: "lang" | "code" | "cont" | undefined;
+      let inputType: "command" | "lang" | "code" | "cont" | undefined;
+
+      let command: string | undefined;
+      let commandArgument: string | undefined;
 
       // Iterate over all input lines received by the REPL.
       for await (const line of readline) {
         bufferedLineCount -= 1;
 
-        // Check for non-continuation line special cases.
-        if (this.#bufferedInput.length === 0) {
-          const input = line.trim();
+        // Short-circuit non-continuation empty lines.
+        if (this.#bufferedInput.length === 0 && line.trim().length === 0) {
+          // Issue a new prompt and wait for the next line.
+          readline.prompt();
+          continue;
+        }
 
-          // Check for an empty input line.
-          if (input.length === 0) {
-            // Issue a new prompt and wait for the next line.
-            readline.prompt();
-            continue;
-          }
+        // Handle slash commands.
+        const slashMatch = /^\/([A-Za-z]+)(?:\s+(.*))?$/.exec(line);
+        if (slashMatch !== null) {
+          inputType = "command";
+          command = slashMatch[1];
+          commandArgument = slashMatch[2];
 
-          // Check for an explicit exit command.
-          if (input === ".exit") {
-            readline.close();
-            break repl;
-          }
+          // Execute the slash command outside of a readline context to
+          // prevent conflict between the REPL and interactive commands.
+          break;
         }
 
         // Append the new input line to the currently buffered input.
@@ -455,14 +518,21 @@ class Repl {
       Error.stackTraceLimit = Infinity;
 
       try {
-        if (inputType === "lang") {
+        if (inputType === "command") {
+          // Evaluate slash command.
+          await this.#runCommand(command!, commandArgument);
+        } else if (inputType === "lang") {
           // Evaluate natural language input.
           await this.#runLang(this.#bufferedInput);
-        } else {
+        } else if (inputType === "code") {
           // Evaluate code input.
           await this.#runCode(this.#bufferedInput);
         }
       } catch (error) {
+        if (error instanceof ReplExitError) {
+          // Immediately exit the REPL.
+          return;
+        }
         // Print the error to the output stream and continue.
         this.printError(error);
       } finally {
@@ -474,9 +544,14 @@ class Repl {
 
         // Reset the input buffer.
         this.#bufferedInput = "";
+
+        // Reset input classification state.
+        inputType = undefined;
+        command = undefined;
+        commandArgument = undefined;
       }
 
-      // Begin a new readline context.
+      // Enter a new readline context.
       continue;
     }
 
@@ -576,6 +651,26 @@ class Repl {
     }
 
     return line;
+  }
+
+  async #runCommand(
+    keyword: string,
+    argument: string | undefined,
+  ): Promise<void> {
+    // Special case the no-op `/break` command.
+    if (keyword === "break") {
+      return;
+    }
+
+    const command = this.#commands[keyword];
+    if (command === undefined) {
+      this.#output.write(
+        this.#style.redBright("Unrecognized command:") + " /" + keyword + EOL,
+      );
+      return;
+    }
+
+    await command.action(argument, this);
   }
 
   async #runLang(input: string): Promise<unknown> {
@@ -901,7 +996,307 @@ class Repl {
       ]);
     };
   };
+
+  /**
+   * Resets the REPL to its initial state.
+   */
+  async reset(): Promise<void> {
+    AgentContext.current().clear();
+
+    this.#scriptSnapshot = undefined;
+    this.#scriptVersion = 0;
+
+    this.#cumulativeInput = "";
+    this.#bufferedInput = "";
+    this.#turnCount = 1;
+
+    this.#executedStatementCount = 0;
+    this.#pendingStatementCount = 0;
+
+    await this.evalPrelude();
+  }
+
+  get resetCommand(): ReplCommand {
+    return {
+      description: "Reset the REPL to its initial state",
+      action: async (): Promise<void> => {
+        await this.reset();
+      },
+    };
+  }
+
+  get breakCommand(): ReplCommand {
+    return {
+      description: "Abort the current input without further processing",
+      action: (): void => {
+        // no-op
+      },
+    };
+  }
+
+  get exitCommand(): ReplCommand {
+    return {
+      description: "Immediately exit the REPL",
+      action: (): void => {
+        throw new ReplExitError();
+      },
+    };
+  }
+
+  #formatHelpHeader(): string {
+    const outputCols = this.outputCols;
+    let header = "";
+    header += "Input is automatically classified as either ";
+    header += this.#style.bold("TypeScript code") + ", ";
+    header += this.#style.bold("natural language") + " text, ";
+    header += "or a " + this.#style.bold("/slash") + " command. ";
+    header += "TypeScript input is transpiled to JavaScript and ";
+    header += "evaluated locally by Node.js. ";
+    header += "Natural language input is sent as a prompt ";
+    header += "to the currently configured LLM. ";
+    header += "The LLM is given access to all tools made available ";
+    header += "by calls to the " + this.#style.bold("useTool()") + " and ";
+    header += this.#style.bold("useTools()") + " functions in the ";
+    header += "current REPL session.";
+    header += EOL;
+    header += EOL;
+    header += "The following " + this.#style.bold("/slash") + " commands ";
+    header += "can be invoked at the start of any line:";
+    if (outputCols !== undefined) {
+      header = wrapText(header, outputCols - 1);
+    }
+    return header;
+  }
+
+  #formatCommandHelp(): string {
+    const outputCols = this.outputCols;
+
+    let maxKeywordLength = 0;
+    for (const [keyword, command] of Object.entries(this.#commands)) {
+      if (command.description === undefined) {
+        continue;
+      }
+      maxKeywordLength = Math.max(maxKeywordLength, keyword.length);
+    }
+    const columnBreak = Math.ceil((1 + maxKeywordLength + 2) / 2) * 2;
+    const indent = " ".repeat(columnBreak);
+
+    let message = "";
+    for (const [keyword, command] of Object.entries(this.#commands)) {
+      let description = command.description;
+      if (description === undefined) {
+        continue;
+      }
+
+      if (outputCols !== undefined) {
+        description = wrapText(description, outputCols - columnBreak - 1);
+        description = replaceLines(description, (line, eol, lineno) => {
+          return lineno === 0 ? line : indent + line;
+        });
+      }
+
+      message += this.style.greenBright(("/" + keyword).padEnd(columnBreak));
+      message += description;
+      message += EOL;
+    }
+    return message;
+  }
+
+  #formatImportsHelp(imports: ReplImports): string {
+    const outputCols = this.outputCols;
+
+    let description = imports.description;
+    if (description === undefined) {
+      description =
+        "The following " +
+        this.#style.bold(imports.module) +
+        " APIs are automatically imported:";
+    }
+    if (outputCols !== undefined) {
+      description = wrapText(description, outputCols - 1);
+    }
+
+    let maxNameLength = 0;
+    for (const valueImport of imports.valueImports) {
+      maxNameLength = Math.max(maxNameLength, valueImport.name.length);
+    }
+    const columnBreak = Math.ceil((1 + maxNameLength + 2) / 2) * 2;
+    const indent = " ".repeat(columnBreak);
+
+    let message = "";
+    message += description;
+    message += EOL;
+
+    for (const valueImport of imports.valueImports) {
+      let description = "";
+      if (valueImport.type !== undefined) {
+        description += this.#style.magentaBright(valueImport.type);
+      }
+      if (valueImport.description !== undefined) {
+        if (description.length !== 0) {
+          description += EOL;
+        }
+        description += valueImport.description;
+      }
+
+      if (outputCols !== undefined) {
+        description = wrapText(description, outputCols - columnBreak - 1);
+        description = replaceLines(description, (line, eol, lineno) => {
+          return lineno === 0 ? line : indent + line;
+        });
+      }
+
+      message += this.style.cyanBright(valueImport.name.padEnd(columnBreak));
+      message += description;
+      message += EOL;
+    }
+
+    return message;
+  }
+
+  #formatHelpFooter(): string {
+    const outputCols = this.outputCols;
+    let footer = "";
+    footer += "Press " + this.#style.cyanBright("<Ctrl+C>") + " ";
+    footer += "to abort the current input. ";
+    footer += "Press " + this.#style.cyanBright("<Ctrl+D>") + " ";
+    footer += "to exit the REPL.";
+    if (outputCols !== undefined) {
+      footer = wrapText(footer, outputCols - 1);
+    }
+    return footer;
+  }
+
+  formatHelpMessage(): string {
+    let message = "";
+    message += this.#formatHelpHeader();
+    message += EOL;
+    message += this.#formatCommandHelp();
+    message += EOL;
+    for (const imports of this.#imports) {
+      message += this.#formatImportsHelp(imports);
+      message += EOL;
+    }
+    message += this.#formatHelpFooter();
+    message += EOL;
+    return message;
+  }
+
+  get helpCommand(): ReplCommand {
+    return {
+      description: "Print this help message",
+      action: (): void => {
+        this.#output.write(this.formatHelpMessage());
+      },
+    };
+  }
+
+  get coreImports(): ReplImports {
+    return {
+      module: "@toolcog/core",
+      typeImports: [
+        {
+          name: "EmbeddingVector",
+        },
+        {
+          name: "Embedding",
+        },
+        {
+          name: "Embedder",
+        },
+        {
+          name: "Idiom",
+        },
+        {
+          name: "Idioms",
+        },
+        {
+          name: "Index",
+        },
+        {
+          name: "Indexer",
+        },
+        {
+          name: "Tool",
+        },
+        {
+          name: "Tools",
+        },
+        {
+          name: "Generator",
+        },
+        {
+          name: "PromptFunction",
+        },
+      ],
+      valueImports: [
+        {
+          name: "defineIdiom",
+        },
+        {
+          name: "defineIdioms",
+        },
+        {
+          name: "defineIndex",
+        },
+        {
+          name: "defineTool",
+        },
+        {
+          name: "defineTools",
+        },
+        {
+          name: "definePrompt",
+        },
+        {
+          name: "prompt",
+        },
+      ],
+    };
+  }
+
+  get runtimeImports(): ReplImports {
+    return {
+      module: "@toolcog/runtime",
+      typeImports: [],
+      valueImports: [
+        {
+          name: "embed",
+        },
+        {
+          name: "index",
+        },
+        {
+          name: "generate",
+        },
+        {
+          name: "currentTools",
+        },
+        {
+          name: "useTool",
+        },
+        {
+          name: "useTools",
+        },
+      ],
+    };
+  }
 }
 
-export type { ReplOptions };
-export { ReplCompilerError, Repl };
+class ReplExitError extends Error {}
+
+class ReplCompilerError extends Error {
+  readonly diagnostics: readonly ts.Diagnostic[];
+
+  constructor(
+    message: string,
+    diagnostics: readonly ts.Diagnostic[],
+    options?: ErrorOptions,
+  ) {
+    super(message, options);
+    this.diagnostics = diagnostics;
+  }
+}
+
+export type { ReplImport, ReplImports, ReplCommand, ReplOptions };
+export { Repl, ReplExitError, ReplCompilerError };

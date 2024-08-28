@@ -1,2 +1,7 @@
-export type { ReplOptions } from "./repl.ts";
-export { ReplCompilerError, Repl } from "./repl.ts";
+export type {
+  ReplImport,
+  ReplImports,
+  ReplCommand,
+  ReplOptions,
+} from "./repl.ts";
+export { Repl, ReplExitError, ReplCompilerError } from "./repl.ts";

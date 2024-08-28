@@ -49,7 +49,7 @@ const decodeEmbeddingVector = (vector: Buffer): EmbeddingVector => {
 };
 
 const encodeEmbeddingVector = (vector: EmbeddingVector): Buffer => {
-  return Buffer.from(vector.buffer);
+  return Buffer.from(vector.buffer, 0, vector.length * 4);
 };
 
 const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {

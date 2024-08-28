@@ -53,6 +53,9 @@ type ToolSource =
   | Tool
   | undefined;
 
+/**
+ * Generates an LLM tool for a TypeScript function.
+ */
 const defineTool: {
   <const F extends (...args: any[]) => unknown>(func: F): Tool<F>;
 

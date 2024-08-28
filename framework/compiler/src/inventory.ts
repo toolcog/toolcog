@@ -1,5 +1,6 @@
 import type ts from "typescript";
 import type { Embedding, Embeddings } from "@toolcog/core";
+import { encodeEmbeddingVector } from "@toolcog/core";
 import type { IdiomInventory, Inventory } from "@toolcog/runtime";
 
 const inventoryModuleName = "toolcog-inventory.js";
@@ -153,7 +154,7 @@ const createEmbeddingExpression = (
           undefined, // typeArguments
           [
             factory.createStringLiteral(
-              Buffer.from(vector.buffer).toString("base64"),
+              encodeEmbeddingVector(vector).toString("base64"),
             ),
           ],
         ),

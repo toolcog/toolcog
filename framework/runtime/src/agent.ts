@@ -61,6 +61,11 @@ class AgentContext extends Emitter<AgentContextEvents> {
     return tools;
   }
 
+  clear(): void {
+    this.#messages.length = 0;
+    this.#tools.length = 0;
+  }
+
   spawn(options?: AgentContextOptions): AgentContext {
     const child = new AgentContext(this, options);
     this.emit("spawn", child, this);

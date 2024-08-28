@@ -8,6 +8,7 @@ import type {
   Embedded,
   Embedder,
 } from "@toolcog/core";
+import { decodeEmbeddingVector } from "@toolcog/core";
 
 declare module "@toolcog/core" {
   interface EmbeddingModelNames {
@@ -109,13 +110,7 @@ const embed = (async <T extends string | readonly string[]>(
   for (const response of responses) {
     for (const data of response.data) {
       const buffer = Buffer.from(data.embedding as unknown as string, "base64");
-      embeddings.push(
-        new Float32Array(
-          buffer.buffer,
-          buffer.byteOffset,
-          buffer.byteLength / 4,
-        ),
-      );
+      embeddings.push(decodeEmbeddingVector(buffer));
     }
   }
 
