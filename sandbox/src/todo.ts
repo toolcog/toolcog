@@ -50,7 +50,7 @@ const lists: TodoList[] = [
 /**
  * Get the names of all of the user's existing to-do lists.
  *
- * @embed Get the names of my to-do lists.
+ * @idiom Get the names of my to-do lists.
  * @returns An array of to-do list names.
  */
 export const getTodoLists = defineTool((): string[] => {
@@ -60,7 +60,7 @@ export const getTodoLists = defineTool((): string[] => {
 /**
  * Create a new to-do list.
  *
- * @embed Create a new to-do list.
+ * @idiom Create a new to-do list.
  * @param listName - The name of the list to create.
  */
 export const createTodoList = defineTool((listName: string): void => {
@@ -74,7 +74,7 @@ export const createTodoList = defineTool((listName: string): void => {
 /**
  * Delete an existing to-do list.
  *
- * @embed Delete a to-do list.
+ * @idiom Delete a to-do list.
  * @param listName - The name of the list to delete.
  */
 export const deleteTodoList = defineTool((listName: string): void => {
@@ -89,7 +89,7 @@ export const deleteTodoList = defineTool((listName: string): void => {
  * The names of all existing lists can be retrieved by calling the
  * `getTodoLists` function.
  *
- * @embed Get the items on my to-do list.
+ * @idiom Get the items on my to-do list.
  * @param listName - The name of the to-do list whose items should be returned.
  * @returns The items on the to-do list with the given `listName`,
  * or `null` if no list with the given `listName` could be found.
@@ -106,7 +106,7 @@ export const getTodos = defineTool(
  * more appropriate list by calling `createTodoList`, and then add the item
  * to that new list.
  *
- * @embed Add an item to my to-do list.
+ * @idiom Add an item to my to-do list.
  * @param listName - The name of the list to which the item should be added.
  * Must be the name of an existing to-do list, as returned by `getTodoLists`.
  * @param item - The text of the item to add to the list.
@@ -122,9 +122,9 @@ export const createTodo = defineTool((listName: string, item: string): void => {
 /**
  * Update an existing item on a to-do list.
  *
- * @embed Update my to-do list.
- * @embed I'm done.
- * @embed I finished.
+ * @idiom Update my to-do list.
+ * @idiom I'm done.
+ * @idiom I finished.
  * @param listName - The name of the to-do list that contains the item to update.
  * @param itemId - The id of the item to update.
  * @param text - The updated text of the to-do item.
@@ -144,7 +144,7 @@ export const updateTodo = defineTool(
 /**
  * Remove an existing item from a to-do list.
  *
- * @embed Remove an item from my to-do list.
+ * @idiom Remove an item from my to-do list.
  * @param listName - The name of the to-do list from which to remove an item.
  * @param itemId - The id of the item to remove.
  */

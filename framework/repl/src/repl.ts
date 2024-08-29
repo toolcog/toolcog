@@ -1270,6 +1270,9 @@ class Repl {
           name: "generate",
         },
         {
+          name: "resolveIdiom",
+        },
+        {
           name: "currentTools",
         },
         {

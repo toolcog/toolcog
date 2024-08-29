@@ -12,7 +12,7 @@ export default pluginTs.config(
       "jsdoc/check-line-alignment": "error",
       "jsdoc/check-tag-names": [
         "error",
-        { definedTags: ["instructions", "embed"] },
+        { definedTags: ["instructions", "idiom"] },
       ],
       "jsdoc/no-bad-blocks": "error",
       "jsdoc/require-jsdoc": "off",

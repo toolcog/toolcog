@@ -120,13 +120,13 @@ const defineIdiomExpression = (
 
   // Define the embeddings variable.
 
-  const embeds = comment?.embeds ?? [];
-  if (embeds.length === 0 && comment?.description !== undefined) {
-    embeds.push(comment.description);
+  const idioms = comment?.idioms ?? [];
+  if (idioms.length === 0 && comment?.description !== undefined) {
+    idioms.push(comment.description);
   }
 
   const embeddingsObjectLiteral = factory.createObjectLiteralExpression(
-    embeds.map((text) => {
+    idioms.map((text) => {
       return factory.createPropertyAssignment(
         factory.createStringLiteral(text),
         factory.createObjectLiteralExpression(),
@@ -197,7 +197,7 @@ const defineIdiomExpression = (
 
   // Add the idiom to the module manifest.
 
-  moduleDef.idioms[idiomId] = { embeds };
+  moduleDef.idioms[idiomId] = { embeds: idioms };
 
   // Create and return an IIFE wrapper.
 
