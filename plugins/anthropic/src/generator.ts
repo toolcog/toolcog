@@ -450,102 +450,51 @@ const createPrompt = (
   args: unknown,
   instructions: string | undefined,
 ): string => {
-  let parametersDirective: string | undefined;
+  const directives: string[] = [];
   if (parametersSchema !== undefined) {
-    parametersDirective =
-      "Interpret the JSON function arguments according to the JSON parameters schema.";
-  }
-
-  let executionDirective: string | undefined;
-  if (parametersSchema !== undefined) {
-    executionDirective =
-      "Use the interpreted arguments to perform the function as instructed.";
+    directives.push(
+      "Perform the function as instructed using the provided arguments.",
+    );
   } else if (returnSchema !== undefined) {
-    executionDirective = "Perform the function as instructed.";
+    directives.push("Perform the function as instructed.");
   }
-
-  let toolsDirective: string | undefined;
   if (
     tools !== undefined &&
     tools.length !== 0 &&
     (parametersSchema !== undefined || returnSchema !== undefined)
   ) {
-    toolsDirective = "Use tools as needed to follow all instructions.";
+    directives.push(
+      "Use tools as needed to generate the return value of the function.",
+    );
   }
-
-  let returnDirective: string | undefined;
   if (returnSchema !== undefined) {
-    returnDirective = 'Use the "return" tool to return a result.';
+    directives.push(
+      'Invoke the "return" tool with the generated return value.',
+    );
   }
 
-  let directives: string | undefined;
-  if (parametersDirective !== undefined) {
-    directives = parametersDirective;
-  }
-  if (executionDirective !== undefined) {
-    if (directives === undefined) {
-      directives = executionDirective;
-    } else {
-      directives += " " + executionDirective;
-    }
-  }
-  if (toolsDirective !== undefined) {
-    if (directives === undefined) {
-      directives = toolsDirective;
-    } else {
-      directives += " " + toolsDirective;
-    }
-  }
-  if (returnDirective !== undefined) {
-    if (directives === undefined) {
-      directives = returnDirective;
-    } else {
-      directives += " " + returnDirective;
-    }
-  }
-
-  let parametersContext: string | undefined;
-  if (parametersSchema !== undefined) {
-    parametersContext =
-      "Parameters schema: " + JSON.stringify(parametersSchema);
-  }
-
-  let argumentsContext: string | undefined;
+  const context: string[] = [];
   if (args !== undefined) {
-    argumentsContext = "Function arguments: " + JSON.stringify(args);
+    context.push("Arguments: " + formatJson(args, parametersSchema));
   }
 
-  let context: string | undefined;
-  if (parametersContext !== undefined) {
-    context = parametersContext;
+  const sections: string[] = [];
+  if (directives.length !== 0) {
+    sections.push(directives.join(" "));
   }
-  if (argumentsContext !== undefined) {
-    if (context === undefined) {
-      context = argumentsContext;
-    } else {
-      context += "\n" + argumentsContext;
-    }
-  }
-
-  let prompt: string | undefined;
-  if (directives !== undefined) {
-    prompt = directives;
-  }
-  if (context !== undefined) {
-    if (prompt === undefined) {
-      prompt = context;
-    } else {
-      prompt += "\n\n" + context;
-    }
+  if (context.length !== 0) {
+    sections.push(context.join("\n"));
   }
   if (instructions !== undefined) {
-    if (prompt === undefined) {
-      prompt = instructions;
+    if (sections.length === 0) {
+      sections.push(instructions);
     } else {
-      prompt += "\n\n" + "Instructions:" + "\n" + instructions;
+      sections.push("Instructions:" + "\n" + instructions);
     }
   }
-  if (prompt === undefined) {
+
+  const prompt = sections.join("\n\n");
+  if (prompt.length === 0) {
     throw new Error("No generation instructions");
   }
   return prompt;
