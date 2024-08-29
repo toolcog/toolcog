@@ -26,8 +26,8 @@ The Toolcog framework consists of:
 
 ## Quick Start
 
-The quickest way try out Tool Augmented Generation (TAG) is to run the
-Toolcog REPL.
+The quickest way to begin using Tool Augmented Generation (TAG) is by 
+running the Toolcog REPL.
 
 To start the REPL with an OpenAI model, run:
 
