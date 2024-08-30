@@ -1,7 +1,15 @@
 {
   "name": "toolcog",
   "version": "0.0.1",
-  "description": "AI native compiler",
+  "description": "AI Framework for Tool Augmented Generation (TAG)",
+  "author": "Tool Cognition Inc.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/toolcog/toolcog#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toolcog/toolcog.git",
+    "directory": "toolcog"
+  },
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
