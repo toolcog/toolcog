@@ -1,4 +1,4 @@
-import { definePrompt } from "@toolcog/core";
+import { defineFunction } from "@toolcog/core";
 
 /**
  * A fictional character with a backstory.
@@ -26,7 +26,7 @@ export interface Character {
  * @param count - The number of characters to create.
  * @returns The generated cast of characters.
  */
-export const createCharacters = definePrompt<
+export const createCharacters = defineFunction<
   (genre: string, count?: number) => Character[]
 >({
   defaults: { count: 5 },

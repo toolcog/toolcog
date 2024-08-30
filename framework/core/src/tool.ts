@@ -47,12 +47,6 @@ type AnyTool = Tool;
 /** @internal */
 type AnyTools = Tools<readonly ((...args: any[]) => unknown)[]>;
 
-type ToolSource =
-  | ((args: unknown) => Promise<Tool | undefined> | Tool | undefined)
-  | Promise<Tool | undefined>
-  | Tool
-  | undefined;
-
 /**
  * Generates an LLM tool for a TypeScript function.
  */
@@ -88,5 +82,5 @@ const defineTools: {
   } as const,
 ) as typeof defineTools;
 
-export type { Tool, Tools, AnyTool, AnyTools, ToolSource };
+export type { Tool, Tools, AnyTool, AnyTools };
 export { defineTool, defineTools };

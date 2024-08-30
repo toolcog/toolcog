@@ -94,11 +94,9 @@ export const deleteTodoList = defineTool((listName: string): void => {
  * @returns The items on the to-do list with the given `listName`,
  * or `null` if no list with the given `listName` could be found.
  */
-export const getTodos = defineTool(
-  (listName: string): TodoItem[] | null => {
-    return lists.find((list) => list.name === listName)?.items ?? null;
-  },
-);
+export const getTodos = defineTool((listName: string): TodoItem[] | null => {
+  return lists.find((list) => list.name === listName)?.items ?? null;
+});
 
 /**
  * Add a new unchecked item to an existing to-do list. If a new item isn't

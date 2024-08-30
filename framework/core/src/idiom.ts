@@ -1,4 +1,11 @@
-import type { Embeddings } from "./embedding.ts";
+import type {
+  EmbeddingVector,
+  EmbeddingDistance,
+  Embeddings,
+  EmbedderConfig,
+  EmbedderOptions,
+  Embedder,
+} from "./embedding.ts";
 
 /**
  * A collection of embeddings associated with a value.
@@ -59,5 +66,100 @@ const defineIdioms: {
   } as const,
 ) as typeof defineIdioms;
 
-export type { Idiom, Idioms, AnyIdiom, AnyIdioms, IdiomResolver };
-export { defineIdiom, defineIdioms };
+/**
+ * Options for configuring an {@link Index} function.
+ */
+interface IndexConfig extends EmbedderConfig {
+  limit?: number | undefined;
+}
+
+/**
+ * Options for controlling an {@link Index} call.
+ */
+interface IndexOptions extends EmbedderOptions {
+  limit?: number | undefined;
+}
+
+/**
+ * A similarity search index.
+ */
+interface Index<T extends readonly unknown[]> {
+  /**
+   * Returns the indexed values that are most similar to the given `query`.
+   */
+  (
+    query: string | EmbeddingVector,
+    options?: IndexOptions,
+  ): Promise<T[number][]>;
+
+  readonly id: string | undefined;
+
+  readonly embedder: Embedder | undefined;
+
+  readonly idioms: Idioms<T>;
+}
+
+const defineIndex: {
+  <const T extends readonly unknown[]>(
+    values: readonly [...T],
+    config?: IndexConfig,
+  ): Index<T>;
+
+  /** @internal */
+  readonly brand: unique symbol;
+} = Object.assign(
+  <const T extends readonly unknown[]>(
+    values: readonly [...T],
+    config?: IndexConfig,
+  ): Index<T> => {
+    throw new Error("Uncompiled index");
+  },
+  {
+    brand: Symbol("toolcog.defineIndex"),
+  } as const,
+) as typeof defineIndex;
+
+/**
+ * Options for configuring an {@link Indexer} function.
+ */
+interface IndexerConfig extends IndexConfig {
+  embedder?: Embedder | undefined;
+
+  distance?: EmbeddingDistance | undefined;
+}
+
+/**
+ * Options for controlling an {@link Indexer} call.
+ */
+interface IndexerOptions extends IndexOptions {
+  id?: string | undefined;
+
+  embedder?: Embedder | undefined;
+
+  distance?: EmbeddingDistance | undefined;
+}
+
+/**
+ * A function that returns a similarity {@link Index} for a set of idioms.
+ */
+interface Indexer {
+  <T extends readonly unknown[]>(
+    idioms: Idioms<T>,
+    options?: IndexerOptions,
+  ): Promise<Index<T>>;
+}
+
+export type {
+  Idiom,
+  Idioms,
+  AnyIdiom,
+  AnyIdioms,
+  IdiomResolver,
+  IndexConfig,
+  IndexOptions,
+  Index,
+  IndexerConfig,
+  IndexerOptions,
+  Indexer,
+};
+export { defineIdiom, defineIdioms, defineIndex };

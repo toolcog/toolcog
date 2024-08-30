@@ -1,32 +1,37 @@
-# Toolcog: Tool Augmented Generation (TAG) Framework
+# Toolcog&ensp;![License](https://img.shields.io/github/license/toolcog/toolcog) ![Version](https://img.shields.io/npm/v/toolcog)
 
-![Version](https://img.shields.io/npm/v/toolcog)
-![License](https://img.shields.io/github/license/toolcog/toolcog)
+Build smarter apps with generative functions.
+
+- **Generative functions:** Implement AI functions by simply declaring them
+- **Tool generation:** Generate LLM tools from any TypeScript function
+- **Natural language control flow:** Bundle prefetched vector indexes for fast
+  semantic selection of program values
+
+## Overview
 
 Toolcog is an AI framework for Tool Augmented Generation (TAG) that makes it
 easier to create AI agents that use software tools and APIs. Toolcog leverages
 the static types and documentation comments present in code to automate
 integration between LLMs and software tools. Developers can use Toolcog
 to integrate generative AI capabilities into their application servers,
-serverless functions, utility programs, and AI agents like any other
-first-class programming primitive.
+serverless functions, utility programs, and AI agents.
 
 The Toolcog framework consists of:
 
-- **Library:** Minimalistic core library of intrinsic LLM functions
-- **Compiler:** TypeScript compiler plugin that statically analyzes
+- **API:** A minimalistic core library of intrinsic LLM functions
+- **Compiler:** A TypeScript compiler plugin that statically analyzes
   and transforms intrinsic LLM function calls
-- **Runtime:** Lightweight runtime with plugins for popular AI models
+- **Runtime:** A lightweight runtime with plugins for popular AI models
   and integrations for diverse application environments
-- **Indexing:** Compile-time manifest generation of all tools, schemas,
+- **Packaging:** Compile-time manifest generation of all tools, schemas,
   prompts, embeddings, and indexes used by a library or application
 - **Tooling:** Compile-time vector embedding prefetching and bundling
-- **REPL:** Interactive read-eval-print loop that combines TypeScript
+- **REPL:** An interactive read-eval-print loop that combines TypeScript
   code execution, tool definition, and tool-enabled AI chat
 
 ## Quick Start
 
-The quickest way to begin using Tool Augmented Generation (TAG) is by 
+The quickest way to begin using Tool Augmented Generation (TAG) is by
 running the Toolcog REPL.
 
 To start the REPL with an OpenAI model, run:
@@ -152,7 +157,7 @@ and used the output of the tool to generate a relevant response.
 
 We can make LLM interactions repeatable by defining _generative functions_.
 A generative function is a TypeScript function that uses an LLM to generate
-its return value. Toolcog's `definePrompt` intrinsic can "magically" implement
+its return value. Toolcog's `defineFunction` intrinsic can "magically" implement
 almost any TypeScript function signature with generative AI! Paste the
 following code into the REPL to define a generative function that creates
 character profiles.
@@ -163,7 +168,7 @@ character profiles.
  * @param role - The role the character plays.
  * @param alignment - The morality of the character.
  */
-const createCharacter = definePrompt<(role: string, alignment: "good" | "evil") => {
+const createCharacter = defineFunction<(role: string, alignment: "good" | "evil") => {
   // The name of the character,
   name: string;
   // The age of the character.
@@ -320,7 +325,7 @@ to an unbounded number of possible tools.
 Toolcog enables TAG with four intrinsic operations:
 
 - **defineTool:** Generates LLM tools from TypeScript functions
-- **definePrompt:** Implements TypeScript functions with LLM completions
+- **defineFunction:** Implements TypeScript functions with LLM completions
 - **defineIdiom:** Associates arbitrary program values with idiomatic text embeddings
 - **defineIndex:** Bundles prefetched vector indexes for fast natural language preprocessing
 

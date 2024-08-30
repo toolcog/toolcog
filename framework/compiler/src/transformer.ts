@@ -90,7 +90,7 @@ const transformToolcog = (
       "defineIndex",
       "defineTool",
       "defineTools",
-      "definePrompt",
+      "defineFunction",
       "prompt",
     ],
     "@toolcog/core",
@@ -125,7 +125,7 @@ const transformToolcog = (
       | "defineIndex"
       | "defineTool"
       | "defineTools"
-      | "definePrompt"
+      | "defineFunction"
       | "prompt"
     >;
 
@@ -142,7 +142,7 @@ const transformToolcog = (
           defineIndex: intrinsicTypes.defineIndex,
           defineTool: intrinsicTypes.defineTool,
           defineTools: intrinsicTypes.defineTools,
-          definePrompt: intrinsicTypes.definePrompt,
+          defineFunction: intrinsicTypes.defineFunction,
           prompt: intrinsicTypes.prompt,
         },
         intrinsicImports,
@@ -415,10 +415,15 @@ const transformToolcog = (
         );
       }
 
-      // Transform `definePrompt` intrinsics.
+      // Transform `defineFunction` intrinsics.
       if (
-        intrinsicTypes.definePrompt !== undefined &&
-        isFunctionCallExpression(ts, checker, node, intrinsicTypes.definePrompt)
+        intrinsicTypes.defineFunction !== undefined &&
+        isFunctionCallExpression(
+          ts,
+          checker,
+          node,
+          intrinsicTypes.defineFunction,
+        )
       ) {
         needsGenerator = true;
         needsContextTools = true;
@@ -473,7 +478,7 @@ const transformToolcog = (
         intrinsicTypes.defineIndex,
         intrinsicTypes.defineTool,
         intrinsicTypes.defineTools,
-        intrinsicTypes.definePrompt,
+        intrinsicTypes.defineFunction,
         intrinsicTypes.prompt,
       ]);
     };

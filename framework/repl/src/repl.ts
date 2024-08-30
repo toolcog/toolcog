@@ -1226,7 +1226,7 @@ class Repl {
           name: "Generator",
         },
         {
-          name: "PromptFunction",
+          name: "GenerativeFunction",
         },
       ],
       valueImports: [
@@ -1246,7 +1246,7 @@ class Repl {
           name: "defineTools",
         },
         {
-          name: "definePrompt",
+          name: "defineFunction",
         },
         {
           name: "prompt",
