@@ -29,9 +29,9 @@ type EmbeddingDistance = (a: EmbeddingVector, b: EmbeddingVector) => number;
 /**
  * A set of embedding vectors keyed by the model that generated each vector.
  */
-interface Embedding<V = EmbeddingVector> {
-  [model: EmbeddingModel]: V;
-}
+type Embedding<V = EmbeddingVector> = {
+  [Model in EmbeddingModel]?: V;
+};
 
 /**
  * A set of embeddings keyed by the embedded text.
@@ -110,7 +110,7 @@ const encodeEmbeddingVector = (vector: EmbeddingVector): Buffer => {
 const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {
   return Object.fromEntries(
     Object.entries(embedding).map(([model, vector]) => {
-      return [model, decodeEmbeddingVector(vector)] as const;
+      return [model, decodeEmbeddingVector(vector!)] as const;
     }),
   );
 };
@@ -119,7 +119,7 @@ const encodeEmbedding = (embedding: Embedding): Embedding<Buffer> => {
   return Object.fromEntries(
     Object.entries(embedding)
       .map(([model, vector]) => {
-        return [model, encodeEmbeddingVector(vector)] as const;
+        return [model, encodeEmbeddingVector(vector!)] as const;
       })
       .sort((a, b) => a[0].localeCompare(b[0])),
   );

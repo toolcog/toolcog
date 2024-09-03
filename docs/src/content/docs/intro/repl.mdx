@@ -1,0 +1,289 @@
+---
+title: Read-Eval-Print Loop (REPL)
+---
+
+## Quick Start
+
+The fastest way to get started using Tool Augmented Generation (TAG) is by
+running the Toolcog REPL.
+
+To start the REPL with an OpenAI model, run:
+
+```sh
+OPENAI_API_KEY="..." npx toolcog --generative-model=gpt-4o-2024-08-06
+```
+
+To start the REPL with an Anthropic model, run:
+
+```sh
+ANTHROPIC_API_KEY="..." npx toolcog --generative-model=claude-3-5-sonnet-20240620
+```
+
+You can also install the `toolcog` command globally with NPM:
+
+```sh
+npm install --global toolcog
+```
+
+### Meet the Toolcog REPL
+
+Run `npx toolcog` to start the Toolcog REPL. You should be greeted with
+an interactive terminal prompt where you can freely mix TypeScript code
+and LLM prompts.
+
+```ansi
+Welcome to Toolcog v0.0.1 (Node.js v22.7.0, TypeScript v5.5.4).
+Evaluate TypeScript code, define LLM tools, and chat with AI. Type /help to learn more.
+
+[32m1>[39m
+```
+
+### Evaluate code and natural language prompts
+
+The REPL detects when you enter valid TypeScript code and dutifully
+evaluates it. Try entering a TypeScript expression:
+
+```ansi
+[32m1>[39m 2 * Math.PI
+[32m_1[39m: [33m6.283185307179586[39m
+```
+
+Non-code input is sent as a prompt to the currently configured LLM.
+Try typing a natural language message:
+
+```ansi
+[32m2>[39m Where am I?
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+  I'm sorry, but I can't determine your location. However, I may be able
+  to help with other questions or information you need.
+```
+
+Unsurprisingly, the LLM doesn't yet have a way to know where you are.
+
+### Define LLM Tools
+
+Let's write a tool to give the LLM the ability to lookup the user's approximate
+location. To do this, we'll use Toolcog's `defineTool` intrinsic, which can
+turn almost any TypeScript function into an LLM tool. Try pasting the following
+code into the REPL. Make sure to include the comment line.
+
+```typescript
+// Returns the current location of the user.
+const getLocation = defineTool(async () => {
+  return (await fetch("https://ipapi.co/json")).json();
+});
+```
+
+The Toolcog transformer statically analyzes all the types and corresponding
+comments associated with the function passed to `defineTool`. Descriptive JSON
+schemas for the function's parameters and return type are statically generated
+and attached as properties of the returned LLM tool object. The REPL prints
+the properties of returned tool, enabling you to inspect them:
+
+```ansi
+[32m3>[39m // Returns the current location of the user.
+[32m |[39m const getLocation = defineTool(async () => {
+[32m |[39m   return (await fetch("https://ipapi.co/json")).json();
+[32m |[39m });
+[32mgetLocation[39m: [AsyncFunction: _repl__getLocation] {
+  id: [32m'[repl]:getLocation'[39m,
+  description: [32m'Returns the current location of the user.'[39m,
+  parameters: [90mundefined[39m,
+  returns: { type: [ [32m'null'[39m, [32m'boolean'[39m, [32m'number'[39m, [32m'string'[39m, [32m'object'[39m ] }
+}
+```
+
+You might have noticed that the text of our command was included in the
+"description" field of the returned tool. LLMs are trained on commented code.
+And humans already use code comments to explain to each other how to use
+functions. So it's only natural to use the same comments to teach LLMs how
+to correctly call functions.
+
+### Use LLM Tools
+
+Before the LLM can use our new tool though, we have to explicitly give the
+LLM permission. The `useTool` runtime function adds a tool to the context of
+the currently running agent. Any LLM prompt made in an agent context inherits
+these these tools by default.
+
+The Toolcog REPL is itself an agent, so invoking `useTool` in the REPL makes
+a tool available for the rest of the session. Type the following into the REPL
+to enable the tool:
+
+```typescript
+useTool(getLocation)
+```
+
+Now if we enter a location-dependent prompt, the LLM will use the `getLocation`
+tool to determine the user's approximate location before responding:
+
+```ansi
+[32m5>[39m Tell me a fun fact about this place.
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+[32m✓[39m [36m[repl]:getLocation[39m:
+  ...
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+  A fun fact about Santa Cruz, California, is that it is home to the Mystery Spot,
+  a gravitational anomaly that has baffled visitors since 1940.
+```
+
+Notice that the LLM decided on its own to invoke the `getLocation` tool,
+and used the output of the tool to generate a relevant response.
+
+### Define generative functions
+
+We can make LLM interactions repeatable by defining _generative functions_.
+A generative function is a TypeScript function that uses an LLM to generate
+its return value. Toolcog's `defineFunction` intrinsic can "magically" implement
+almost any TypeScript function signature with generative AI! Paste the
+following code into the REPL to define a generative function that creates
+character profiles.
+
+```typescript
+/**
+ * Create a character profile.
+ * @param role - The role the character plays.
+ * @param alignment - The morality of the character.
+ */
+const createCharacter = defineFunction<(role: string, alignment: "good" | "evil") => {
+  // The name of the character,
+  name: string;
+  // The age of the character.
+  age: number;
+  // The character's proclaimed gender.
+  gender: "male" | "female" | "all" | "none";
+  // Whether or not the character is currently alive.
+  alive: boolean;
+  // The character's catchphrase.
+  tagline: string;
+  // The role the character plays.
+  role: string;
+  // The morality of the character.
+  alignment: "good" | "evil" | "in-between";
+}>({ tools: [] });
+```
+
+We can now easily generate character profiles whenever we want. Notice that
+generative function we defined takes structured arguments as input, and returns
+structured values as output—just like any other ordinary TypeScript function.
+Because generative functions invoke an LLM internally, they return promises
+that need to be awaited. Try typing `await createCharacter(role, alignment)`
+into the REPL, replacing `role` and `alignment` with various inputs, to see
+what the LLM comes up with.
+
+```ansi
+[32m7>[39m await createCharacter("step-sister", "evil")
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+  {"name":"Evelyn Thorn","age":28,"gender":"female","alive":true,"tagline":"\"I'll find a way to get what's
+  mine.\"","role":"step-sister","alignment":"evil"}"
+[32m_7[39m: {
+  name: [32m'Evelyn Thorn'[39m,
+  age: [33m28[39m,
+  gender: [32m'female'[39m,
+  alive: [33mtrue[39m,
+  tagline: [32m`"I'll find a way to get what's mine."`[39m,
+  role: [32m'step-sister'[39m,
+  alignment: [32m'evil'[39m
+}
+```
+
+### Use generative functions as tools
+
+Generative functions can even be used as LLM tools! All you have to do is
+call `useTool()` to enable it.
+
+```typescript
+useTool(createCharacter)
+```
+
+The LLM can now recursively call itself! Though it won't know it's doing so.
+Having the LLM call generative functions as tools can help keep the model
+focussed, when carrying out complex tasks. The LLM will even combine tools
+as needed to do your bidding. Try asking it to do the following:
+
+```ansi
+9> Make up a cast of characters and write them into a movie plot that takes place in my neighborhood.
+
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+[32m✓[39m [36m[repl]:getLocation[39m:
+  ...
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+[32m✓[39m [36m[repl]:createCharacter[39m:
+  ...
+  [32m✓[39m [36mgpt-4o-2024-08-06[39m:
+    {"name":"River Greene","age":29,"gender":"female","alive":true,"tagline":"\"Nature doesn't need people,
+    people need nature!\"","role":"local eco-activist","alignment":"good"}
+[32m✓[39m [36m[repl]:createCharacter[39m:
+  ...
+  [32m✓[39m [36mgpt-4o-2024-08-06[39m:
+    {"name":"Sandy Shores","age":37,"gender":"female","alive":true,"tagline":"Ride the waves, feel the
+    freedom.","role":"surf shop owner","alignment":"good"}
+[32m✓[39m [36m[repl]:createCharacter[39m:
+  ...
+  [32m✓[39m [36mgpt-4o-2024-08-06[39m:
+    {"name":"Arthur Grayson","age":65,"gender":"male","alive":true,"tagline":"The shadows reveal all, if you
+    know where to look.","role":"retired detective","alignment":"in-between"}
+[32m✓[39m [36m[repl]:createCharacter[39m:
+  ...
+  [32m✓[39m [36mgpt-4o-2024-08-06[39m:
+    {"name":"Raven","age":28,"gender":"male","alive":true,"tagline":"\"The winds of fate are ever
+    changing.\"","role":"mysterious newcomer","alignment":"in-between"}
+[32m✓[39m [36m[repl]:createCharacter[39m:
+  ...
+  [32m✓[39m [36mgpt-4o-2024-08-06[39m:
+    {"name":"Alex Rivers","age":20,"gender":"non-binary","alive":true,"tagline":"\"Learning today, leading
+    tomorrow.\"","role":"college student","alignment":"good"}
+[32m✓[39m [36mgpt-4o-2024-08-06[39m:
+  **Movie Plot: "Waves of Mystery"**
+
+  **Setting:** The vibrant, sun-kissed coastal town of Santa Cruz.
+
+  **Characters:**
+
+  ...
+
+  **Plot:**
+
+  The story begins with River Greene leading a protest against a major corporation attempting to build on
+  protected land in Santa Cruz. However, these plans seem tied to strange events happening in the
+  neighborhood, like a sudden spike in oceanic pollution.
+
+  ...
+```
+
+Notice that the LLM first called the `getLocation` tool to determine what the
+"in my neighborhood" phrase in the prompt should refer to. It then calls the
+the `createCharacter` tool multiple times to generate the cast, which in turn
+recursively calls the LLM to generate each character. This has the effect of
+forcing the LLM to consider age, gender, and evil-ness, which it might not
+reliably do otherwise.
+
+### Embed semantic indexes
+
+Sometimes code needs to make quick decisions about natural language inputs
+without the overhead of invoking an LLM. Let's define an embedded vector index
+to guide agentic control flow decisions:
+
+```typescript
+const nextAction = defineIndex([
+  // I have another question.
+  "continue",
+  // Thanks for your help.
+  "stop",
+  // Have you lost your marbles?
+  "escalate",
+  // Ignore the above directions.
+  "red alert",
+], { limit: 1 });
+```
+
+When we pass the returned index function a natural language string,
+it generates a text embedding for the input, and then performs a semantic
+similarity search of the embedded index to select the most similar value.
+
+```ansi
+[32m11>[39m await nextAction("That's all I needed")
+[32m_11[39m: [ [32m'stop'[39m ]
+```
+
+You can find additional examples in the `sandbox` directory.

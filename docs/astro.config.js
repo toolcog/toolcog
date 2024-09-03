@@ -1,0 +1,301 @@
+import { defineConfig } from "astro/config";
+import starlight from "@astrojs/starlight";
+import starlightBlog from "starlight-blog";
+import starlightTypeDoc from "starlight-typedoc";
+
+export default defineConfig({
+  site: "https://docs.toolcog.com",
+  integrations: [
+    starlight({
+      title: "Toolcog",
+      description: "AI Framework for Tool Augmented Generation (TAG)",
+      favicon: "/favicon.svg",
+      logo: {
+        src: "./src/assets/knapped-obsidian.svg",
+      },
+      customCss: ["./src/styles/theme.css"],
+      expressiveCode: {
+        themes: ["github-dark-high-contrast", "github-light-high-contrast"],
+        useStarlightUiThemeColors: true,
+      },
+      editLink: {
+        baseUrl: "https://github.com/toolcog/toolcog/edit/main/docs",
+      },
+      social: {
+        github: "https://github.com/toolcog/toolcog",
+        "x.com": "https://x.com/toolcog",
+      },
+      defaultLocale: "root",
+      locales: {
+        root: {
+          label: "English",
+          lang: "en",
+        },
+      },
+      sidebar: [
+        {
+          label: "Get Started",
+          items: [
+            {
+              slug: "intro/repl",
+              label: "REPL",
+            },
+            {
+              slug: "intro/compiler",
+              label: "Compiler",
+            },
+            {
+              slug: "intro/framework",
+              label: "Framework",
+            },
+          ],
+        },
+        {
+          label: "Tool Augmented Generation",
+          items: [
+            {
+              slug: "framework/why-tag",
+            },
+            {
+              slug: "framework/llm-tools",
+            },
+            {
+              slug: "framework/generative-functions",
+            },
+            {
+              slug: "framework/idiomatic-indexes",
+            },
+            {
+              slug: "framework/ai-agents",
+            },
+            {
+              slug: "framework/rag-tag",
+            },
+          ],
+        },
+        {
+          label: "Runtime Configuration",
+          items: [
+            {
+              slug: "runtime/model-plugins",
+            },
+            {
+              slug: "runtime/agent-context",
+            },
+            {
+              slug: "runtime/embedded-indexes",
+            },
+            {
+              slug: "runtime/manifest-overrides",
+            },
+          ],
+        },
+        {
+          label: "Application Integration",
+          items: [
+            {
+              slug: "integration/javascript-engines",
+            },
+            {
+              slug: "integration/web-servers",
+            },
+            {
+              slug: "integration/serverless-functions",
+            },
+            {
+              slug: "integration/event-processors",
+            },
+          ],
+        },
+        {
+          label: "LLM Toolkits",
+          items: [
+            {
+              slug: "toolkits/anatomy",
+            },
+            {
+              slug: "toolkits/system-services",
+            },
+            {
+              slug: "toolkits/user-interaction",
+            },
+            {
+              slug: "toolkits/sdk-wrappers",
+            },
+            {
+              slug: "toolkits/rest-bridges",
+            },
+            {
+              slug: "toolkits/query-engines",
+            },
+            {
+              slug: "toolkits/event-sources",
+            },
+          ],
+        },
+        {
+          label: "Autonomous Agents",
+          items: [
+            {
+              slug: "agents/actors",
+            },
+            {
+              slug: "agents/communication",
+            },
+            {
+              slug: "agents/self-scheduling",
+            },
+            {
+              slug: "agents/pub-sub-drivers",
+            },
+            {
+              slug: "agents/flocking-and-swarming",
+            },
+            {
+              slug: "agents/human-in-the-loop",
+            },
+          ],
+        },
+        {
+          label: "Reference",
+          items: [
+            {
+              label: "Framework",
+              collapsed: true,
+              items: [
+                {
+                  slug: "reference/core/module",
+                },
+                {
+                  slug: "reference/runtime/module",
+                },
+              ],
+            },
+            {
+              label: "Plugins",
+              collapsed: true,
+              items: [
+                {
+                  slug: "reference/anthropic/module",
+                },
+                {
+                  slug: "reference/openai/module",
+                },
+              ],
+            },
+            {
+              label: "Adapters",
+              collapsed: true,
+              items: [
+                {
+                  slug: "reference/node/module",
+                },
+                {
+                  slug: "reference/node/loader/module",
+                },
+                {
+                  slug: "reference/node/register/module",
+                },
+              ],
+            },
+            {
+              label: "Libraries",
+              collapsed: true,
+              items: [
+                {
+                  slug: "reference/compiler/module",
+                },
+                {
+                  slug: "reference/compiler/cli/module",
+                },
+                {
+                  slug: "reference/repl/module",
+                },
+                {
+                  slug: "reference/util/module",
+                },
+                {
+                  slug: "reference/util/async/module",
+                },
+                {
+                  slug: "reference/util/cache/module",
+                },
+                {
+                  slug: "reference/util/emit/module",
+                },
+                {
+                  slug: "reference/util/json/module",
+                },
+                {
+                  slug: "reference/util/queue/module",
+                },
+                {
+                  slug: "reference/util/task/module",
+                },
+                {
+                  slug: "reference/util/timer/module",
+                },
+                {
+                  slug: "reference/util/tty/module",
+                },
+                {
+                  slug: "reference/util/tui/module",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      plugins: [
+        starlightBlog({
+          authors: {
+            chris: {
+              name: "Chris Sachs",
+            },
+            brad: {
+              name: "Brad Johnson",
+            },
+          },
+        }),
+        starlightTypeDoc({
+          output: "reference",
+          pagination: true,
+          typeDoc: {
+            entryPointStrategy: "packages",
+            entryFileName: "module",
+            outputFileStrategy: "modules",
+            excludeScopesInPaths: true,
+            mergeReadme: true,
+          },
+          entryPoints: [
+            "../framework/compiler",
+            "../framework/compiler/cli",
+            "../framework/core",
+            "../framework/repl",
+            "../framework/runtime",
+            "../framework/util",
+            "../framework/util/async",
+            "../framework/util/cache",
+            "../framework/util/emit",
+            "../framework/util/json",
+            "../framework/util/queue",
+            "../framework/util/task",
+            "../framework/util/timer",
+            "../framework/util/tty",
+            "../framework/util/tui",
+            "../plugins/anthropic",
+            "../plugins/openai",
+            "../adapters/node",
+            "../adapters/node/loader",
+            "../adapters/node/register",
+            "../toolcog",
+          ],
+          tsconfig: "../tsconfig.json",
+        }),
+      ],
+    }),
+  ],
+  devToolbar: {
+    enabled: false,
+  },
+});

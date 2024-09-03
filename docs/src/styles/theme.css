@@ -1,0 +1,63 @@
+:root {
+	--sl-color-accent-low: #262220; /* --bronzeDark-3 */
+	--sl-color-accent: #a18072; /* --bronzeDark-9 */
+	--sl-color-accent-high: #ae8c7e; /* --bronzeDark-10 */
+	--sl-color-white: #fdfdfc; /* --sand-1 */
+	--sl-color-gray-1: #b5b3ad; /* --sandDark-11 */
+	--sl-color-gray-2: #eeeeec; /* --sandDark-12 */
+	--sl-color-gray-3: #7c7b74; /* --sandDark-10 */
+	--sl-color-gray-4: #62605b; /* --sandDark-8 */
+	--sl-color-gray-5: #3b3a37; /* --sandDark-6 */
+	--sl-color-gray-6: #222221; /* --sandDark-3 */
+	--sl-color-gray-7: #191918; /* --sandDark-2 */
+	--sl-color-black: #111110; /* --sandDark-1 */
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #f6edea; /* --bronze-3 */
+	--sl-color-accent: #957468; /* --bronze-10 */
+	--sl-color-accent-high: #43302b; /* --bronze-12 */
+	--sl-color-white: #222221; /* --sandDark-3 */
+	--sl-color-gray-1: #63635e; /* --sand-11 */
+	--sl-color-gray-2: #21201c; /* --sand-12 */
+	--sl-color-gray-3: #82827c; /* --sand-10 */
+	--sl-color-gray-4: #bcbbb5; /* --sand-8 */
+	--sl-color-gray-5: #dad9d6; /* --sand-6 */
+	--sl-color-gray-6: #f1f0ef; /* --sand-3 */
+	--sl-color-gray-7: #f9f9f8; /* --sand-2 */
+	--sl-color-black: #fdfdfc; /* --sand-1 */
+}
+
+@supports (color: color(display-p3 1 1 1)) {
+  @media (color-gamut: p3) {
+    :root {
+      --sl-color-accent-low: color(display-p3 0.147 0.132 0.125); /* --bronzeDark-3 */
+      --sl-color-accent: color(display-p3 0.611 0.507 0.455); /* --bronzeDark-9 */
+      --sl-color-accent-high: color(display-p3 0.66 0.556 0.504); /* --bronzeDark-10 */
+      --sl-color-white: color(display-p3 0.992 0.992 0.989); /* --sand-1 */
+      --sl-color-gray-1: color(display-p3 0.707 0.703 0.68); /* --sandDark-11 */
+      --sl-color-gray-2: color(display-p3 0.933 0.933 0.926); /* --sandDark-12 */
+      --sl-color-gray-3: color(display-p3 0.487 0.481 0.456); /* --sandDark-10 */
+      --sl-color-gray-4: color(display-p3 0.384 0.378 0.357); /* --sandDark-8 */
+      --sl-color-gray-5: color(display-p3 0.23 0.229 0.217); /* --sandDark-6 */
+      --sl-color-gray-6: color(display-p3 0.135 0.135 0.129); /* --sandDark-3 */
+      --sl-color-gray-7: color(display-p3 0.098 0.098 0.094); /* --sandDark-2 */
+      --sl-color-black: color(display-p3 0.067 0.067 0.063); /* --sandDark-1 */
+    }
+
+    :root[data-theme='light'] {
+      --sl-color-accent-low: color(display-p3 0.958 0.932 0.919); /* --bronze-3 */
+      --sl-color-accent: color(display-p3 0.563 0.461 0.414); /* --bronze-10 */
+      --sl-color-accent-high: color(display-p3 0.251 0.191 0.172); /* --bronze-12 */
+      --sl-color-white: color(display-p3 0.135 0.135 0.129); /* --sandDark-3 */
+      --sl-color-gray-1: color(display-p3 0.388 0.388 0.37); /* --sand-11 */
+      --sl-color-gray-2: color(display-p3 0.129 0.126 0.111); /* --sand-12 */
+      --sl-color-gray-3: color(display-p3 0.511 0.511 0.488); /* --sand-10 */
+      --sl-color-gray-4: color(display-p3 0.738 0.734 0.713); /* --sand-8 */
+      --sl-color-gray-5: color(display-p3 0.854 0.852 0.839); /* --sand-6 */
+      --sl-color-gray-6: color(display-p3 0.943 0.942 0.936); /* --sand-3 */
+      --sl-color-gray-7: color(display-p3 0.977 0.977 0.973); /* --sand-2 */
+      --sl-color-black: color(display-p3 0.992 0.992 0.989); /* --sand-1 */
+    }
+  }
+}

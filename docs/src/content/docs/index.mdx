@@ -1,0 +1,36 @@
+---
+title: Documentation
+hero:
+  title: Turn Any API into an LLM Tool
+  tagline: AI framework for Tool Augmented Generation (TAG)
+  image:
+    file: ../../assets/knapped-obsidian.svg
+  actions:
+    - text: Get Started
+      link: /intro/repl
+      icon: right-arrow
+    - text: View on GitHub
+      link: https://github.com/toolcog/toolcog
+      icon: external
+      variant: minimal
+template: splash
+editUrl: false
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+<CardGrid stagger>
+  <Card title="LLM Tool Compiler" icon="seti:hex">
+    Turn any TypeScript function into an LLM tool.
+  </Card>
+  <Card title="Generative Functions" icon="seti:json">
+    Implement AI functions by simply declaring them.
+  </Card>
+  <Card title="Embedded Indexes" icon="seti:db">
+    Bundle prefetched vector indexes for fast tool selection and agentic
+    control flow.
+  </Card>
+  <Card title="AI Agents" icon="seti:todo">
+    Build advanced AI agents using ordinary programming techniques.
+  </Card>
+</CardGrid>

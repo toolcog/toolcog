@@ -16,8 +16,8 @@
   "scripts": {
     "build": "rollup --config",
     "check": "tsc --noEmit",
-    "lint": "eslint src/",
-    "format": "prettier --check src/",
+    "lint": "eslint src/ */src/",
+    "format": "prettier --check src/ */src",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",
@@ -27,12 +27,6 @@
     "dist/"
   ],
   "sideEffects": false,
-  "imports": {
-    "#async-scope": {
-      "node": "./src/async/scope.node.ts",
-      "default": "./src/async/scope.polyfill.ts"
-    }
-  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",

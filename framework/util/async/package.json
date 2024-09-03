@@ -1,0 +1,10 @@
+{
+  "name": "@toolcog/util/async",
+  "type": "module",
+  "imports": {
+    "#scope": {
+      "node": "./src/scope.node.ts",
+      "default": "./src/scope.polyfill.ts"
+    }
+  }
+}

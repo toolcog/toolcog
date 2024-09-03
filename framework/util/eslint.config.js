@@ -4,7 +4,7 @@ export default [
   ...config,
   {
     ignores: [
-      "src/tty/width.ts", // takes an eternity to lint
+      "tty/src/width.ts", // takes an eternity to lint
     ],
   },
 ];

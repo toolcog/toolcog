@@ -103,7 +103,7 @@ const indexer = (<T extends readonly unknown[]>(
       const embeddingVectors = await embedder(texts, options);
       for (let i = 0; i < embeddingVectors.length; i += 1) {
         const embedding = embeddings[i] as {
-          [model: EmbeddingModel]: EmbeddingVector;
+          [Model in EmbeddingModel]?: EmbeddingVector;
         };
         embedding[model] = embeddingVectors[i]!;
       }

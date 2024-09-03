@@ -19,8 +19,8 @@
   "scripts": {
     "build": "rollup --config",
     "check": "tsc --noEmit",
-    "lint": "eslint src/",
-    "format": "prettier --check src/",
+    "lint": "eslint src/ */src/",
+    "format": "prettier --check src/ */src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
     "clean": "rimraf .turbo dist",

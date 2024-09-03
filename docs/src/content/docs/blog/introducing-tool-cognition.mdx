@@ -1,0 +1,119 @@
+---
+title: Introducing Tool Cognition
+date: 2024-09-03
+tags:
+  - Announcement
+authors:
+  - chris
+---
+
+Today, we're proud to announce the launch of Toolcog, the first open source
+AI framework for Tool Augmented Generation (TAG).
+
+### What is Tool Augmented Generation (TAG)?
+
+Tool Augmented Generation (TAG) is a complementary technique to Retrieval
+Augmented Generation (RAG) that further extends the reach of generative AI.
+Similar to RAG, which uses vector search to select semantically relevant
+context for inclusion in LLM requests, TAG instead uses vector search to
+select semantically relevant tools for the LLM to use when generating
+responses, thus improving tool usage and reliability by LLMs.
+
+### Humans and Tools
+
+Human eras are defined by advancements in technology and tools. The bronze age.
+The iron age.
+
+The information age is a cumulative sum of different tools for knowledge
+transfer. Written language. The printing press. Network communications.
+
+Our earliest human ancestors possessed great intelligence long before departing
+their caves. Developing sufficient tools, however, enabled them to venture
+forward and begin reshaping the world according to their imaginations.
+
+Our current AI landscape is similarly limited. Though AI already possesses
+great intelligence, without sufficient tools AI can't really do much. You can
+ask an AI about hammers and nails, but today it cannot build you a house.
+
+### AI Tools Landscape
+
+Today, there are millions of software tools built for humans. There are almost
+none built for AI.
+
+Within the burgeoning area of AI tool use research, challenges remain around
+tool use accuracy and reliability.
+
+For example, researchers from the Sky Computing lab and the [Berkeley AI
+Research, or BAIR, Lab](https://arxiv.org/abs/2305.15334) noted the following
+challenges with LLM function calling:
+
+> Large Language Models (LLMs) have seen an impressive wave of advances
+> recently, with models now excelling in a variety of tasks, such as
+> mathematical reasoning and program synthesis. However, their potential to
+> effectively use tools via API calls remains unfulfilled. This is a
+> challenging task even for today's state-of-the-art LLMs such as GPT-4,
+> largely due to their inability to generate accurate input arguments and their
+> tendency to hallucinate the wrong usage of an API call.
+
+Similarly, [customer experience AI startup Sierra](https://arxiv.org/pdf/2406.12045)
+observed these challenges while building AI agents and benchmarking Tool-Agent
+User (TAU) interactions:
+
+> At the core, the main results from our experiments demonstrate a critical
+> fact: agents built on top of LM function calling lack sufficient consistency
+> and rule-following ability to reliably build real-world applications.
+> Solving both of these problems can have outsized impact on automating several
+> real-world tasks and ensuring smoother human-in-the-loop interaction.
+
+The prospect that AI might one day invent its own tools is certainly intriguing.
+But AI already has the faculties—today— to intelligently use the same software
+tools that humans and businesses consume everyday. The missing link is
+connecting AI models with the bounty of software tools waiting to be harnessed.
+
+### Future of AI Tools
+
+It's our mission at Tool Cognition to safely and responsibly connect generative
+AI to the world's best software ecosystems. To turn every API into an AI tool.
+
+The end state looks like this: any routine task that currently requires a
+combination of many software tools will be achievable by asking AI to do it
+for you. Repetitive tasks will be arranged by telling the AI to periodically
+perform them, or to act autonomously in response to particular events. The AI
+will leverage many of the same tools you would use to perform the
+task—calculators, calendars, databases, analytics, SaaS, and so on. Though AI
+will not act via the user interfaces designed for you, but will instead directly
+access the underlying APIs that machines use to communicate with each other.
+
+To get there, three things need to happen:
+
+1. LLM tools need to become a first-class programming interface
+2. Existing APIs need to be exposed as LLM toolkits
+3. Infrastructure software is needed to govern the interactions between
+   AI agents and LLM tools
+
+Note that smarter AI models isn't on the list. Improved LLM reasoning and
+recall will certainly help. But it's not the limiting factor that many presume
+it to be.
+
+### Transform any API into an AI Tool
+
+Today, developers can start using Toolcog to quickly transform their favorite
+software tools into powerful AI agents.
+
+Toolcog works by harnessing the programmatic types and comments already present
+in software code to generate effective LLM tools for any TypeScript function.
+We believe that minimizing the boilerplate and cognitive load needed to develop
+LLM tools is essential to bringing large numbers of high quality, reliable tools
+online quickly.
+
+Toolcog ships with an interactive read-eval-print loop (REPL) that seamlessly
+blends code execution, and tool-enabled AI chat. Developers and researchers can
+use the Toolcog REPL to quickly experiment with Tool Augmented Generation,
+and validate its accuracy and suitability for any use case.
+
+### Let's Work Together!
+
+We invite anyone interested in actionable AI and autonomous AI agents to join
+us in the pursuit of making all the world's software available as LLM tools.
+Give the Toolcog REPL a try. Star us on GitHub. And follow us on LinkedIn.
+We look forward to seeing the tools and use cases the community creates.

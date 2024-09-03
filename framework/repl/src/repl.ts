@@ -758,14 +758,10 @@ class Repl {
   printBindings(bindings: Record<string, unknown>): void {
     for (const key in bindings) {
       const value = bindings[key];
-      this.#output.write(this.#style.green(key));
-      this.#output.write(": ");
-      this.printValue(value);
+      this.#output.write(
+        this.#style.green(key) + ": " + this.formatValue(value) + EOL,
+      );
     }
-  }
-
-  printValue(value: unknown): void {
-    this.#output.write(this.formatValue(value) + EOL);
   }
 
   formatValue(value: unknown): string {

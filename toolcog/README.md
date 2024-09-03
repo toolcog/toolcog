@@ -40,7 +40,7 @@ The Toolcog framework consists of:
 
 ## Quick Start
 
-The quickest way to begin using Tool Augmented Generation (TAG) is by
+The fasted way to get started using Tool Augmented Generation (TAG) is by
 running the Toolcog REPL.
 
 To start the REPL with an OpenAI model, run:
@@ -74,7 +74,7 @@ Evaluate TypeScript code, define LLM tools, and chat with AI. Type /help to lear
 1>
 ```
 
-### Evaluating code and natural language prompts
+### Evaluate code and natural language prompts
 
 The REPL detects when you enter valid TypeScript code and dutifully
 evaluates it. Try entering a TypeScript expression:
@@ -96,7 +96,7 @@ Try typing a natural language message:
 
 Unsurprisingly, the LLM doesn't yet have a way to know where you are.
 
-### Tool definition
+### Define LLM Tools
 
 Let's write a tool to give the LLM the ability to lookup the user's approximate
 location. To do this, we'll use Toolcog's `defineTool` intrinsic, which can
@@ -131,7 +131,7 @@ And humans already use code comments to explain to each other how to use
 functions. So it's only natural to use the same comments to teach LLMs how
 to correctly call functions.
 
-### Tool use
+### Use LLM Tools
 
 Before the LLM can use our new tool though, we have to explicitly give the
 LLM permission. The `useTool` runtime function adds a tool to the context of
@@ -162,7 +162,7 @@ tool to determine the user's approximate location before responding:
 Notice that the LLM decided on its own to invoke the `getLocation` tool,
 and used the output of the tool to generate a relevant response.
 
-### Generative functions
+### Define generative functions
 
 We can make LLM interactions repeatable by defining _generative functions_.
 A generative function is a TypeScript function that uses an LLM to generate
@@ -219,7 +219,7 @@ _7: {
 }
 ```
 
-### Generative functions as tools
+### Use generative functions as tools
 
 Generative functions can even be used as LLM tools! All you have to do is
 call `useTool()` to enable it.
@@ -289,7 +289,7 @@ recursively calls the LLM to generate each character. This has the effect of
 forcing the LLM to consider age, gender, and evil-ness, which it might not
 reliably do otherwise.
 
-### Embedded vector indexes
+### Embed semantic indexes
 
 Sometimes code needs to make quick decisions about natural language inputs
 without the overhead of invoking an LLM. Let's define an embedded vector index

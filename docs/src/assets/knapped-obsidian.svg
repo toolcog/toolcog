@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<svg fill="none" width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <path fill="#000000" d="M395 255V76H391L236 140L162 191L117 249V357L179 436H267L360 353L367 302L395 255Z"/>
+  <path fill="#F0F0F0" d="M384 257V88L238 174L169 194L219 199V202L128 246V357L166 379L175 416L169 381L185 384L183 426L222 394H275L270 423L278 394L300 359L349 353L302 355L347 286L384 257Z"/>
+  <path fill="#000000" d="M303 224L384 88V145L282 337L299 358L232 394H222L303 224Z"/>
+  <path fill="#000000" d="M278 205L238 174L226 194L216 237L225 290L177 270L169 381L185 384L278 205Z"/>
+  <path fill="url(#flake1)" d="M177 270L212 239L221.5 288.5L177 270Z"/>
+  <path fill="url(#flake2)" d="M384 254V145L378.68 155L355 271L384 254Z"/>
+  <path fill="url(#flake3)" d="M303 224L384 88L238 174L303 224Z"/>
+  <path fill="url(#flake4)" d="M212 239L219 202L128 246L177 270L212 239Z"/>
+  <path fill="url(#flake5)" d="M173 268L128 246V350L165 367L173 268Z"/>
+  <path fill="url(#flake6)" d="M282 337L378.68 155L346 280L298 352L282 337Z"/>
+  <path fill="url(#flake7)" d="M303 224L278 205L185 384L183 426L222 394L303 224Z"/>
+  <defs>
+    <linearGradient id="flake1" x1="212" y1="239" x2="221.5" y2="288.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0.365"/>
+      <stop offset="0.76" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <linearGradient id="flake2" x1="378.5" y1="155.5" x2="355" y2="271" gradientUnits="userSpaceOnUse">
+      <stop offset="0.665"/>
+      <stop offset="1" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <linearGradient id="flake3" x1="238" y1="174" x2="303" y2="224.5" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#989898"/>
+      <stop offset="0.435" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <linearGradient id="flake4" x1="219" y1="202" x2="204" y2="281" gradientUnits="userSpaceOnUse">
+      <stop offset="0.065"/>
+      <stop offset="0.495" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <linearGradient id="flake5" x1="128" y1="246" x2="222" y2="394" gradientUnits="userSpaceOnUse">
+      <stop offset="0.371795"/>
+      <stop offset="0.630254" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <linearGradient id="flake6" x1="221.5" y1="288.5" x2="298" y2="352" gradientUnits="userSpaceOnUse">
+      <stop offset="0.6"/>
+      <stop offset="0.97" stop-color="#F0F0F0"/>
+    </linearGradient>
+    <linearGradient id="flake7" x1="278" y1="205" x2="349" y2="353" gradientUnits="userSpaceOnUse">
+      <stop offset="0.247764"/>
+      <stop offset="0.517981" stop-color="#F0F0F0"/>
+    </linearGradient>
+  </defs>
+</svg>

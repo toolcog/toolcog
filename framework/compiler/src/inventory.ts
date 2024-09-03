@@ -154,7 +154,7 @@ const createEmbeddingExpression = (
           undefined, // typeArguments
           [
             factory.createStringLiteral(
-              encodeEmbeddingVector(vector).toString("base64"),
+              encodeEmbeddingVector(vector!).toString("base64"),
             ),
           ],
         ),

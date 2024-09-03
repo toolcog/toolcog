@@ -2,21 +2,21 @@ import { defineLib } from "../../rollup.js";
 
 export default [
   ...defineLib({ input: "./src/lib.ts" }),
-  ...defineLib({ input: "./src/json/mod.ts" }),
-  ...defineLib({ input: "./src/cache/mod.ts" }),
-  ...defineLib({ input: "./src/queue/mod.ts" }),
-  ...defineLib({ input: "./src/emit/mod.ts" }),
-  ...defineLib({ input: "./src/task/mod.ts" }),
+  ...defineLib({ input: "./json/src/mod.ts" }),
+  ...defineLib({ input: "./cache/src/mod.ts" }),
+  ...defineLib({ input: "./queue/src/mod.ts" }),
+  ...defineLib({ input: "./emit/src/mod.ts" }),
+  ...defineLib({ input: "./task/src/mod.ts" }),
   ...defineLib({
-    input: "./src/async/mod.ts",
+    input: "./async/src/mod.ts",
     outputTag: "node",
     exportConditions: ["node"],
   }),
   ...defineLib({
-    input: "./src/async/mod.ts",
+    input: "./async/src/mod.ts",
     outputTag: "polyfill",
   }),
-  ...defineLib({ input: ["./src/timer/mod.ts"] }),
-  ...defineLib({ input: "./src/tty/mod.ts" }),
-  ...defineLib({ input: "./src/tui/mod.ts" }),
+  ...defineLib({ input: "./timer/src/mod.ts" }),
+  ...defineLib({ input: "./tty/src/mod.ts" }),
+  ...defineLib({ input: "./tui/src/mod.ts" }),
 ];

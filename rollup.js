@@ -27,7 +27,9 @@ const defineLib = (options = {}) => {
 
   const entityFileName = (ext, chunkInfo) => {
     const name =
-      chunkInfo.facadeModuleId.endsWith("/mod.ts") ?
+      chunkInfo.facadeModuleId.endsWith("/src/mod.ts") ?
+        basename(chunkInfo.facadeModuleId.slice(0, -"/src/mod.ts".length))
+      : chunkInfo.facadeModuleId.endsWith("/mod.ts") ?
         basename(chunkInfo.facadeModuleId.slice(0, -"/mod.ts".length))
       : basename(chunkInfo.name);
     return outputTag !== undefined ?
