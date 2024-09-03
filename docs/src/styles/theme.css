@@ -1,7 +1,7 @@
 :root {
 	--sl-color-accent-low: #262220; /* --bronzeDark-3 */
-	--sl-color-accent: #a18072; /* --bronzeDark-9 */
-	--sl-color-accent-high: #ae8c7e; /* --bronzeDark-10 */
+	--sl-color-accent: #ae8c7e; /* --bronzeDark-10 */
+	--sl-color-accent-high: #d4b3a5; /* --bronzeDark-11 */
 	--sl-color-white: #fdfdfc; /* --sand-1 */
 	--sl-color-gray-1: #b5b3ad; /* --sandDark-11 */
 	--sl-color-gray-2: #eeeeec; /* --sandDark-12 */
@@ -32,8 +32,8 @@
   @media (color-gamut: p3) {
     :root {
       --sl-color-accent-low: color(display-p3 0.147 0.132 0.125); /* --bronzeDark-3 */
-      --sl-color-accent: color(display-p3 0.611 0.507 0.455); /* --bronzeDark-9 */
-      --sl-color-accent-high: color(display-p3 0.66 0.556 0.504); /* --bronzeDark-10 */
+      --sl-color-accent: color(display-p3 0.66 0.556 0.504); /* --bronzeDark-10 */
+      --sl-color-accent-high: color(display-p3 0.81 0.707 0.655); /* --bronzeDark-11 */
       --sl-color-white: color(display-p3 0.992 0.992 0.989); /* --sand-1 */
       --sl-color-gray-1: color(display-p3 0.707 0.703 0.68); /* --sandDark-11 */
       --sl-color-gray-2: color(display-p3 0.933 0.933 0.926); /* --sandDark-12 */
