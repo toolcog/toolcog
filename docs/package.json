@@ -9,8 +9,8 @@
     "preview": "astro preview",
     "lint": "eslint src/",
     "format": "prettier --check src/**/*.ts",
-    "clean": "rimraf .astro .turbo src/content/docs/reference dist",
-    "clean-all": "rimraf .astro .turbo src/content/docs/reference dist node_modules"
+    "clean": "rimraf .astro .turbo src/content/docs/api dist",
+    "clean-all": "rimraf .astro .turbo src/content/docs/api dist node_modules"
   },
   "devDependencies": {
     "@astrojs/check": "catalog:website",

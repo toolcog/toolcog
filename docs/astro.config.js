@@ -157,17 +157,17 @@ export default defineConfig({
           ],
         },
         {
-          label: "Reference",
+          label: "API",
           items: [
             {
               label: "Framework",
               collapsed: true,
               items: [
                 {
-                  slug: "reference/core/module",
+                  slug: "api/core/module",
                 },
                 {
-                  slug: "reference/runtime/module",
+                  slug: "api/runtime/module",
                 },
               ],
             },
@@ -176,10 +176,10 @@ export default defineConfig({
               collapsed: true,
               items: [
                 {
-                  slug: "reference/anthropic/module",
+                  slug: "api/anthropic/module",
                 },
                 {
-                  slug: "reference/openai/module",
+                  slug: "api/openai/module",
                 },
               ],
             },
@@ -188,13 +188,13 @@ export default defineConfig({
               collapsed: true,
               items: [
                 {
-                  slug: "reference/node/module",
+                  slug: "api/node/module",
                 },
                 {
-                  slug: "reference/node/loader/module",
+                  slug: "api/node/loader/module",
                 },
                 {
-                  slug: "reference/node/register/module",
+                  slug: "api/node/register/module",
                 },
               ],
             },
@@ -203,43 +203,43 @@ export default defineConfig({
               collapsed: true,
               items: [
                 {
-                  slug: "reference/compiler/module",
+                  slug: "api/compiler/module",
                 },
                 {
-                  slug: "reference/compiler/cli/module",
+                  slug: "api/compiler/cli/module",
                 },
                 {
-                  slug: "reference/repl/module",
+                  slug: "api/repl/module",
                 },
                 {
-                  slug: "reference/util/module",
+                  slug: "api/util/module",
                 },
                 {
-                  slug: "reference/util/async/module",
+                  slug: "api/util/async/module",
                 },
                 {
-                  slug: "reference/util/cache/module",
+                  slug: "api/util/cache/module",
                 },
                 {
-                  slug: "reference/util/emit/module",
+                  slug: "api/util/emit/module",
                 },
                 {
-                  slug: "reference/util/json/module",
+                  slug: "api/util/json/module",
                 },
                 {
-                  slug: "reference/util/queue/module",
+                  slug: "api/util/queue/module",
                 },
                 {
-                  slug: "reference/util/task/module",
+                  slug: "api/util/task/module",
                 },
                 {
-                  slug: "reference/util/timer/module",
+                  slug: "api/util/timer/module",
                 },
                 {
-                  slug: "reference/util/tty/module",
+                  slug: "api/util/tty/module",
                 },
                 {
-                  slug: "reference/util/tui/module",
+                  slug: "api/util/tui/module",
                 },
               ],
             },
@@ -258,7 +258,7 @@ export default defineConfig({
           },
         }),
         starlightTypeDoc({
-          output: "reference",
+          output: "api",
           pagination: true,
           typeDoc: {
             entryPointStrategy: "packages",
