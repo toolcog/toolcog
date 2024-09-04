@@ -1,0 +1,55 @@
+{
+  "name": "@toolcog/repl",
+  "version": "0.0.1",
+  "description": "Toolcog read-eval-print loop",
+  "author": "Tool Cognition Inc.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/toolcog/toolcog/tree/main/packages/framework/repl#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toolcog/toolcog.git",
+    "directory": "packages/framework/repl"
+  },
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
+  },
+  "files": [
+    "dist/"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    }
+  },
+  "peerDependencies": {
+    "typescript": "catalog:default"
+  },
+  "dependencies": {
+    "@toolcog/compiler": "workspace:*",
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
+    "@toolcog/util": "workspace:*"
+  },
+  "devDependencies": {
+    "eslint": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "tslib": "catalog:build",
+    "ts-expose-internals": "catalog:build",
+    "typescript": "catalog:build"
+  }
+}

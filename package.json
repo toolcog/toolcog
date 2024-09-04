@@ -7,9 +7,9 @@
     "build": "turbo run build",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "toolcog-compiler": "turbo --filter=@toolcog/compiler build && node framework/compiler/bin/toolcog-compiler.js",
-    "toolcog-node": "turbo --filter=@toolcog/node build && node adapters/node/bin/toolcog-node.js",
-    "toolcog": "turbo --filter=toolcog build && node toolcog/bin/toolcog.js",
+    "toolcog-compiler": "turbo --filter=@toolcog/compiler build && node packages/framework/compiler/bin/toolcog-compiler.js",
+    "toolcog-node": "turbo --filter=@toolcog/node build && node packages/adapters/node/bin/toolcog-node.js",
+    "toolcog": "turbo --filter=toolcog build && node packages/toolcog/bin/toolcog.js",
     "clean": "pnpm run -r clean && rimraf .turbo node_modules/.cache",
     "clean-all": "pnpm run -r clean-all && rimraf .turbo node_modules"
   },

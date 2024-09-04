@@ -78,14 +78,14 @@ catalogs:
       version: 3.3.2
     yaml:
       specifier: ^2.5
-      version: 2.5.0
+      version: 2.5.1
   plugins:
     '@anthropic-ai/sdk':
       specifier: ^0.27
       version: 0.27.1
     openai:
       specifier: ^4.57
-      version: 4.57.0
+      version: 4.57.1
   website:
     '@astrojs/check':
       specifier: ^0.9
@@ -183,59 +183,6 @@ importers:
         specifier: catalog:build
         version: 2.0.5(@types/node@22.5.2)
 
-  adapters/node:
-    dependencies:
-      '@toolcog/compiler':
-        specifier: workspace:*
-        version: link:../../framework/compiler
-      '@toolcog/core':
-        specifier: workspace:*
-        version: link:../../framework/core
-      '@toolcog/repl':
-        specifier: workspace:*
-        version: link:../../framework/repl
-      '@toolcog/runtime':
-        specifier: workspace:*
-        version: link:../../framework/runtime
-      '@types/node':
-        specifier: catalog:default
-        version: 22.5.2
-      commander:
-        specifier: catalog:default
-        version: 12.1.0
-      fast-glob:
-        specifier: catalog:default
-        version: 3.3.2
-    optionalDependencies:
-      '@toolcog/anthropic':
-        specifier: workspace:*
-        version: link:../../plugins/anthropic
-      '@toolcog/openai':
-        specifier: workspace:*
-        version: link:../../plugins/openai
-    devDependencies:
-      eslint:
-        specifier: catalog:build
-        version: 9.9.1
-      prettier:
-        specifier: catalog:build
-        version: 3.3.3
-      rimraf:
-        specifier: catalog:build
-        version: 6.0.1
-      rollup:
-        specifier: catalog:build
-        version: 4.21.2
-      ts-expose-internals:
-        specifier: catalog:build
-        version: 5.5.4
-      tslib:
-        specifier: catalog:build
-        version: 2.7.0
-      typescript:
-        specifier: catalog:build
-        version: 5.5.4
-
   docs:
     devDependencies:
       '@astrojs/check':
@@ -290,23 +237,29 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  framework/compiler:
+  packages/adapters/node:
     dependencies:
+      '@toolcog/compiler':
+        specifier: workspace:*
+        version: link:../../framework/compiler
       '@toolcog/core':
         specifier: workspace:*
-        version: link:../core
+        version: link:../../framework/core
+      '@toolcog/repl':
+        specifier: workspace:*
+        version: link:../../framework/repl
       '@toolcog/runtime':
         specifier: workspace:*
-        version: link:../runtime
-      '@toolcog/util':
-        specifier: workspace:*
-        version: link:../util
+        version: link:../../framework/runtime
+      '@types/node':
+        specifier: catalog:default
+        version: 22.5.2
       commander:
         specifier: catalog:default
         version: 12.1.0
-      yaml:
+      fast-glob:
         specifier: catalog:default
-        version: 2.5.0
+        version: 3.3.2
     optionalDependencies:
       '@toolcog/anthropic':
         specifier: workspace:*
@@ -337,7 +290,54 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  framework/core:
+  packages/framework/compiler:
+    dependencies:
+      '@toolcog/core':
+        specifier: workspace:*
+        version: link:../core
+      '@toolcog/runtime':
+        specifier: workspace:*
+        version: link:../runtime
+      '@toolcog/util':
+        specifier: workspace:*
+        version: link:../util
+      commander:
+        specifier: catalog:default
+        version: 12.1.0
+      yaml:
+        specifier: catalog:default
+        version: 2.5.1
+    optionalDependencies:
+      '@toolcog/anthropic':
+        specifier: workspace:*
+        version: link:../../plugins/anthropic
+      '@toolcog/openai':
+        specifier: workspace:*
+        version: link:../../plugins/openai
+    devDependencies:
+      eslint:
+        specifier: catalog:build
+        version: 9.9.1
+      prettier:
+        specifier: catalog:build
+        version: 3.3.3
+      rimraf:
+        specifier: catalog:build
+        version: 6.0.1
+      rollup:
+        specifier: catalog:build
+        version: 4.21.2
+      ts-expose-internals:
+        specifier: catalog:build
+        version: 5.5.4
+      tslib:
+        specifier: catalog:build
+        version: 2.7.0
+      typescript:
+        specifier: catalog:build
+        version: 5.5.4
+
+  packages/framework/core:
     dependencies:
       '@toolcog/util':
         specifier: workspace:*
@@ -362,7 +362,7 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  framework/repl:
+  packages/framework/repl:
     dependencies:
       '@toolcog/compiler':
         specifier: workspace:*
@@ -399,7 +399,7 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  framework/runtime:
+  packages/framework/runtime:
     dependencies:
       '@toolcog/core':
         specifier: workspace:*
@@ -409,7 +409,7 @@ importers:
         version: link:../util
       yaml:
         specifier: catalog:default
-        version: 2.5.0
+        version: 2.5.1
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -433,7 +433,7 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  framework/util:
+  packages/framework/util:
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -454,7 +454,7 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  plugins/anthropic:
+  packages/plugins/anthropic:
     dependencies:
       '@anthropic-ai/sdk':
         specifier: catalog:plugins
@@ -488,7 +488,7 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  plugins/openai:
+  packages/plugins/openai:
     dependencies:
       '@toolcog/core':
         specifier: workspace:*
@@ -501,7 +501,7 @@ importers:
         version: link:../../framework/util
       openai:
         specifier: catalog:plugins
-        version: 4.57.0(zod@3.23.8)
+        version: 4.57.1(zod@3.23.8)
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -522,39 +522,7 @@ importers:
         specifier: catalog:build
         version: 5.5.4
 
-  sandbox:
-    dependencies:
-      '@toolcog/compiler':
-        specifier: workspace:*
-        version: link:../framework/compiler
-      '@toolcog/core':
-        specifier: workspace:*
-        version: link:../framework/core
-      '@toolcog/runtime':
-        specifier: workspace:*
-        version: link:../framework/runtime
-      '@toolcog/util':
-        specifier: workspace:*
-        version: link:../framework/util
-    optionalDependencies:
-      '@toolcog/anthropic':
-        specifier: workspace:*
-        version: link:../plugins/anthropic
-      '@toolcog/openai':
-        specifier: workspace:*
-        version: link:../plugins/openai
-    devDependencies:
-      rimraf:
-        specifier: catalog:build
-        version: 6.0.1
-      ts-patch:
-        specifier: catalog:build
-        version: 3.2.1
-      typescript:
-        specifier: catalog:build
-        version: 5.5.4
-
-  toolcog:
+  packages/toolcog:
     dependencies:
       '@toolcog/compiler':
         specifier: workspace:*
@@ -591,6 +559,38 @@ importers:
       tslib:
         specifier: catalog:build
         version: 2.7.0
+      typescript:
+        specifier: catalog:build
+        version: 5.5.4
+
+  sandbox:
+    dependencies:
+      '@toolcog/compiler':
+        specifier: workspace:*
+        version: link:../packages/framework/compiler
+      '@toolcog/core':
+        specifier: workspace:*
+        version: link:../packages/framework/core
+      '@toolcog/runtime':
+        specifier: workspace:*
+        version: link:../packages/framework/runtime
+      '@toolcog/util':
+        specifier: workspace:*
+        version: link:../packages/framework/util
+    optionalDependencies:
+      '@toolcog/anthropic':
+        specifier: workspace:*
+        version: link:../packages/plugins/anthropic
+      '@toolcog/openai':
+        specifier: workspace:*
+        version: link:../packages/plugins/openai
+    devDependencies:
+      rimraf:
+        specifier: catalog:build
+        version: 6.0.1
+      ts-patch:
+        specifier: catalog:build
+        version: 3.2.1
       typescript:
         specifier: catalog:build
         version: 5.5.4
@@ -2812,8 +2812,8 @@ packages:
     resolution: {integrity: sha512-VXJjc87FScF88uafS3JllDgvAm+c/Slfz06lorj2uAY34rlUu0Nt+v8wreiImcrgAjjIHp1rXpTDlLOGw29WwQ==}
     engines: {node: '>=18'}
 
-  openai@4.57.0:
-    resolution: {integrity: sha512-JnwBSIYqiZ3jYjB5f2in8hQ0PRA092c6m+/6dYB0MzK0BEbn+0dioxZsPLBm5idJbg9xzLNOiGVm2OSuhZ+BdQ==}
+  openai@4.57.1:
+    resolution: {integrity: sha512-7q+4U9A/klaAT40bqL6sPFhIKb4jsUJ8udddCzaf8mdwICYeBG7grps/zDcrOUfkwCxCzR6fxfDDah3WqHoVUA==}
     hasBin: true
     peerDependencies:
       zod: ^3.23.8
@@ -3523,8 +3523,8 @@ packages:
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
 
-  vite@5.4.2:
-    resolution: {integrity: sha512-dDrQTRHp5C1fTFzcSaMxjk6vdpKvT+2/mIdE07Gw2ykehT49O0z/VHS3zZ8iV/Gh8BJJKHWOe5RjaNrW5xf/GA==}
+  vite@5.4.3:
+    resolution: {integrity: sha512-IH+nl64eq9lJjFqU+/yrRnrHPVTlgy42/+IzbOdaFDVlyLgI/wDlf+FCobXLX1cT0X5+7LMyH1mIy2xJdLfo8Q==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
     peerDependencies:
@@ -3767,8 +3767,8 @@ packages:
     resolution: {integrity: sha512-CBKFWExMn46Foo4cldiChEzn7S7SRV+wqiluAb6xmueD/fGyRHIhX8m14vVGgeFWjN540nKCNVj6P21eQjgTuA==}
     engines: {node: '>= 14'}
 
-  yaml@2.5.0:
-    resolution: {integrity: sha512-2wWLbGbYDiSqqIKoPjar3MPgB94ErzCtrNE1FdqGuaO0pi2JGjmE8aW8TDZwzU7vuxcGRdL/4gPQwQ7hD5AMSw==}
+  yaml@2.5.1:
+    resolution: {integrity: sha512-bLQOjaX/ADgQ20isPJRvF0iRUHIxVhYvr53Of7wGcWlO2jvtUlH5m87DsmulFVxRpNLOnI4tB6p/oh8D7kpn9Q==}
     engines: {node: '>= 14'}
     hasBin: true
 
@@ -3966,7 +3966,7 @@ snapshots:
 
   '@astrojs/yaml2ts@0.2.1':
     dependencies:
-      yaml: 2.5.0
+      yaml: 2.5.1
 
   '@babel/code-frame@7.24.7':
     dependencies:
@@ -4992,8 +4992,8 @@ snapshots:
       tsconfck: 3.1.3(typescript@5.5.4)
       unist-util-visit: 5.0.0
       vfile: 6.0.3
-      vite: 5.4.2(@types/node@22.5.2)
-      vitefu: 0.2.5(vite@5.4.2(@types/node@22.5.2))
+      vite: 5.4.3(@types/node@22.5.2)
+      vitefu: 0.2.5(vite@5.4.3(@types/node@22.5.2))
       which-pm: 3.0.0
       xxhash-wasm: 1.0.2
       yargs-parser: 21.1.1
@@ -6604,7 +6604,7 @@ snapshots:
     dependencies:
       mimic-function: 5.0.1
 
-  openai@4.57.0(zod@3.23.8):
+  openai@4.57.1(zod@3.23.8):
     dependencies:
       '@types/node': 18.19.48
       '@types/node-fetch': 2.6.11
@@ -7307,7 +7307,7 @@ snapshots:
       minimatch: 9.0.5
       shiki: 1.16.1
       typescript: 5.5.4
-      yaml: 2.5.0
+      yaml: 2.5.1
 
   typesafe-path@0.2.2: {}
 
@@ -7425,7 +7425,7 @@ snapshots:
       debug: 4.3.6
       pathe: 1.1.2
       tinyrainbow: 1.2.0
-      vite: 5.4.2(@types/node@22.5.2)
+      vite: 5.4.3(@types/node@22.5.2)
     transitivePeerDependencies:
       - '@types/node'
       - less
@@ -7437,7 +7437,7 @@ snapshots:
       - supports-color
       - terser
 
-  vite@5.4.2(@types/node@22.5.2):
+  vite@5.4.3(@types/node@22.5.2):
     dependencies:
       esbuild: 0.21.5
       postcss: 8.4.44
@@ -7446,9 +7446,9 @@ snapshots:
       '@types/node': 22.5.2
       fsevents: 2.3.3
 
-  vitefu@0.2.5(vite@5.4.2(@types/node@22.5.2)):
+  vitefu@0.2.5(vite@5.4.3(@types/node@22.5.2)):
     optionalDependencies:
-      vite: 5.4.2(@types/node@22.5.2)
+      vite: 5.4.3(@types/node@22.5.2)
 
   vitest@2.0.5(@types/node@22.5.2):
     dependencies:
@@ -7468,7 +7468,7 @@ snapshots:
       tinybench: 2.9.0
       tinypool: 1.0.1
       tinyrainbow: 1.2.0
-      vite: 5.4.2(@types/node@22.5.2)
+      vite: 5.4.3(@types/node@22.5.2)
       vite-node: 2.0.5(@types/node@22.5.2)
       why-is-node-running: 2.3.0
     optionalDependencies:
@@ -7666,7 +7666,7 @@ snapshots:
 
   yaml@2.2.2: {}
 
-  yaml@2.5.0: {}
+  yaml@2.5.1: {}
 
   yargs-parser@21.1.1: {}
 

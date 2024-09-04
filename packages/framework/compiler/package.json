@@ -1,0 +1,69 @@
+{
+  "name": "@toolcog/compiler",
+  "version": "0.0.1",
+  "description": "Toolcog compiler",
+  "author": "Tool Cognition Inc.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/toolcog/toolcog/tree/main/packages/framework/compiler#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toolcog/toolcog.git",
+    "directory": "packages/framework/compiler"
+  },
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "bin": {
+    "toolcog-compiler": "./bin/toolcog-compiler.js"
+  },
+  "scripts": {
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/ */src/",
+    "format": "prettier --check src/ */src/",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
+  },
+  "files": [
+    "bin/",
+    "dist/"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    },
+    "./cli": {
+      "types": "./dist/cli.d.ts",
+      "import": "./dist/cli.js",
+      "require": "./dist/cli.cjs"
+    }
+  },
+  "peerDependencies": {
+    "typescript": "catalog:default"
+  },
+  "dependencies": {
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*",
+    "@toolcog/util": "workspace:*",
+    "commander": "catalog:default",
+    "yaml": "catalog:default"
+  },
+  "optionalDependencies": {
+    "@toolcog/anthropic": "workspace:*",
+    "@toolcog/openai": "workspace:*"
+  },
+  "devDependencies": {
+    "eslint": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "ts-expose-internals": "catalog:build",
+    "tslib": "catalog:build",
+    "typescript": "catalog:build"
+  }
+}

@@ -1,13 +1,13 @@
 packages:
-  - framework/util
-  - framework/core
-  - framework/runtime
-  - framework/compiler
-  - framework/repl
-  - adapters/node
-  - plugins/anthropic
-  - plugins/openai
-  - toolcog
+  - packages/framework/util
+  - packages/framework/core
+  - packages/framework/runtime
+  - packages/framework/compiler
+  - packages/framework/repl
+  - packages/adapters/node
+  - packages/plugins/anthropic
+  - packages/plugins/openai
+  - packages/toolcog
   - sandbox
   - docs
 

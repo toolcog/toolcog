@@ -1,0 +1,48 @@
+{
+  "name": "@toolcog/core",
+  "version": "0.0.1",
+  "description": "Toolcog core",
+  "author": "Tool Cognition Inc.",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/toolcog/toolcog/tree/main/packages/framework/core#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/toolcog/toolcog.git",
+    "directory": "packages/framework/core"
+  },
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "build": "rollup --config",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "test": "vitest run --passWithNoTests",
+    "coverage": "vitest run --coverage",
+    "clean": "rimraf .turbo dist",
+    "clean-all": "rimraf .turbo dist node_modules"
+  },
+  "files": [
+    "dist/"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    }
+  },
+  "dependencies": {
+    "@toolcog/util": "workspace:*"
+  },
+  "devDependencies": {
+    "eslint": "catalog:build",
+    "prettier": "catalog:build",
+    "rimraf": "catalog:build",
+    "rollup": "catalog:build",
+    "tslib": "catalog:build",
+    "typescript": "catalog:build"
+  }
+}
