@@ -1,6 +1,6 @@
 {
   "name": "toolcog",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "AI Framework for Tool Augmented Generation (TAG)",
   "author": "Tool Cognition Inc.",
   "license": "Apache-2.0",
