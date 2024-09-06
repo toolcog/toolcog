@@ -18,6 +18,7 @@ class AgentContext extends Emitter<AgentContextEvents> {
   readonly #parent: AgentContext | null;
   readonly #messages: Message[];
   readonly #tools: ToolSource[];
+  #query: string | undefined;
 
   constructor(
     parent: AgentContext | null = null,
@@ -28,6 +29,7 @@ class AgentContext extends Emitter<AgentContextEvents> {
     this.#parent = parent;
     this.#messages = options?.messages ?? [];
     this.#tools = options?.tools ?? [];
+    this.#query = undefined;
   }
 
   get parent(): AgentContext | null {
@@ -40,6 +42,10 @@ class AgentContext extends Emitter<AgentContextEvents> {
 
   get tools(): readonly ToolSource[] {
     return this.#tools;
+  }
+
+  get query(): string | undefined {
+    return this.#query;
   }
 
   addMessage(message: Message): void {
@@ -61,9 +67,14 @@ class AgentContext extends Emitter<AgentContextEvents> {
     return tools;
   }
 
+  setQuery(query: string | undefined): void {
+    this.#query = query;
+  }
+
   clear(): void {
     this.#messages.length = 0;
     this.#tools.length = 0;
+    this.#query = undefined;
   }
 
   spawn(options?: AgentContextOptions): AgentContext {
@@ -119,6 +130,10 @@ class AgentContext extends Emitter<AgentContextEvents> {
   }
 }
 
+const currentQuery = (): string | undefined => {
+  return AgentContext.get()?.query;
+};
+
 const currentTools = (): readonly ToolSource[] => {
   return AgentContext.get()?.tools ?? [];
 };
@@ -134,4 +149,4 @@ const useTools = <const T extends readonly ToolSource[]>(tools: T): T => {
 };
 
 export type { AgentContextOptions, AgentContextEvents };
-export { AgentContext, currentTools, useTool, useTools };
+export { AgentContext, currentQuery, currentTools, useTool, useTools };

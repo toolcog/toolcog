@@ -1,5 +1,4 @@
 import type {
-  EmbeddingVector,
   EmbeddingDistance,
   Embeddings,
   EmbedderConfig,
@@ -86,11 +85,10 @@ interface IndexOptions extends EmbedderOptions {
 interface Index<T extends readonly unknown[]> {
   /**
    * Returns the indexed values that are most similar to the given `query`.
+   * The `query` will be converted into an `EmbeddingVector`, if it isn't
+   * already one.
    */
-  (
-    query: string | EmbeddingVector,
-    options?: IndexOptions,
-  ): Promise<T[number][]>;
+  (query?: unknown, options?: IndexOptions): Promise<T[number][]>;
 
   readonly id: string | undefined;
 

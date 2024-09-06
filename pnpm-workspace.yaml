@@ -19,17 +19,15 @@ catalog:
   yaml: ^2.5
 
 catalogs:
-  plugins:
-    "@anthropic-ai/sdk": ^0.27
-    openai: ^4.57
-    whatwg-url: ^14.0
   build:
-    "@eslint/js": ^9.9
+    "@changesets/changelog-github": ^0.5
+    "@changesets/cli": ^2.27
+    "@eslint/js": ^9.10
     "@rollup/plugin-node-resolve": ^15.2
     "@rollup/plugin-replace": ^5.0
     "@rollup/plugin-typescript": ^11.1
     "@types/node": ^22
-    eslint: ^9.9
+    eslint: ^9.10
     eslint-plugin-jsdoc: ^50.2
     prettier: ^3.3
     rimraf: ^6.0
@@ -44,6 +42,10 @@ catalogs:
     typescript: ^5.5
     typescript-eslint: ^8.4
     vitest: ^2.0
+  plugins:
+    "@anthropic-ai/sdk": ^0.27
+    openai: ^4.58
+    whatwg-url: ^14.0
   website:
     "@astrojs/check": ^0.9
     "@astrojs/mdx": ^3.1

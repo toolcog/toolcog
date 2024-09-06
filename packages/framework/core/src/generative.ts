@@ -19,19 +19,34 @@ interface GenerativeModelNames {}
 type GenerativeModel = keyof GenerativeModelNames | (string & {});
 
 type ToolSource =
-  | ((args: unknown) => Promise<Tool | undefined> | Tool | undefined)
-  | Promise<Tool | undefined>
+  | ((
+      args: unknown,
+    ) =>
+      | Promise<readonly Tool[] | Tool | undefined>
+      | readonly Tool[]
+      | Tool
+      | undefined)
+  | Promise<readonly Tool[] | Tool | undefined>
+  | readonly Tool[]
   | Tool
   | undefined;
 
 const resolveTool = async (
   tool: ToolSource,
   args: unknown,
-): Promise<Tool | undefined> => {
-  if (typeof tool === "function" && !("id" in tool) && !("function" in tool)) {
+): Promise<readonly Tool[] | Tool | undefined> => {
+  if (
+    typeof tool === "function" &&
+    !("parameters" in tool) &&
+    !("returns" in tool)
+  ) {
     tool = tool(args);
   }
-  return await (tool as Promise<Tool | undefined> | Tool | undefined);
+  return await (tool as
+    | Promise<readonly Tool[] | Tool | undefined>
+    | readonly Tool[]
+    | Tool
+    | undefined);
 };
 
 const resolveTools = async (
@@ -45,7 +60,11 @@ const resolveTools = async (
     await Promise.allSettled(tools.map((tool) => resolveTool(tool, args)))
   ).reduce<Tool[]>((tools, result) => {
     if (result.status === "fulfilled" && result.value !== undefined) {
-      tools.push(result.value);
+      if (Array.isArray(result.value)) {
+        tools.push(...(result.value as readonly Tool[]));
+      } else {
+        tools.push(result.value as Tool);
+      }
     }
     return tools;
   }, []);
