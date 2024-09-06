@@ -7,6 +7,9 @@
     "build": "turbo run build",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm run build && changeset publish",
     "toolcog-compiler": "turbo --filter=@toolcog/compiler build && node packages/framework/compiler/bin/toolcog-compiler.js",
     "toolcog-node": "turbo --filter=@toolcog/node build && node packages/adapters/node/bin/toolcog-node.js",
     "toolcog": "turbo --filter=toolcog build && node packages/toolcog/bin/toolcog.js",
@@ -14,6 +17,8 @@
     "clean-all": "pnpm run -r clean-all && rimraf .turbo node_modules"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "catalog:build",
+    "@changesets/cli": "catalog:build",
     "@eslint/js": "catalog:build",
     "@rollup/plugin-node-resolve": "catalog:build",
     "@rollup/plugin-replace": "catalog:build",

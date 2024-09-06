@@ -3,21 +3,6 @@
 ![License](https://img.shields.io/github/license/toolcog/toolcog)
 ![Version](https://img.shields.io/npm/v/toolcog)
 
-Build smarter apps with generative functions.
-- **Generative functions:** Implement AI functions by simply declaring them
-- **Tool synthesis:** Transform any TypeScript function into an LLM tool
-- **Embedded indexes:** Bundle prefetched vector indexes for fast tool
-  selection and agentic control flow
-
-Turn any package into an AI toolkit.
-- **Idiomatic APIs**: Make key functions callable by LLMs out of the box
-- **Agentic Behavior:** Build advanced AI agents using ordinary
-  programming techniques
-- **Reliability:** Improve LLM reliability by rigorously separating
-  instructions from input parameters
-
-## What Is Toolcog?
-
 Toolcog is an AI framework for Tool Augmented Generation (TAG) that makes it
 easier to create AI agents that use software tools and APIs. Toolcog leverages
 the static types and documentation comments present in code to automate

@@ -11,6 +11,7 @@ import type {
   IndexerOptions,
   Indexer,
 } from "@toolcog/core";
+import { currentQuery } from "./agent.ts";
 
 const cosineDistance = (a: EmbeddingVector, b: EmbeddingVector): number => {
   const k = a.length;
@@ -111,7 +112,7 @@ const indexer = (<T extends readonly unknown[]>(
   };
 
   const index = (async (
-    query: string | EmbeddingVector,
+    query?: string | EmbeddingVector,
     options?: IndexOptions,
   ): Promise<T[number][]> => {
     const model = options?.model ?? index.model;
@@ -130,8 +131,13 @@ const indexer = (<T extends readonly unknown[]>(
       model,
     };
 
+    if (query === undefined) {
+      query = currentQuery();
+    }
     if (typeof query === "string") {
       query = await embedder(query, options);
+    } else {
+      throw new Error("Unspecified query");
     }
 
     let neighbors = nearest(model, query, options.limit);
@@ -147,10 +153,7 @@ const indexer = (<T extends readonly unknown[]>(
 
     return neighbors;
   }) as {
-    (
-      query: string | EmbeddingVector,
-      options?: IndexOptions,
-    ): Promise<T[number][]>;
+    (query?: unknown, options?: IndexOptions): Promise<T[number][]>;
     id: string | undefined;
     model: EmbeddingModel | undefined;
     embedder: Embedder | undefined;

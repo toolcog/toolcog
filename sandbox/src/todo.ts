@@ -166,12 +166,15 @@ export const todoTools = [
   deleteTodo,
 ] as const;
 
-export const todoToolSelector = defineIndex([
-  getTodoLists,
-  createTodoList,
-  deleteTodoList,
-  getTodos,
-  createTodo,
-  updateTodo,
-  deleteTodo,
-] as const);
+export const todoToolSelector = defineIndex(
+  [
+    getTodoLists,
+    createTodoList,
+    deleteTodoList,
+    getTodos,
+    createTodo,
+    updateTodo,
+    deleteTodo,
+  ] as const,
+  { limit: 5 },
+);
