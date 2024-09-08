@@ -65,7 +65,6 @@ export { Job } from "./job.ts";
 export type { Precache } from "./precache.ts";
 export {
   precacheFileName,
-  resolvePrecacheFile,
   parsePrecache,
   formatPrecache,
   createPrecache,

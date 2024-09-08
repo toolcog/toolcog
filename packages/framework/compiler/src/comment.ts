@@ -208,13 +208,23 @@ const mergeComments: {
   };
 }) as typeof mergeComments;
 
-const getCommentForNode = (
-  ts: typeof import("typescript"),
-  node: ts.Node,
-): Comment | undefined => {
-  const commentText = getLeadingComment(ts, node);
-  return commentText !== undefined ? parseComment(ts, commentText) : undefined;
-};
+const getCommentForNode = (() => {
+  const commentCache = new WeakMap<ts.Node, Comment | undefined>();
+  return (
+    ts: typeof import("typescript"),
+    node: ts.Node,
+  ): Comment | undefined => {
+    let comment = commentCache.get(node);
+    if (comment === undefined && !commentCache.has(node)) {
+      const commentText = getLeadingComment(ts, node);
+      if (commentText !== undefined) {
+        comment = parseComment(ts, commentText);
+      }
+      commentCache.set(node, comment);
+    }
+    return comment;
+  };
+})();
 
 const getCommentForType = (
   ts: typeof import("typescript"),

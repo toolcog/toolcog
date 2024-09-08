@@ -290,7 +290,8 @@ const transformToolcog = (
     const moduleId = getNodeId(ts, sourceFile, {
       package: true,
       module: true,
-      getCommonSourceDirectory: program.getCommonSourceDirectory,
+      host,
+      program,
     })!;
     const moduleDef = createModuleDef();
     manifest.modules[moduleId] = moduleDef;
@@ -307,10 +308,11 @@ const transformToolcog = (
         const valueExpression = node.arguments[0]!;
         node = defineIdiomExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           intrinsicTypes.AnyIdiom,
           idiomResolverExpression,
@@ -331,10 +333,11 @@ const transformToolcog = (
         const valuesExpression = node.arguments[0]!;
         node = defineIdiomsExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           intrinsicTypes.AnyIdiom,
           intrinsicTypes.AnyIdioms,
@@ -357,10 +360,11 @@ const transformToolcog = (
         needsIdiomResolver = true;
         node = defineIndexExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           intrinsicTypes.AnyIdiom,
           intrinsicTypes.AnyIdioms,
@@ -380,10 +384,11 @@ const transformToolcog = (
         const funcExpression = node.arguments[0]!;
         node = defineToolExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           intrinsicTypes.AnyTool,
           funcExpression,
@@ -402,10 +407,11 @@ const transformToolcog = (
         const funcsExpression = node.arguments[0]!;
         node = defineToolsExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           intrinsicTypes.AnyTool,
           intrinsicTypes.AnyTools,
@@ -429,10 +435,11 @@ const transformToolcog = (
         needsContextTools = true;
         node = definePromptExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           generatorExpression!,
           contextToolsExpression,
@@ -449,10 +456,11 @@ const transformToolcog = (
         needsContextTools = true;
         node = promptExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          program.getCommonSourceDirectory,
           moduleDef,
           generatorExpression!,
           contextToolsExpression,

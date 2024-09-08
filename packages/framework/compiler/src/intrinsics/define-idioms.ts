@@ -6,10 +6,11 @@ import { defineIdiomExpression } from "./define-idiom.ts";
 
 const defineIdiomsExpression = (
   ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  getCommonSourceDirectory: (() => string) | undefined,
   moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomsType: ts.Type,
@@ -52,10 +53,11 @@ const defineIdiomsExpression = (
       idiomExpressions.push(
         defineIdiomExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          getCommonSourceDirectory,
           moduleDef,
           idiomType,
           idiomResolverExpression,
@@ -93,10 +95,11 @@ const defineIdiomsExpression = (
     idiomExpressions.push(
       defineIdiomExpression(
         ts,
+        host,
+        program,
         factory,
         checker,
         addDiagnostic,
-        getCommonSourceDirectory,
         moduleDef,
         idiomType,
         idiomResolverExpression,

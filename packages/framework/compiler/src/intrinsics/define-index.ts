@@ -5,10 +5,11 @@ import { defineIdiomsExpression } from "./define-idioms.ts";
 
 const defineIndexExpression = (
   ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  getCommonSourceDirectory: (() => string) | undefined,
   moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomsType: ts.Type,
@@ -28,7 +29,8 @@ const defineIndexExpression = (
     getNodeId(ts, callExpression, {
       package: true,
       module: true,
-      getCommonSourceDirectory,
+      host,
+      program,
     }) ?? "";
 
   if (
@@ -278,10 +280,11 @@ const defineIndexExpression = (
 
   const idiomsArgument = defineIdiomsExpression(
     ts,
+    host,
+    program,
     factory,
     checker,
     addDiagnostic,
-    getCommonSourceDirectory,
     moduleDef,
     idiomType,
     idiomsType,

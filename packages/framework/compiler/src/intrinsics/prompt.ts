@@ -9,10 +9,11 @@ import { callSiteToSchema } from "../schema.ts";
 
 const promptExpression = (
   ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  getCommonSourceDirectory: (() => string) | undefined,
   moduleDef: ModuleDef,
   generatorExpression: ts.Expression,
   contextToolsExpression: ts.Expression | undefined,
@@ -41,7 +42,8 @@ const promptExpression = (
     getNodeId(ts, callExpression, {
       package: true,
       module: true,
-      getCommonSourceDirectory,
+      host,
+      program,
     }) ?? "";
 
   if (
