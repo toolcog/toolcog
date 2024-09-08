@@ -8,10 +8,11 @@ import { getNodeTypeId } from "../node-id.ts";
 
 const defineIdiomExpression = (
   ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  getCommonSourceDirectory: (() => string) | undefined,
   moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomResolverExpression: ts.Expression | undefined,
@@ -34,7 +35,8 @@ const defineIdiomExpression = (
     getNodeTypeId(ts, valueExpression, valueType, {
       package: true,
       module: true,
-      getCommonSourceDirectory,
+      host,
+      program,
     }) ?? "";
 
   if (

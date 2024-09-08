@@ -6,10 +6,11 @@ import { defineToolExpression } from "./define-tool.ts";
 
 const defineToolsExpression = (
   ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  getCommonSourceDirectory: (() => string) | undefined,
   moduleDef: ModuleDef,
   toolType: ts.Type,
   toolsType: ts.Type,
@@ -50,10 +51,11 @@ const defineToolsExpression = (
       toolExpressions.push(
         defineToolExpression(
           ts,
+          host,
+          program,
           factory,
           checker,
           addDiagnostic,
-          getCommonSourceDirectory,
           moduleDef,
           toolType,
           element,
@@ -89,10 +91,11 @@ const defineToolsExpression = (
     toolExpressions.push(
       defineToolExpression(
         ts,
+        host,
+        program,
         factory,
         checker,
         addDiagnostic,
-        getCommonSourceDirectory,
         moduleDef,
         toolType,
         factory.createElementAccessExpression(funcsExpression, index),

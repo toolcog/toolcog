@@ -1,5 +1,3 @@
-import { resolve as resolvePath } from "node:path";
-import type ts from "typescript";
 import YAML from "yaml";
 import type { EmbeddingVector, Embeddings } from "@toolcog/core";
 import { decodeEmbeddings, encodeEmbeddings } from "@toolcog/core";
@@ -9,17 +7,6 @@ interface Precache<V = EmbeddingVector> {
 }
 
 const precacheFileName = ".toolcog/precache.yaml";
-
-const resolvePrecacheFile = (
-  sourceFile: ts.SourceFile | undefined,
-  fileName: string = precacheFileName,
-): string | undefined => {
-  const packageDirectory = sourceFile?.packageJsonScope?.packageDirectory;
-  if (packageDirectory === undefined) {
-    return undefined;
-  }
-  return resolvePath(packageDirectory, fileName);
-};
 
 const parsePrecache = (yaml: string): Precache => {
   return decodePrecache(
@@ -54,10 +41,4 @@ const createPrecache = (): Precache => {
 };
 
 export type { Embeddings, Precache };
-export {
-  precacheFileName,
-  resolvePrecacheFile,
-  parsePrecache,
-  formatPrecache,
-  createPrecache,
-};
+export { precacheFileName, parsePrecache, formatPrecache, createPrecache };

@@ -1,15 +1,12 @@
-import {
-  relative as relativePath,
-  parse as parsePath,
-  format as formatPath,
-} from "node:path";
 import type ts from "typescript";
+import { getCommentForNode } from "./comment.ts";
 
 interface NodeIdOptions {
   package?: boolean | undefined;
   module?: boolean | undefined;
 
-  getCommonSourceDirectory?: (() => string) | undefined;
+  host?: ts.ModuleResolutionHost | undefined;
+  program?: ts.Program | undefined;
 }
 
 const getNodeTypeId = (
@@ -64,6 +61,11 @@ const getNodeId = (
     return undefined;
   }
 
+  const comment = getCommentForNode(ts, node);
+  if (comment?.tags.id !== undefined) {
+    return comment.tags.id.trim();
+  }
+
   let nodeId = getNodePath(ts, node, options);
 
   if (ts.isSourceFile(node) && nodeId?.endsWith(":") === true) {
@@ -110,18 +112,37 @@ const getNodePath = (
   if (ts.isSourceFile(node)) {
     let packageName: string | undefined;
     if (options?.package === true) {
-      packageName = node.packageJsonScope?.contents.packageJsonContent.name;
+      let packageJsonInfo = node.packageJsonScope;
+      if (
+        packageJsonInfo === undefined &&
+        options.host !== undefined &&
+        options.program !== undefined
+      ) {
+        packageJsonInfo = ts.getPackageScopeForPath(
+          node.fileName,
+          ts.getTemporaryModuleResolutionState(
+            options.program
+              .getModuleResolutionCache()
+              ?.getPackageJsonInfoCache(),
+            options.host,
+            options.program.getCompilerOptions(),
+          ),
+        );
+      }
+      packageName = packageJsonInfo?.contents.packageJsonContent.name;
     }
 
     let moduleName: string | undefined;
-    if (
-      options?.module === true &&
-      options.getCommonSourceDirectory !== undefined
-    ) {
-      const { dir, name } = parsePath(
-        relativePath(options.getCommonSourceDirectory(), node.fileName),
+    if (options?.module === true && options.program !== undefined) {
+      moduleName = ts.getExternalModuleNameFromPath(
+        {
+          getCanonicalFileName: options.program.getCanonicalFileName,
+          getCommonSourceDirectory: options.program.getCommonSourceDirectory,
+          getCurrentDirectory: options.program.getCurrentDirectory,
+        },
+        node.fileName,
       );
-      moduleName = formatPath({ dir, name }).replace("\\", "/");
+      moduleName = moduleName.replace("\\", "/");
     }
 
     if (packageName !== undefined && moduleName !== undefined) {
@@ -166,6 +187,11 @@ const getNodeName = (
   node: ts.Node | undefined,
 ): string | undefined => {
   if (node === undefined) {
+    return undefined;
+  }
+
+  const comment = getCommentForNode(ts, node);
+  if (comment?.tags.noid !== undefined) {
     return undefined;
   }
 

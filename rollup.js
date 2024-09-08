@@ -16,6 +16,7 @@ const defineLib = (options = {}) => {
     exports,
     exportConditions,
     external = [/^@?toolcog\//],
+    transformers,
     plugins,
   } = options;
 
@@ -85,7 +86,9 @@ const defineLib = (options = {}) => {
           extensions: [".js", ".ts"],
           exportConditions,
         }),
-        typescript(),
+        typescript({
+          transformers,
+        }),
         ...(replaceOptions !== undefined ? [replace(replaceOptions)] : []),
         ...(plugins ?? []),
       ],

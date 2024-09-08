@@ -99,7 +99,7 @@ interface Index<T extends readonly unknown[]> {
 
 const defineIndex: {
   <const T extends readonly unknown[]>(
-    values: readonly [...T],
+    values: readonly [...T] | Idioms<T>,
     config?: IndexConfig,
   ): Index<T>;
 
@@ -107,7 +107,7 @@ const defineIndex: {
   readonly brand: unique symbol;
 } = Object.assign(
   <const T extends readonly unknown[]>(
-    values: readonly [...T],
+    values: readonly [...T] | Idioms<T>,
     config?: IndexConfig,
   ): Index<T> => {
     throw new Error("Uncompiled index");

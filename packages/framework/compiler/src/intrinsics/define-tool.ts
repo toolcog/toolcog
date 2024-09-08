@@ -11,10 +11,11 @@ import { signatureToSchema } from "../schema.ts";
 
 const defineToolExpression = (
   ts: typeof import("typescript"),
+  host: ts.ModuleResolutionHost,
+  program: ts.Program,
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
-  getCommonSourceDirectory: (() => string) | undefined,
   moduleDef: ModuleDef,
   toolType: ts.Type,
   funcExpression: ts.Expression,
@@ -38,7 +39,8 @@ const defineToolExpression = (
     getNodeTypeId(ts, funcExpression, funcType, {
       package: true,
       module: true,
-      getCommonSourceDirectory,
+      host,
+      program,
     }) ?? "";
 
   if (

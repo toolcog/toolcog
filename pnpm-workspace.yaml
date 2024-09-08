@@ -50,7 +50,7 @@ catalogs:
     "@astrojs/check": ^0.9
     "@astrojs/mdx": ^3.1
     "@astrojs/sitemap": ^3.1
-    "@astrojs/starlight": ^0.26
+    "@astrojs/starlight": ^0.27
     astro: ^4.15
     astro-expressive-code: ^0.36
     eslint-plugin-astro: ^1.2
