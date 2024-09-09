@@ -59,7 +59,7 @@ export { resolvePlugin, resolvePlugins } from "./plugin.ts";
 export type { RuntimeConfigSource, RuntimeConfig } from "./runtime.ts";
 export { Runtime, embed, index, generate, resolveIdiom } from "./runtime.ts";
 
-export type { JobInfo, JobEvents } from "./job.ts";
+export type { JobOutputType, JobInfo, JobEvents } from "./job.ts";
 export { Job } from "./job.ts";
 
 export type { Precache } from "./precache.ts";

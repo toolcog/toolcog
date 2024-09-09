@@ -1,3 +1,10 @@
+export type { MarkdownTheme } from "./markdown.ts";
+export {
+  markdownTheme,
+  renderMarkdown,
+  renderMarkdownInline,
+} from "./markdown.ts";
+
 export type {
   ReplImport,
   ReplImports,

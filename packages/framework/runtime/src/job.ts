@@ -1,9 +1,12 @@
 import { Emitter } from "@toolcog/util/emit";
 import { AsyncContext } from "@toolcog/util/async";
 
+type JobOutputType = "text" | "markdown" | "json";
+
 interface JobInfo {
   title?: string | undefined;
   output?: string | undefined;
+  outputType?: JobOutputType | undefined;
   ellipsize?: number | undefined;
 }
 
@@ -26,6 +29,7 @@ class Job extends Emitter<JobEvents> {
 
   #title: string | undefined;
   #output: string | undefined;
+  #outputType: JobOutputType;
   #ellipsize: number | undefined;
   #finished: boolean;
 
@@ -44,6 +48,7 @@ class Job extends Emitter<JobEvents> {
 
     this.#title = info?.title;
     this.#output = info?.output;
+    this.#outputType = info?.outputType ?? "text";
     this.#ellipsize = info?.ellipsize;
     this.#finished = false;
   }
@@ -151,6 +156,10 @@ class Job extends Emitter<JobEvents> {
     return this.#output;
   }
 
+  get outputType(): JobOutputType {
+    return this.#outputType;
+  }
+
   get ellipsize(): number | undefined {
     return this.#ellipsize;
   }
@@ -172,6 +181,9 @@ class Job extends Emitter<JobEvents> {
       }
       if ("output" in info) {
         this.#output = info.output;
+      }
+      if ("outputType" in info) {
+        this.#outputType = info.outputType ?? "text";
       }
       if ("ellipsize" in info) {
         this.#ellipsize = info.ellipsize;
@@ -269,5 +281,5 @@ class Job extends Emitter<JobEvents> {
   }
 }
 
-export type { JobInfo, JobEvents };
+export type { JobOutputType, JobInfo, JobEvents };
 export { Job };

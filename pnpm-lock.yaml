@@ -33,6 +33,9 @@ catalogs:
     eslint-plugin-jsdoc:
       specifier: ^50.2
       version: 50.2.2
+    marked:
+      specifier: ^14.1
+      version: 14.1.2
     prettier:
       specifier: ^3.3
       version: 3.3.3
@@ -62,7 +65,7 @@ catalogs:
       version: 2.1.1
     typedoc:
       specifier: ^0.26
-      version: 0.26.6
+      version: 0.26.7
     typescript:
       specifier: ^5.5
       version: 5.5.4
@@ -184,7 +187,7 @@ importers:
         version: 2.1.1
       typedoc:
         specifier: catalog:build
-        version: 0.26.6(typescript@5.5.4)
+        version: 0.26.7(typescript@5.5.4)
       typescript:
         specifier: catalog:build
         version: 5.5.4
@@ -238,13 +241,13 @@ importers:
         version: 0.12.0(@astrojs/starlight@0.27.1(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4)))(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4))
       starlight-typedoc:
         specifier: catalog:website
-        version: 0.16.0(@astrojs/starlight@0.27.1(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4)))(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4))(typedoc-plugin-markdown@4.2.7(typedoc@0.26.6(typescript@5.5.4)))(typedoc@0.26.6(typescript@5.5.4))
+        version: 0.16.0(@astrojs/starlight@0.27.1(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4)))(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4))(typedoc-plugin-markdown@4.2.7(typedoc@0.26.7(typescript@5.5.4)))(typedoc@0.26.7(typescript@5.5.4))
       typedoc:
         specifier: catalog:build
-        version: 0.26.6(typescript@5.5.4)
+        version: 0.26.7(typescript@5.5.4)
       typedoc-plugin-markdown:
         specifier: catalog:website
-        version: 4.2.7(typedoc@0.26.6(typescript@5.5.4))
+        version: 4.2.7(typedoc@0.26.7(typescript@5.5.4))
       typescript:
         specifier: catalog:build
         version: 5.5.4
@@ -388,6 +391,9 @@ importers:
       '@toolcog/util':
         specifier: workspace:*
         version: link:../util
+      marked:
+        specifier: catalog:build
+        version: 14.1.2
     devDependencies:
       eslint:
         specifier: catalog:build
@@ -1759,8 +1765,8 @@ packages:
     resolution: {integrity: sha512-xlx1yCK2Oc1APsPXDL2LdlNP6+uu8OCDdhOBSVT279M/S+y75O30C2VuD8T2ogdePBBl7PfPF4504tnLgX3zfw==}
     engines: {node: '>=14.16'}
 
-  caniuse-lite@1.0.30001658:
-    resolution: {integrity: sha512-N2YVqWbJELVdrnsW5p+apoQyYt51aBMSsBZki1XZEfeBCexcM/sf4xiAHcXQBkuOwJBXtWF7aW1sYX6tKebPHw==}
+  caniuse-lite@1.0.30001659:
+    resolution: {integrity: sha512-Qxxyfv3RdHAfJcXelgf0hU4DFUVXBGTjqrBUZLUh8AtlGnsDo+CnncYtTd95+ZKfnANUOzxyIQCuU/UeBZBYoA==}
 
   ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -2529,8 +2535,8 @@ packages:
     resolution: {integrity: sha512-43r2mRvz+8JRIKnWJ+3j8JtjRKZ6GmjzfaE/qiBJnikNnYv/6bagRJ1kUhNk8R5EX/GkobD+r+sfxCPJsiKBLQ==}
     engines: {node: '>=12'}
 
-  is-unicode-supported@2.0.0:
-    resolution: {integrity: sha512-FRdAyx5lusK1iHG0TWpVtk9+1i+GjrzRffhDg4ovQ7mcidMQ6mj+MhKPmvh7Xwyv5gIS06ns49CA7Sqg7lC22Q==}
+  is-unicode-supported@2.1.0:
+    resolution: {integrity: sha512-mE00Gnza5EEB3Ds0HfMyllZzbBrmLOX3vfWoj9A9PEnTfratQ/BcaJOuMhnkhjXvb2+FkY3VuHqtAGpTPmglFQ==}
     engines: {node: '>=18'}
 
   is-windows@1.0.2:
@@ -2694,6 +2700,11 @@ packages:
 
   marked@12.0.2:
     resolution: {integrity: sha512-qXUm7e/YKFoqFPYPa3Ukg9xlI5cyAtGmyEIzMfW//m6kXwCy2Ps9DYf5ioijFKQ8qyuscrHoY04iJGctu2Kg0Q==}
+    engines: {node: '>= 18'}
+    hasBin: true
+
+  marked@14.1.2:
+    resolution: {integrity: sha512-f3r0yqpz31VXiDB/wj9GaOB0a2PRLQl6vJmXiFrniNwjkKdvakqJRULhjFKJpxOchlCRiG5fcacoUZY5Xa6PEQ==}
     engines: {node: '>= 18'}
     hasBin: true
 
@@ -3553,8 +3564,8 @@ packages:
     resolution: {integrity: sha512-weEDEq7Z5eTHPDh4xjX789+fHfF+P8boiFB+0vbWzpbnbsEr/GRaohi/uMKxg8RZMXnl1ItAi/IUHWMsjDV7kQ==}
     engines: {node: '>=14.0.0'}
 
-  tinyspy@3.0.0:
-    resolution: {integrity: sha512-q5nmENpTHgiPVd1cJDDc9cVoYN5x4vCvwT3FMilvKPKneCBZAxn2YWQjDF0UMcE9k0Cay1gBiDfTMU0g+mPMQA==}
+  tinyspy@3.0.1:
+    resolution: {integrity: sha512-Zl/ko7fioZvaflejqwgnWwnTjr3K562tmyNFZADyRWYLXxkr2g+cuZ+lP+s2GRUV0PVCqqoDu0Rmx4fzdJnrZw==}
     engines: {node: '>=14.0.0'}
 
   tmp@0.0.33:
@@ -3653,12 +3664,12 @@ packages:
     peerDependencies:
       typedoc: 0.26.x
 
-  typedoc@0.26.6:
-    resolution: {integrity: sha512-SfEU3SH3wHNaxhFPjaZE2kNl/NFtLNW5c1oHsg7mti7GjmUj1Roq6osBQeMd+F4kL0BoRBBr8gQAuqBlfFu8LA==}
+  typedoc@0.26.7:
+    resolution: {integrity: sha512-gUeI/Wk99vjXXMi8kanwzyhmeFEGv1LTdTQsiyIsmSYsBebvFxhbcyAx7Zjo4cMbpLGxM4Uz3jVIjksu/I2v6Q==}
     engines: {node: '>= 18'}
     hasBin: true
     peerDependencies:
-      typescript: 4.6.x || 4.7.x || 4.8.x || 4.9.x || 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x
+      typescript: 4.6.x || 4.7.x || 4.8.x || 4.9.x || 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x
 
   typesafe-path@0.2.2:
     resolution: {integrity: sha512-OJabfkAg1WLZSqJAJ0Z6Sdt3utnbzr/jh+NAHoyWHJe8CMSy79Gm085094M9nvTPy22KzTVn5Zq5mbapCI/hPA==}
@@ -5185,7 +5196,7 @@ snapshots:
 
   '@vitest/spy@2.0.5':
     dependencies:
-      tinyspy: 3.0.0
+      tinyspy: 3.0.1
 
   '@vitest/utils@2.0.5':
     dependencies:
@@ -5496,7 +5507,7 @@ snapshots:
 
   browserslist@4.23.3:
     dependencies:
-      caniuse-lite: 1.0.30001658
+      caniuse-lite: 1.0.30001659
       electron-to-chromium: 1.5.18
       node-releases: 2.0.18
       update-browserslist-db: 1.1.0(browserslist@4.23.3)
@@ -5517,7 +5528,7 @@ snapshots:
 
   camelcase@7.0.1: {}
 
-  caniuse-lite@1.0.30001658: {}
+  caniuse-lite@1.0.30001659: {}
 
   ccount@2.0.1: {}
 
@@ -6403,7 +6414,7 @@ snapshots:
 
   is-unicode-supported@1.3.0: {}
 
-  is-unicode-supported@2.0.0: {}
+  is-unicode-supported@2.1.0: {}
 
   is-windows@1.0.2: {}
 
@@ -6553,6 +6564,8 @@ snapshots:
       smartypants: 0.2.2
 
   marked@12.0.2: {}
+
+  marked@14.1.2: {}
 
   mdast-util-definitions@6.0.0:
     dependencies:
@@ -7127,7 +7140,7 @@ snapshots:
       cli-cursor: 5.0.0
       cli-spinners: 2.9.2
       is-interactive: 2.0.0
-      is-unicode-supported: 2.0.0
+      is-unicode-supported: 2.1.0
       log-symbols: 6.0.0
       stdin-discarder: 0.2.2
       string-width: 7.2.0
@@ -7668,13 +7681,13 @@ snapshots:
       marked-plaintify: 1.0.1(marked@12.0.2)
       ultrahtml: 1.5.3
 
-  starlight-typedoc@0.16.0(@astrojs/starlight@0.27.1(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4)))(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4))(typedoc-plugin-markdown@4.2.7(typedoc@0.26.6(typescript@5.5.4)))(typedoc@0.26.6(typescript@5.5.4)):
+  starlight-typedoc@0.16.0(@astrojs/starlight@0.27.1(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4)))(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4))(typedoc-plugin-markdown@4.2.7(typedoc@0.26.7(typescript@5.5.4)))(typedoc@0.26.7(typescript@5.5.4)):
     dependencies:
       '@astrojs/starlight': 0.27.1(astro@4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4))
       astro: 4.15.4(@types/node@22.5.4)(rollup@4.21.2)(typescript@5.5.4)
       github-slugger: 2.0.0
-      typedoc: 0.26.6(typescript@5.5.4)
-      typedoc-plugin-markdown: 4.2.7(typedoc@0.26.6(typescript@5.5.4))
+      typedoc: 0.26.7(typescript@5.5.4)
+      typedoc-plugin-markdown: 4.2.7(typedoc@0.26.7(typescript@5.5.4))
 
   std-env@3.7.0: {}
 
@@ -7762,7 +7775,7 @@ snapshots:
 
   tinyrainbow@1.2.0: {}
 
-  tinyspy@3.0.0: {}
+  tinyspy@3.0.1: {}
 
   tmp@0.0.33:
     dependencies:
@@ -7836,11 +7849,11 @@ snapshots:
 
   type-fest@2.19.0: {}
 
-  typedoc-plugin-markdown@4.2.7(typedoc@0.26.6(typescript@5.5.4)):
+  typedoc-plugin-markdown@4.2.7(typedoc@0.26.7(typescript@5.5.4)):
     dependencies:
-      typedoc: 0.26.6(typescript@5.5.4)
+      typedoc: 0.26.7(typescript@5.5.4)
 
-  typedoc@0.26.6(typescript@5.5.4):
+  typedoc@0.26.7(typescript@5.5.4):
     dependencies:
       lunr: 2.3.9
       markdown-it: 14.1.0
