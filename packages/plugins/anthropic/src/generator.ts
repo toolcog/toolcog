@@ -227,6 +227,7 @@ const generate = (async (
         }
         job.update({
           output: content,
+          outputType: "markdown",
           ellipsize: -1,
         });
       }

@@ -1,6 +1,3 @@
-export type { Stylized, Styled, Style } from "./style.ts";
-export { style, unstyle, stylize } from "./style.ts";
-
 export {
   ansiRegex,
   stripAnsi,
@@ -29,6 +26,9 @@ export {
   beep,
   link,
 } from "./ansi.ts";
+
+export type { Stylized, Styled, Style } from "./style.ts";
+export { style, unstyle, stylize } from "./style.ts";
 
 export { getCharacterWidth, getStringWidth } from "./width.ts";
 

@@ -112,8 +112,8 @@ const wrapLine = (
   eol: string,
   state: WrapState = {},
 ): string => {
-  if (input.length === 0) {
-    return "";
+  if (input.length === 0 || maxWidth === Infinity) {
+    return input;
   }
 
   const lines = [""];
@@ -240,6 +240,9 @@ const wrapLine = (
 };
 
 const wrapLines = (input: string, maxWidth: number): string[] => {
+  if (maxWidth === Infinity) {
+    return [input];
+  }
   const state: WrapState = {};
   return reduceLines(
     input,
@@ -252,6 +255,9 @@ const wrapLines = (input: string, maxWidth: number): string[] => {
 };
 
 const wrapText = (input: string, maxWidth: number): string => {
+  if (maxWidth === Infinity) {
+    return input;
+  }
   const state: WrapState = {};
   return replaceLines(input, (line: string, eol: string): string => {
     return wrapLine(line, maxWidth, eol, state);

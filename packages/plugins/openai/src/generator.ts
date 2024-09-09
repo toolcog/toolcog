@@ -336,6 +336,7 @@ const generate = (async (
         if (choice.message.content !== null) {
           job.update({
             output: choice.message.content,
+            outputType: "markdown",
             ellipsize: -1,
           });
         }
