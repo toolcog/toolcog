@@ -9,7 +9,6 @@ packages:
   - packages/plugins/openai
   - packages/toolcog
   - sandbox
-  - docs
 
 catalog:
   "@types/node": ">=20"
@@ -40,23 +39,10 @@ catalogs:
     tslib: ^2.6
     turbo: ^2.1
     typedoc: ^0.26
-    typescript: ^5.5
+    typescript: ^5.6
     typescript-eslint: ^8.4
     vitest: ^2.0
   plugins:
     "@anthropic-ai/sdk": ^0.27
     openai: ^4.58
     whatwg-url: ^14.0
-  website:
-    "@astrojs/check": ^0.9
-    "@astrojs/mdx": ^3.1
-    "@astrojs/sitemap": ^3.1
-    "@astrojs/starlight": ^0.27
-    astro: ^4.15
-    astro-expressive-code: ^0.36
-    eslint-plugin-astro: ^1.2
-    prettier-plugin-astro: ^0.14
-    starlight-blog: ^0.12
-    starlight-typedoc: ^0.16
-    sharp: ^0.33
-    typedoc-plugin-markdown: ^4.2

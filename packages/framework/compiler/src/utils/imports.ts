@@ -152,9 +152,11 @@ const insertNamedImport = (
   factory: ts.NodeFactory,
   sourceFile: ts.SourceFile,
   propertyName: ts.Identifier | undefined,
-  name: ts.Identifier,
+  name: ts.ModuleExportName,
   moduleSpecifier: string,
 ): ts.SourceFile => {
+  ts.Debug.assert(ts.isIdentifier(name));
+
   let index: number;
   for (index = 0; index < sourceFile.statements.length; index += 1) {
     const statement = sourceFile.statements[index]!;

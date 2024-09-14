@@ -99,23 +99,23 @@ const transformToolcog = (
   const standalone = config?.standalone ?? false;
 
   const transformSourceFile = (sourceFile: ts.SourceFile): ts.SourceFile => {
-    let generatorExpression: ts.Identifier | undefined;
+    let generatorExpression: ts.ModuleExportName | undefined;
     let hasGeneratorImport = false as boolean;
     let needsGenerator = false as boolean;
 
-    let embedderExpression: ts.Identifier | undefined;
+    let embedderExpression: ts.ModuleExportName | undefined;
     let hasEmbedderImport = false as boolean;
     let needsEmbedder = false as boolean;
 
-    let indexerExpression: ts.Identifier | undefined;
+    let indexerExpression: ts.ModuleExportName | undefined;
     let hasIndexerImport = false as boolean;
     let needsIndexer = false as boolean;
 
-    let idiomResolverExpression: ts.Identifier | undefined;
+    let idiomResolverExpression: ts.ModuleExportName | undefined;
     let hasIdiomResolverImport = false as boolean;
     let needsIdiomResolver = false as boolean;
 
-    let contextToolsExpression: ts.Identifier | undefined;
+    let contextToolsExpression: ts.ModuleExportName | undefined;
     let hasContextToolsImport = false as boolean;
     let needsContextTools = false as boolean;
 
