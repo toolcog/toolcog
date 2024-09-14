@@ -12,8 +12,8 @@ interface NodeIdOptions {
 const getNodeTypeId = (
   ts: typeof import("typescript"),
   node: ts.Node | undefined,
-  type?: ts.Type | undefined,
-  options?: NodeIdOptions | undefined,
+  type?: ts.Type,
+  options?: NodeIdOptions,
 ): string | undefined => {
   if (node === undefined) {
     return undefined;
@@ -34,7 +34,7 @@ const getNodeTypeId = (
 const getNodeTypeIdentifier = (
   ts: typeof import("typescript"),
   node: ts.Node | undefined,
-  type?: ts.Type | undefined,
+  type?: ts.Type,
 ): string | undefined => {
   if (node === undefined) {
     return undefined;
@@ -55,7 +55,7 @@ const getNodeTypeIdentifier = (
 const getNodeId = (
   ts: typeof import("typescript"),
   node: ts.Node | undefined,
-  options?: NodeIdOptions | undefined,
+  options?: NodeIdOptions,
 ): string | undefined => {
   if (node === undefined) {
     return undefined;
