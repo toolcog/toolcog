@@ -1,3 +1,5 @@
+export { deepEqual } from "./equal.ts";
+
 export {
   countLines,
   reduceLines,
