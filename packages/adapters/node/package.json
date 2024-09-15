@@ -1,6 +1,6 @@
 {
   "name": "@toolcog/node",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Toolcog Node.js adapter",
   "author": "Tool Cognition Inc.",
   "license": "Apache-2.0",
