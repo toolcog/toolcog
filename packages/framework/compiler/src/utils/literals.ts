@@ -31,6 +31,7 @@ const valueToExpression = (
       value.map((value: unknown) =>
         valueToExpression(ts, factory, value, errorNode),
       ),
+      true, // multiLine
     );
   }
 
@@ -49,4 +50,67 @@ const valueToExpression = (
   return ts.Debug.fail(`Unsupported value type \`${typeof value}\``);
 };
 
-export { valueToExpression };
+const expressionToValue = (
+  ts: typeof import("typescript"),
+  expression: ts.Expression,
+): unknown => {
+  if (expression.kind === ts.SyntaxKind.UndefinedKeyword) {
+    return undefined;
+  }
+
+  if (expression.kind === ts.SyntaxKind.NullKeyword) {
+    return null;
+  }
+
+  if (expression.kind === ts.SyntaxKind.FalseKeyword) {
+    return false;
+  }
+
+  if (expression.kind === ts.SyntaxKind.TrueKeyword) {
+    return true;
+  }
+
+  if (ts.isNumericLiteral(expression)) {
+    return parseFloat(expression.text);
+  }
+
+  if (ts.isStringLiteral(expression)) {
+    return expression.text;
+  }
+
+  if (ts.isArrayLiteralExpression(expression)) {
+    return expression.elements.map((element) => expressionToValue(ts, element));
+  }
+
+  if (ts.isObjectLiteralExpression(expression)) {
+    return Object.fromEntries(
+      expression.properties.map((property) => {
+        if (!ts.isPropertyAssignment(property)) {
+          throw new Error(
+            "Cannot statically resolve object literal property " +
+              property.getText(),
+          );
+        }
+        const name = property.name.getText();
+        const value = expressionToValue(ts, property.initializer);
+        return [name, value];
+      }),
+    );
+  }
+
+  if (ts.isPrefixUnaryExpression(expression)) {
+    if (expression.operator === ts.SyntaxKind.MinusToken) {
+      const value = expressionToValue(ts, expression.operand);
+      return typeof value === "number" ? -value : undefined;
+    } else if (expression.operator === ts.SyntaxKind.PlusToken) {
+      const value = expressionToValue(ts, expression.operand);
+      return typeof value === "number" ? +value : undefined;
+    }
+  }
+
+  throw new Error(
+    "Cannot statically resolve expression " + expression.getText(),
+  );
+};
+
+export { valueToExpression, expressionToValue };

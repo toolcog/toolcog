@@ -7,6 +7,7 @@ interface Comment {
   params: Record<string, string>;
   returns: string | undefined;
   idioms: string[];
+  constants: Record<string, string>;
   tags: Record<string, string>;
 }
 
@@ -113,6 +114,12 @@ const parseTag = (
     return;
   }
 
+  if (tag === "constant") {
+    const [, name, description] = parseTypedValue(ts, value, { named: true });
+    comment.constants[name] = description;
+    return;
+  }
+
   comment.tags[tag] = value;
 };
 
@@ -125,6 +132,7 @@ const parseComment = (
     params: Object.create(null) as Record<string, string>,
     returns: undefined,
     idioms: [],
+    constants: Object.create(null) as Record<string, string>,
     tags: Object.create(null) as Record<string, string>,
   };
 
@@ -170,6 +178,7 @@ const mergeComments: {
   const params = Object.create(null) as Record<string, string>;
   let returns: string | undefined;
   const idioms = new Set<string>();
+  const constants = Object.create(null) as Record<string, string>;
   const tags = Object.create(null) as Record<string, string>;
 
   for (const comment of comments) {
@@ -190,6 +199,9 @@ const mergeComments: {
     for (const idiom of comment.idioms) {
       idioms.add(idiom);
     }
+    for (const constant in comment.constants) {
+      constants[constant] = comment.constants[constant]!;
+    }
     for (const tag in comment.tags) {
       tags[tag] = comment.tags[tag]!;
     }
@@ -204,6 +216,7 @@ const mergeComments: {
     params,
     returns,
     idioms: [...idioms],
+    constants,
     tags,
   };
 }) as typeof mergeComments;

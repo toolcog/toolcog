@@ -1,10 +1,12 @@
 import type ts from "typescript";
 import type {
+  SchemaType,
   SchemaDefinition,
   Schema,
   FunctionSchema,
 } from "@toolcog/util/json";
 import { abort } from "./utils/errors.ts";
+import { expressionToValue } from "./utils/literals.ts";
 import { Diagnostics } from "./diagnostics.ts";
 import type { Comment } from "./comment.ts";
 import { getCommentForNode, getComment } from "./comment.ts";
@@ -14,87 +16,129 @@ const typeToSchema = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   type: ts.Type,
+  comment: Comment | undefined,
+  title: string | null | undefined,
   description: string | null | undefined,
-  propertyDescriptions: Record<string, string> | undefined,
   errorNode: ts.Node | undefined,
 ): Schema => {
-  if (description === undefined) {
-    let typeDeclaration = type.getSymbol()?.declarations?.[0];
-    if (typeDeclaration !== undefined) {
-      description = getCommentForNode(ts, typeDeclaration)?.description;
+  if (title === undefined) {
+    let typeSymbol = type.getSymbol();
+    if (typeSymbol !== undefined) {
+      title = typeSymbol.getName();
     }
-    if (description === undefined) {
-      typeDeclaration = type.getConstraint()?.getSymbol()?.declarations?.[0];
-      if (typeDeclaration !== undefined) {
-        description = getCommentForNode(ts, typeDeclaration)?.description;
+    if (title === undefined) {
+      typeSymbol = type.getConstraint()?.getSymbol();
+      if (typeSymbol !== undefined) {
+        title = typeSymbol.getName();
       }
     }
-  } else if (description === null) {
+  }
+  if (title === null) {
+    title = undefined;
+  }
+
+  if (comment === undefined) {
+    let typeDeclaration = type.getSymbol()?.declarations?.[0];
+    if (typeDeclaration !== undefined) {
+      comment = getCommentForNode(ts, typeDeclaration);
+    }
+    if (comment === undefined) {
+      typeDeclaration = type.getConstraint()?.getSymbol()?.declarations?.[0];
+      if (typeDeclaration !== undefined) {
+        comment = getCommentForNode(ts, typeDeclaration);
+      }
+    }
+    if (description === undefined) {
+      description = comment?.description;
+    }
+  }
+  if (description === null) {
     description = undefined;
   }
 
   type = checker.getBaseConstraintOfType(type) ?? type;
 
   if ((type.flags & ts.TypeFlags.Void) !== 0) {
+    if (description === undefined && comment?.constants !== undefined) {
+      description = comment.constants.void;
+    }
     return {
-      type: "void",
       ...(description !== undefined ? { description } : undefined),
+      type: "void",
     } as unknown as Schema;
   }
 
   if ((type.flags & ts.TypeFlags.Undefined) !== 0) {
+    if (description === undefined && comment?.constants !== undefined) {
+      description = comment.constants.undefined;
+    }
     return {
-      type: "undefined",
       ...(description !== undefined ? { description } : undefined),
+      type: "undefined",
     } as unknown as Schema;
   }
 
   if ((type.flags & ts.TypeFlags.Null) !== 0) {
+    if (description === undefined && comment?.constants !== undefined) {
+      description = comment.constants.null;
+    }
     return {
-      type: "null",
       ...(description !== undefined ? { description } : undefined),
+      type: "null",
+    };
+  }
+
+  if ((type.flags & ts.TypeFlags.BooleanLiteral) !== 0) {
+    const value = (type as ts.IntrinsicType).intrinsicName === "true";
+    if (description === undefined && comment?.constants !== undefined) {
+      description = comment.constants[String(value)];
+    }
+    return {
+      ...(description !== undefined ? { description } : undefined),
+      const: value,
+    };
+  }
+
+  if ((type.flags & ts.TypeFlags.NumberLiteral) !== 0) {
+    const value = (type as ts.NumberLiteralType).value;
+    if (description === undefined && comment?.constants !== undefined) {
+      description = comment.constants[String(value)];
+    }
+    return {
+      ...(description !== undefined ? { description } : undefined),
+      const: value,
+    };
+  }
+
+  if ((type.flags & ts.TypeFlags.StringLiteral) !== 0) {
+    const value = (type as ts.StringLiteralType).value;
+    if (description === undefined && comment?.constants !== undefined) {
+      description = comment.constants[value];
+    }
+    return {
+      ...(description !== undefined ? { description } : undefined),
+      const: value,
     };
   }
 
   if ((type.flags & ts.TypeFlags.Boolean) !== 0) {
     return {
-      type: "boolean",
       ...(description !== undefined ? { description } : undefined),
+      type: "boolean",
     };
   }
 
   if ((type.flags & ts.TypeFlags.Number) !== 0) {
     return {
-      type: "number",
       ...(description !== undefined ? { description } : undefined),
+      type: "number",
     };
   }
 
   if ((type.flags & ts.TypeFlags.String) !== 0) {
     return {
+      ...(description !== undefined ? { description } : undefined),
       type: "string",
-      ...(description !== undefined ? { description } : undefined),
-    };
-  }
-
-  if ((type.flags & ts.TypeFlags.BooleanLiteral) !== 0) {
-    return {
-      const: (type as ts.LiteralType & { intrinsicName: string }).intrinsicName,
-      ...(description !== undefined ? { description } : undefined),
-    };
-  }
-
-  if ((type.flags & ts.TypeFlags.NumberLiteral) !== 0) {
-    return {
-      const: (type as ts.NumberLiteralType).value,
-      ...(description !== undefined ? { description } : undefined),
-    };
-  }
-
-  if ((type.flags & ts.TypeFlags.StringLiteral) !== 0) {
-    return {
-      const: (type as ts.StringLiteralType).value,
-      ...(description !== undefined ? { description } : undefined),
     };
   }
 
@@ -120,16 +164,18 @@ const typeToSchema = (
         checker,
         addDiagnostic,
         memberType,
-        memberComment?.description,
+        memberComment,
         undefined,
+        memberComment?.description,
         errorNode,
       );
       memberSchemas.push(memberSchema);
     }
 
     return {
-      anyOf: memberSchemas,
+      ...(title !== undefined ? { title } : undefined),
       ...(description !== undefined ? { description } : undefined),
+      anyOf: memberSchemas,
     };
   }
 
@@ -144,13 +190,14 @@ const typeToSchema = (
 
       if (typeName === "Array") {
         return {
-          type: "array",
           ...(description !== undefined ? { description } : undefined),
+          type: "array",
           items: typeToSchema(
             ts,
             checker,
             addDiagnostic,
             (objectType as ts.TypeReference).typeArguments![0]!,
+            undefined,
             undefined,
             undefined,
             errorNode,
@@ -158,8 +205,8 @@ const typeToSchema = (
         };
       } else if (typeName === "Set") {
         return {
-          type: "array",
           ...(description !== undefined ? { description } : undefined),
+          type: "array",
           items: typeToSchema(
             ts,
             checker,
@@ -167,18 +214,20 @@ const typeToSchema = (
             (objectType as ts.TypeReference).typeArguments![0]!,
             undefined,
             undefined,
+            undefined,
             errorNode,
           ),
         };
       } else if (typeName === "Map") {
         return {
-          type: "object",
           ...(description !== undefined ? { description } : undefined),
+          type: "object",
           additionalProperties: typeToSchema(
             ts,
             checker,
             addDiagnostic,
             (objectType as ts.TypeReference).typeArguments![1]!,
+            undefined,
             undefined,
             undefined,
             errorNode,
@@ -204,17 +253,30 @@ const typeToSchema = (
           getComment(ts, checker, propertyDeclaration, propertyType)
         : undefined;
       const propertyDescription =
-        propertyComment?.description ?? propertyDescriptions?.[propertyName];
+        propertyComment?.description ?? comment?.params[propertyName];
 
-      const propertySchema = typeToSchema(
+      let propertySchema = typeToSchema(
         ts,
         checker,
         addDiagnostic,
         propertyType,
-        propertyDescription,
+        propertyComment,
         undefined,
+        propertyDescription,
         errorNode,
       );
+      if (propertyComment?.tags.default !== undefined) {
+        let propertyDefault: unknown;
+        try {
+          propertyDefault = JSON.parse(propertyComment.tags.default);
+        } catch {
+          propertyDefault = propertyComment.tags.default;
+        }
+        propertySchema = {
+          ...propertySchema,
+          default: propertyDefault as SchemaType,
+        };
+      }
 
       properties[propertyName] = propertySchema;
       if ((propertySymbol.flags & ts.SymbolFlags.Optional) === 0) {
@@ -223,8 +285,9 @@ const typeToSchema = (
     }
 
     return {
-      type: "object",
+      ...(title !== undefined ? { title } : undefined),
       ...(description !== undefined ? { description } : undefined),
+      type: "object",
       properties,
       ...(required.length !== 0 ? { required } : undefined),
     };
@@ -255,6 +318,7 @@ const typeToSchema = (
         checker,
         addDiagnostic,
         memberType,
+        comment,
         undefined,
         undefined,
         errorNode,
@@ -265,13 +329,15 @@ const typeToSchema = (
     }
     if (memberSchemas.length === 1) {
       return {
-        ...memberSchemas[0]!,
+        ...(title !== undefined ? { title } : undefined),
         ...(description !== undefined ? { description } : undefined),
+        ...memberSchemas[0]!,
       };
     }
     return {
-      anyOf: memberSchemas,
+      ...(title !== undefined ? { title } : undefined),
       ...(description !== undefined ? { description } : undefined),
+      anyOf: memberSchemas,
     };
   }
 
@@ -283,6 +349,7 @@ const typeToSchema = (
         checker,
         addDiagnostic,
         memberType,
+        comment,
         undefined,
         undefined,
         errorNode,
@@ -290,8 +357,9 @@ const typeToSchema = (
       memberSchemas.push(memberSchema);
     }
     return {
-      allOf: memberSchemas,
+      ...(title !== undefined ? { title } : undefined),
       ...(description !== undefined ? { description } : undefined),
+      allOf: memberSchemas,
     };
   }
 
@@ -317,7 +385,8 @@ const signatureToSchema = (
   const requiredParameters: string[] = [];
 
   for (const parameter of signature.parameters) {
-    const parameterDeclaration = parameter.valueDeclaration!;
+    const parameterDeclaration =
+      parameter.valueDeclaration as ts.ParameterDeclaration;
     const parameterType = checker.getTypeOfSymbolAtLocation(
       parameter,
       parameterDeclaration,
@@ -327,10 +396,24 @@ const signatureToSchema = (
       checker,
       addDiagnostic,
       parameterType,
-      comment?.params[parameter.name],
+      comment,
       undefined,
+      comment?.params[parameter.name],
       parameterDeclaration,
     );
+    if (parameterDeclaration.initializer !== undefined) {
+      try {
+        parameterSchema = {
+          ...parameterSchema,
+          default: expressionToValue(
+            ts,
+            parameterDeclaration.initializer,
+          ) as SchemaType,
+        };
+      } catch {
+        // nop
+      }
+    }
     if (parameterSchema.description === undefined) {
       const description = comment?.params[parameter.name];
       if (description !== undefined) {
@@ -367,8 +450,9 @@ const signatureToSchema = (
     checker,
     addDiagnostic,
     returnType,
-    comment?.returns,
+    comment,
     undefined,
+    comment?.returns,
     errorNode,
   );
   if (returnSchema.description === undefined) {
@@ -408,8 +492,9 @@ const callSiteToSchema = (
       checker,
       addDiagnostic,
       argumentsType,
+      comment,
+      undefined,
       null,
-      comment?.params,
       argumentsExpression,
     );
   }
@@ -421,8 +506,9 @@ const callSiteToSchema = (
       checker,
       addDiagnostic,
       returnType,
-      comment?.returns,
+      comment,
       undefined,
+      comment?.returns,
       errorNode,
     );
   }

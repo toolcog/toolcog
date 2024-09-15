@@ -480,15 +480,22 @@ const transformToolcog = (
       }
 
       // Remove intrinsic imports.
-      return removeImportsWithTypes(ts, factory, checker, node, [
-        intrinsicTypes.defineIdiom,
-        intrinsicTypes.defineIdioms,
-        intrinsicTypes.defineIndex,
-        intrinsicTypes.defineTool,
-        intrinsicTypes.defineTools,
-        intrinsicTypes.defineFunction,
-        intrinsicTypes.prompt,
-      ]);
+      return removeImportsWithTypes(
+        ts,
+        factory,
+        checker,
+        node,
+        [
+          intrinsicTypes.defineIdiom,
+          intrinsicTypes.defineIdioms,
+          intrinsicTypes.defineIndex,
+          intrinsicTypes.defineTool,
+          intrinsicTypes.defineTools,
+          intrinsicTypes.defineFunction,
+          intrinsicTypes.prompt,
+        ],
+        "@toolcog/core",
+      );
     };
     sourceFile = ts.visitEachChild(sourceFile, postprocessNode, context);
 
