@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import type { Schema } from "./schema.ts";
 import { formatJson } from "./format.ts";
 
 it("should format void values with descriptive schemas", () => {
@@ -6,7 +7,7 @@ it("should format void values with descriptive schemas", () => {
   const schema = {
     type: "void",
     description: "Does not exist.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// Does not exist.\n" + "undefined",
@@ -18,7 +19,7 @@ it("should format undefined values with descriptive schemas", () => {
   const schema = {
     type: "undefined",
     description: "Not a defined value.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// Not a defined value.\n" + "undefined",
@@ -30,7 +31,7 @@ it("should format null values with descriptive schemas", () => {
   const schema = {
     type: "null",
     description: "Not a real value.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual("// Not a real value.\n" + "null");
 });
@@ -40,7 +41,7 @@ it("should format boolean values with descriptive schemas", () => {
   const schema = {
     type: "boolean",
     description: "Maybe, maybe not.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual("// Maybe, maybe not.\n" + "true");
 });
@@ -50,7 +51,7 @@ it("should format number values with descriptive schemas", () => {
   const schema = {
     type: "number",
     description: "The ratio of a circle's circumference to its diameter.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// The ratio of a circle's circumference to its diameter.\n" + "3.14",
@@ -62,7 +63,7 @@ it("should format string values with descriptive schemas", () => {
   const schema = {
     type: "string",
     description: "A pleasant greeting.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// A pleasant greeting.\n" + '"Hello, world!"',
@@ -74,7 +75,7 @@ it("should format empty arrays with descriptive schemas", () => {
   const schema = {
     type: "array",
     description: "An empty container.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual("// An empty container.\n" + "[]");
 });
@@ -87,7 +88,7 @@ it("should format arrays with nondescript item schemas", () => {
     items: {
       type: "integer",
     },
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// The cardinal numbers.\n" + "[\n" + "  1,\n" + "  2,\n" + "  3,\n" + "]",
@@ -103,7 +104,7 @@ it("should format arrays with descriptive item schemas", () => {
       type: "integer",
       description: "The next integer.",
     },
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// The cardinal numbers.\n" +
@@ -133,7 +134,7 @@ it("should format tuples with descriptive item schemas", () => {
         description: "The ordinal number word.",
       },
     ],
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// An ordinal numeral mapping.\n" +
@@ -151,7 +152,7 @@ it("should format empty objects with descriptive schemas", () => {
   const schema = {
     type: "object",
     description: "An empty vessel.",
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual("// An empty vessel.\n" + "{}");
 });
@@ -172,7 +173,7 @@ it("should format objects with nondescript property schemas", () => {
         type: "number",
       },
     },
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// A point in space.\n" +
@@ -203,7 +204,7 @@ it("should format objects with descriptive property schemas", () => {
         description: "The third dimension.",
       },
     },
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// A point on the plane.\n" +
@@ -274,7 +275,7 @@ it("should format complex objects with descriptive schemas", () => {
         ],
       },
     },
-  } as const;
+  } as const satisfies Schema;
 
   expect(formatJson(value, schema)).toEqual(
     "// A point of interest.\n" +
@@ -300,5 +301,26 @@ it("should format complex objects with descriptive schemas", () => {
       "    36.6181,\n" +
       "  ],\n" +
       "}",
+  );
+});
+
+it("should format values with the most specific matching subschema", () => {
+  const value = 15;
+  const schema = {
+    anyOf: [
+      {
+        type: "string",
+        description: "A string value.",
+      },
+      {
+        type: "number",
+        minimum: 10,
+        description: "A number greater than or equal to 10.",
+      },
+    ],
+  } as const satisfies Schema;
+
+  expect(formatJson(value, schema)).toEqual(
+    "// A number greater than or equal to 10.\n" + "15",
   );
 });
