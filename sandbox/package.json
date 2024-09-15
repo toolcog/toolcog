@@ -12,7 +12,8 @@
     "@toolcog/compiler": "workspace:*",
     "@toolcog/core": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "@toolcog/util": "workspace:*"
+    "@toolcog/util": "workspace:*",
+    "toolcog": "workspace:*"
   },
   "optionalDependencies": {
     "@toolcog/anthropic": "workspace:*",

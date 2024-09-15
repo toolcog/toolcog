@@ -67,7 +67,16 @@ const removeImportsWithTypes = (
   checker: ts.TypeChecker,
   importDeclaration: ts.ImportDeclaration,
   importTypes: readonly (ts.Type | undefined)[],
+  moduleSpecifier?: string,
 ): ts.ImportDeclaration | undefined => {
+  if (
+    moduleSpecifier !== undefined &&
+    ts.isStringLiteral(importDeclaration.moduleSpecifier) &&
+    moduleSpecifier !== importDeclaration.moduleSpecifier.text
+  ) {
+    return importDeclaration;
+  }
+
   let importClause = importDeclaration.importClause;
   if (importClause === undefined) {
     return importDeclaration;
