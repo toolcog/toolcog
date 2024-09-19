@@ -263,7 +263,6 @@ const transformToolcog = (
     if (
       contextToolsExpression === undefined &&
       contextToolsImportName !== undefined &&
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       contextToolsModuleName !== undefined
     ) {
       contextToolsExpression = factory.createUniqueName(
@@ -552,7 +551,6 @@ const transformToolcog = (
       !hasContextToolsImport &&
       needsContextTools &&
       contextToolsImportName !== undefined &&
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       contextToolsModuleName !== undefined
     ) {
       sourceFile = insertNamedImport(

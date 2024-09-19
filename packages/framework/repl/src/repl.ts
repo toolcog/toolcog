@@ -562,7 +562,6 @@ class Repl {
   printError(error: unknown): void {
     let output = "";
     output += this.#style.redBright(
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       (error as object)?.constructor?.name ?? "Error",
     );
     output += ": ";

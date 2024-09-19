@@ -31,7 +31,7 @@ catalogs:
     marked: ^14.1
     prettier: ^3.3
     rimraf: ^6.0
-    rollup: ^4.21
+    rollup: ^4.22
     rollup-plugin-dts: ^6.1
     rollup-plugin-node-externals: ^7.1
     ts-expose-internals: ^5.5
@@ -40,9 +40,9 @@ catalogs:
     turbo: ^2.1
     typedoc: ^0.26
     typescript: ^5.6
-    typescript-eslint: ^8.4
+    typescript-eslint: ^8.6
     vitest: ^2.0
   plugins:
     "@anthropic-ai/sdk": ^0.27
-    openai: ^4.58
+    openai: ^4.62
     whatwg-url: ^14.0

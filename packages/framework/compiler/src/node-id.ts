@@ -195,7 +195,6 @@ const getNodeName = (
     return undefined;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (node.parent !== undefined && ts.isArrayLiteralExpression(node.parent)) {
     const index = node.parent.elements.findIndex((element) => element === node);
     if (index >= 0) {

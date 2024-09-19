@@ -75,7 +75,6 @@ const getLeadingComment = (
   node: ts.Node,
 ): string | undefined => {
   const sourceFile = node.getSourceFile();
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (sourceFile === undefined) {
     return undefined;
   }
@@ -157,7 +156,6 @@ const copyLeadingComments = <T extends ts.Node>(
     ts.getSyntheticLeadingComments(fromNode),
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   const sourceText = fromNode.getSourceFile()?.text as string | undefined;
   if (sourceText !== undefined) {
     const leadingCommentRanges = ts.getLeadingCommentRanges(
