@@ -58,6 +58,11 @@
       "types": "./dist/register.d.ts",
       "import": "./dist/register.js",
       "require": "./dist/register.cjs"
+    },
+    "./installer": {
+      "types": "./dist/installer.d.ts",
+      "import": "./dist/installer.js",
+      "require": "./dist/installer.cjs"
     }
   },
   "peerDependencies": {
@@ -68,6 +73,7 @@
     "@toolcog/core": "workspace:*",
     "@toolcog/repl": "workspace:*",
     "@toolcog/runtime": "workspace:*",
+    "@toolcog/util": "workspace:*",
     "@types/node": "catalog:default",
     "commander": "catalog:default",
     "fast-glob": "catalog:default"

@@ -2,17 +2,123 @@ import { resolve as resolvePath } from "node:path";
 import { readFile } from "node:fs/promises";
 import { Command } from "commander";
 import glob from "fast-glob";
-import type { RuntimeConfigSource } from "@toolcog/runtime";
+import type {
+  AgentContextOptions,
+  Plugin,
+  PluginSource,
+  Toolkit,
+  ToolkitSource,
+  Inventory,
+  RuntimeConfigSource,
+} from "@toolcog/runtime";
 import {
-  Runtime,
   AgentContext,
+  Runtime,
+  resolvePlugins,
+  resolveToolkits,
   inventoryFileName,
   parseInventory,
 } from "@toolcog/runtime";
 import { Repl } from "@toolcog/repl";
+import {
+  isPackageImport,
+  loadModules,
+  loadOrInstallModules,
+} from "@toolcog/node/installer";
+
+const loadPlugins = async (
+  moduleNames: readonly string[] | undefined,
+): Promise<Plugin[]> => {
+  if (moduleNames === undefined) {
+    return [];
+  }
+
+  const { loadedModules: pluginModules } = await loadOrInstallModules(
+    moduleNames,
+    {
+      message: "Need to install the following plugin packages:",
+    },
+  );
+
+  const pluginSources: PluginSource[] = [];
+  for (const [moduleName, moduleImport] of Object.entries(pluginModules)) {
+    const module = moduleImport as { readonly default?: () => PluginSource };
+    if (module.default === undefined) {
+      throw new Error(
+        "Plugin " + JSON.stringify(moduleName) + " has no default export",
+        { cause: module },
+      );
+    }
+    const pluginSource = module.default();
+    pluginSources.push(pluginSource);
+  }
+  return await resolvePlugins(pluginSources);
+};
+
+const loadToolkits = async (
+  moduleNames: readonly string[] | undefined,
+): Promise<[Toolkit[], Inventory[]]> => {
+  if (moduleNames === undefined) {
+    return [[], []];
+  }
+
+  const { loadedModules: toolkitModules, installDir } =
+    await loadOrInstallModules(moduleNames, {
+      message: "Need to install the following toolkit packages:",
+    });
+
+  const toolkitSources: ToolkitSource[] = [];
+  for (const [moduleName, moduleImport] of Object.entries(toolkitModules)) {
+    const module = moduleImport as { readonly default?: () => Toolkit };
+    if (module.default === undefined) {
+      throw new Error(
+        "Toolkit " + JSON.stringify(moduleName) + " has no default export",
+        { cause: module },
+      );
+    }
+    const toolkitSource = module.default();
+    toolkitSources.push(toolkitSource);
+  }
+  const toolkits = await resolveToolkits(toolkitSources);
+
+  const { loadedModules: inventoryModules } = await loadModules(
+    moduleNames
+      .filter(isPackageImport)
+      .map((moduleName) => moduleName + "/toolcog-inventory"),
+    {
+      searchDirs: [
+        process.cwd(),
+        ...(installDir !== undefined ? [installDir] : []),
+      ],
+    },
+  );
+
+  const inventories: Inventory[] = [];
+  for (const [moduleName, moduleImport] of Object.entries(inventoryModules)) {
+    const module = moduleImport as { readonly default?: Inventory } | null;
+    if (module === null) {
+      // Toolkit has no inventory module.
+      continue;
+    } else if (module.default === undefined) {
+      throw new Error(
+        "Inventory module " +
+          JSON.stringify(moduleName) +
+          " has no default export",
+        { cause: module },
+      );
+    }
+    const inventory = module.default;
+    inventories.push(inventory);
+  }
+
+  return [toolkits, inventories];
+};
 
 interface NodeCommandOptions {
   config?: string | boolean | undefined;
+  plugin?: string[] | undefined;
+  toolkit?: string[] | undefined;
+  toolLimit?: number | undefined;
   inventory?: string | boolean | undefined;
   generativeModel?: string | undefined;
   embeddingModel?: string | undefined;
@@ -54,6 +160,7 @@ const runNodeCommand = async (
     runtime = Runtime.get();
   }
 
+  let agentContextOptions: AgentContextOptions | undefined;
   if (runtime !== null) {
     if (options.generativeModel !== undefined) {
       runtime.generatorConfig.model = options.generativeModel;
@@ -62,29 +169,41 @@ const runNodeCommand = async (
       runtime.embedderConfig.model = options.embeddingModel;
     }
 
+    const plugins = await loadPlugins(options.plugin);
+    for (const plugin of plugins) {
+      runtime.addPlugin(plugin);
+    }
+
+    const [toolkits, inventories] = await loadToolkits(options.toolkit);
+    for (const toolkit of toolkits) {
+      runtime.addToolkit(toolkit);
+    }
+    for (const inventory of inventories) {
+      runtime.addInventory(inventory);
+    }
+
     if (inventoryGlob !== undefined) {
       const inventoryFiles = await glob(inventoryGlob);
       for (const inventoryFile of inventoryFiles) {
         const inventory = parseInventory(
           await readFile(inventoryFile, "utf-8"),
         );
-        runtime.inventory.embeddingModels = [
-          ...new Set([
-            ...runtime.inventory.embeddingModels,
-            ...inventory.embeddingModels,
-          ]),
-        ];
-        runtime.inventory.idioms = {
-          ...runtime.inventory.idioms,
-          ...inventory.idioms,
-        };
+        runtime.addInventory(inventory);
       }
     }
+
+    agentContextOptions = {
+      tools: [
+        await runtime.toolIndex({
+          limit: options.toolLimit,
+        }),
+      ],
+    };
   }
 
   await Runtime.run(runtime, async () => {
     // Evaluate input in an agent context.
-    await AgentContext.spawn(undefined, async () => {
+    await AgentContext.spawn(agentContextOptions, async () => {
       // Run script, if not evaluating non-interactive code.
       if (scriptFile !== undefined && (code === undefined || interactive)) {
         const scriptPath = resolvePath(process.cwd(), scriptFile);
@@ -130,6 +249,24 @@ const createNodeCommand = (name: string): Command => {
   return new Command(name)
     .description("Run toolcog programs with Node.js")
     .option(`-c, --config [${configFileName}]`, "Load config from a file")
+    .option<string[]>(
+      "--plugin <pluginModule...>",
+      "Load the specified plugin",
+      (moduleName, moduleNames) => [...moduleNames, moduleName],
+      [],
+    )
+    .option<string[]>(
+      "--toolkit <toolkitModule...>",
+      "Load the specified toolkit",
+      (moduleName, moduleNames) => [...moduleNames, moduleName],
+      [],
+    )
+    .option<number>(
+      "--tool-limit <count>",
+      "Maximum number of tools to select",
+      (value: string) => parseInt(value),
+      10,
+    )
     .option(`--inventory [**/${inventoryFileName}]`, "Inventory files to load")
     .option("--generative-model <model>", "The generative model to use")
     .option("--embedding-model <model>", "The embedding model to use")
