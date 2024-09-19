@@ -1,6 +1,6 @@
 import { replaceLines } from "@toolcog/util";
 import type { SchemaDefinition, Schema } from "./schema.ts";
-import { matchSchema } from "./match.ts";
+import { narrowSchema } from "./narrow.ts";
 
 interface FormatJsonOptions {
   indent?: number | undefined;
@@ -30,7 +30,7 @@ const formatJsonValue = (
   let json = "";
 
   if (schema !== undefined) {
-    schema = matchSchema(value, schema);
+    schema = narrowSchema(value, schema);
   }
 
   if (typeof schema === "object" && schema.description !== undefined) {
