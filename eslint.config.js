@@ -46,10 +46,7 @@ export default pluginTs.config(
         { checksVoidReturn: false },
       ],
       "@typescript-eslint/no-non-null-assertion": "off",
-      "@typescript-eslint/no-unnecessary-condition": [
-        "error",
-        { allowConstantLoopConditions: true },
-      ],
+      "@typescript-eslint/no-unnecessary-condition": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-useless-constructor": "off",
       "@typescript-eslint/prefer-function-type": "off",

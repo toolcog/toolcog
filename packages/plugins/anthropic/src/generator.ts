@@ -394,9 +394,7 @@ const toAnthropicMessage = (message: Message): Anthropic.MessageParam => {
         name: block.name,
         input: block.arguments,
       });
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    else if (block.type === "response") {
+    } else if (block.type === "response") {
       content.push({
         type: "tool_result",
         tool_use_id: block.id,
@@ -428,9 +426,7 @@ const fromAnthropicMessage = (message: Anthropic.MessageParam): Message => {
         name: block.name,
         arguments: block.input,
       });
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    else if (block.type === "tool_result") {
+    } else if (block.type === "tool_result") {
       content.push({
         type: "response",
         id: block.tool_use_id,

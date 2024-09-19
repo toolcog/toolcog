@@ -18,9 +18,14 @@ import { createChatCompletion } from "./client.ts";
 declare module "@toolcog/core" {
   // Manually synchronized with OpenAI.ChatModel.
   interface GenerativeModelNames {
+    "o1-preview": unknown;
+    "o1-preview-2024-09-12": unknown;
+    "o1-mini": unknown;
+    "o1-mini-2024-09-12": unknown;
     "gpt-4o": unknown;
-    "gpt-4o-2024-05-13": unknown;
     "gpt-4o-2024-08-06": unknown;
+    "gpt-4o-2024-05-13": unknown;
+    "chatgpt-4o-latest": unknown;
     "gpt-4o-mini": unknown;
     "gpt-4o-mini-2024-07-18": unknown;
     "gpt-4-turbo": unknown;
@@ -114,7 +119,11 @@ interface OpenAIGeneratorOptions extends GeneratorOptions {
 const generator = (options?: OpenAIGeneratorOptions): Generator | undefined => {
   const model = options?.model;
   if (model !== undefined) {
-    if (model.startsWith("openai:") || model.startsWith("gpt-")) {
+    if (
+      model.startsWith("openai:") ||
+      model.startsWith("gpt-") ||
+      model.startsWith("o1-")
+    ) {
       return generate;
     }
   } else if (
@@ -461,9 +470,7 @@ const toOpenAIMessage = (
           type: "image_url",
           image_url: { url: block.source },
         });
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      else if (block.type === "response") {
+      } else if (block.type === "response") {
         if (content !== undefined) {
           messages.push({ role: "user", content });
         }
@@ -478,9 +485,7 @@ const toOpenAIMessage = (
     if (content !== undefined) {
       messages.push({ role: "user", content });
     }
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  else if (message.role === "assistant") {
+  } else if (message.role === "assistant") {
     let content:
       | (
           | OpenAI.ChatCompletionContentPartText
@@ -499,9 +504,7 @@ const toOpenAIMessage = (
           content = [];
         }
         content.push(block);
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-      else if (block.type === "request") {
+      } else if (block.type === "request") {
         if (toolCalls === undefined) {
           toolCalls = [];
         }
@@ -598,16 +601,12 @@ const fromOpenAIMessage = (
         for (const block of message.content) {
           if (block.type === "text") {
             content.push(block);
-          }
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          else if (block.type === "image_url") {
+          } else if (block.type === "image_url") {
             content.push({ type: "image", source: block.image_url.url });
           }
         }
       }
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    else if (message.role === "tool") {
+    } else if (message.role === "tool") {
       if (content === undefined) {
         content = [];
       } else if (typeof content === "string") {
