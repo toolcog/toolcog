@@ -1,7 +1,7 @@
 import { deepEqual } from "@toolcog/util";
 import type { SchemaTypeName, SchemaDefinition, Schema } from "./schema.ts";
 
-const isSubschema = (
+const isSubtype = (
   subschema: SchemaDefinition,
   superSchema: SchemaDefinition,
 ): boolean => {
@@ -31,7 +31,7 @@ const isSubschema = (
     if (superSchema.not !== undefined) {
       // For `subschema` to be a subtype of `superSchema`,
       // `superSchema.not` must be a subtype of `subschema.not`.
-      return isSubschema(superSchema.not, subschema.not);
+      return isSubtype(superSchema.not, subschema.not);
     } else {
       // `subschema` rejects certain values that `superSchema` may accept.
       return true;
@@ -49,44 +49,44 @@ const isSubschema = (
   if (subschema.allOf !== undefined) {
     // All `subschemas` in `subschema.allOf` must be subtypes of `superSchema`.
     return subschema.allOf.every((subSubschema) =>
-      isSubschema(subSubschema, superSchema),
+      isSubtype(subSubschema, superSchema),
     );
   }
 
   if (superSchema.allOf !== undefined) {
     // `subschema` must be a subtype of all `subschemas` in `superSchema.allOf`.
     return superSchema.allOf.every((subSuperSchema) =>
-      isSubschema(subschema, subSuperSchema),
+      isSubtype(subschema, subSuperSchema),
     );
   }
 
   if (subschema.anyOf !== undefined) {
     // Each `subschema` in `subschema.anyOf` must be a subtype of `superSchema`.
     return subschema.anyOf.every((subSubschema) =>
-      isSubschema(subSubschema, superSchema),
+      isSubtype(subSubschema, superSchema),
     );
   }
 
   if (superSchema.anyOf !== undefined) {
-    // `subschema` must be a subtype of at least one `subschema`
-    // in `superSchema.anyOf`.
+    // `subschema` must be a subtype of at least one subschema in
+    // `superSchema.anyOf`.
     return superSchema.anyOf.some((subSuperSchema) =>
-      isSubschema(subschema, subSuperSchema),
+      isSubtype(subschema, subSuperSchema),
     );
   }
 
   if (subschema.oneOf !== undefined) {
     // Each `subschema` in `subschema.oneOf` must be a subtype of `superSchema`.
     return subschema.oneOf.every((subSubschema) =>
-      isSubschema(subSubschema, superSchema),
+      isSubtype(subSubschema, superSchema),
     );
   }
 
   if (superSchema.oneOf !== undefined) {
-    // `subschema` must be a subtype of at least one `subschema`
-    // in `superSchema.oneOf`.
+    // `subschema` must be a subtype of at least one subschema in
+    // `superSchema.oneOf`.
     return superSchema.oneOf.some((subSuperSchema) =>
-      isSubschema(subschema, subSuperSchema),
+      isSubtype(subschema, subSuperSchema),
     );
   }
 
@@ -311,7 +311,7 @@ const compareArrayConstraints = (
         }
         for (let i = 0; i < subschema.items.length; i += 1) {
           if (
-            !isSubschema(
+            !isSubtype(
               (subschema.items as readonly SchemaDefinition[])[i]!,
               (superSchema.items as readonly SchemaDefinition[])[i]!,
             )
@@ -324,7 +324,7 @@ const compareArrayConstraints = (
         !Array.isArray(superSchema.items)
       ) {
         if (
-          !isSubschema(
+          !isSubtype(
             subschema.items as SchemaDefinition,
             superSchema.items as SchemaDefinition,
           )
@@ -352,7 +352,7 @@ const compareArrayConstraints = (
         // `subschema` is more restrictive.
       } else if (typeof subschema.additionalItems === "object") {
         if (
-          !isSubschema(subschema.additionalItems, superSchema.additionalItems)
+          !isSubtype(subschema.additionalItems, superSchema.additionalItems)
         ) {
           return false;
         }
@@ -422,7 +422,7 @@ const compareObjectConstraints = (
           if (superSchema.required?.includes(key)) {
             return false; // `subschema` is missing a required property.
           }
-        } else if (!isSubschema(subProperty, superProperty)) {
+        } else if (!isSubtype(subProperty, superProperty)) {
           return false;
         }
       }
@@ -443,7 +443,7 @@ const compareObjectConstraints = (
         // `subschema` is more restrictive.
       } else if (typeof subschema.additionalProperties === "object") {
         if (
-          !isSubschema(
+          !isSubtype(
             subschema.additionalProperties,
             superSchema.additionalProperties,
           )
@@ -507,4 +507,4 @@ const getTypes = (schema: SchemaDefinition): readonly SchemaTypeName[] => {
     : [schema.type as SchemaTypeName];
 };
 
-export { isSubschema };
+export { isSubtype };

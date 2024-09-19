@@ -7,11 +7,11 @@ export type {
   FunctionSchema,
 } from "./schema.ts";
 
-export { isSubschema } from "./subschema.ts";
+export { isSubtype } from "./subtype.ts";
 
 export { validate } from "./validate.ts";
 
-export { matchSchema } from "./match.ts";
+export { narrowSchema, narrowSchemas } from "./narrow.ts";
 
 export type { FormatJsonOptions } from "./format.ts";
 export { formatJson } from "./format.ts";
