@@ -212,10 +212,7 @@ const renderMarkdownHeading = (
   }
   const text = renderMarkdownInline(token.tokens, theme);
   const indent = " ".repeat(depth);
-  return replaceLines(
-    wrapText(reflow(text), width - indent.length),
-    (line) => indent + heading(line),
-  );
+  return indent + heading(text);
 };
 
 const renderMarkdownHr = (
