@@ -38,11 +38,16 @@ const resolvePlugin = async (
   return await plugin;
 };
 
-const resolvePlugins = async (
+const resolvePlugins: {
+  (plugins: readonly PluginSource[]): Promise<Plugin[]>;
+  (
+    plugins: readonly PluginSource[] | null | undefined,
+  ): Promise<Plugin[] | undefined>;
+} = (async (
   plugins: readonly PluginSource[] | null | undefined,
-): Promise<Plugin[] | null> => {
+): Promise<Plugin[] | undefined> => {
   if (plugins === undefined || plugins === null) {
-    return null;
+    return undefined;
   }
   return (
     await Promise.allSettled(plugins.map((plugin) => resolvePlugin(plugin)))
@@ -52,7 +57,7 @@ const resolvePlugins = async (
     }
     return plugins;
   }, []);
-};
+}) as typeof resolvePlugins;
 
 export type { Plugin, PluginSource };
 export { resolvePlugin, resolvePlugins };

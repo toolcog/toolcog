@@ -11,6 +11,7 @@ import type {
   IndexerConfig,
   IndexerOptions,
   Indexer,
+  Tool,
   GeneratorConfig,
   GeneratorOptions,
   Generator,
@@ -19,11 +20,15 @@ import { AgentContext } from "./agent.ts";
 import { indexer } from "./indexer.ts";
 import type { Plugin, PluginSource } from "./plugin.ts";
 import { resolvePlugins } from "./plugin.ts";
+import type { Toolkit, ToolkitSource } from "./toolkit.ts";
+import { resolveToolkits } from "./toolkit.ts";
 import type { Inventory, InventorySource } from "./inventory.ts";
 import { createInventory, resolveInventory } from "./inventory.ts";
 
 interface RuntimeConfigSource {
   plugins?: PluginSource[] | null | undefined;
+
+  toolkits?: ToolkitSource[] | null | undefined;
 
   embedder?: EmbedderConfig | undefined;
 
@@ -37,6 +42,8 @@ interface RuntimeConfigSource {
 interface RuntimeConfig {
   plugins?: Plugin[] | null | undefined;
 
+  toolkits?: Toolkit[] | null | undefined;
+
   embedder?: EmbedderConfig | undefined;
 
   indexer?: IndexerConfig | undefined;
@@ -48,6 +55,7 @@ interface RuntimeConfig {
 
 class Runtime {
   readonly #plugins: Plugin[];
+  readonly #toolkits: Toolkit[];
   readonly #embedderConfig: EmbedderConfig;
   readonly #indexerConfig: IndexerConfig;
   readonly #generatorConfig: GeneratorConfig;
@@ -55,14 +63,19 @@ class Runtime {
 
   constructor(config?: RuntimeConfig) {
     this.#plugins = config?.plugins ?? [];
+    this.#toolkits = config?.toolkits ?? [];
     this.#embedderConfig = config?.embedder ?? {};
     this.#indexerConfig = config?.indexer ?? {};
     this.#generatorConfig = config?.generator ?? {};
     this.#inventory = config?.inventory ?? createInventory();
   }
 
-  get plugins(): Plugin[] {
+  get plugins(): readonly Plugin[] {
     return this.#plugins;
+  }
+
+  get toolkits(): readonly Toolkit[] {
+    return this.#toolkits;
   }
 
   get embedderConfig(): EmbedderConfig {
@@ -81,6 +94,27 @@ class Runtime {
     return this.#inventory;
   }
 
+  addPlugin(plugin: Plugin): void {
+    this.#plugins.push(plugin);
+  }
+
+  addToolkit(toolkit: Toolkit): void {
+    this.#toolkits.push(toolkit);
+  }
+
+  addInventory(inventory: Inventory): void {
+    this.#inventory.embeddingModels = [
+      ...new Set([
+        ...this.#inventory.embeddingModels,
+        ...inventory.embeddingModels,
+      ]),
+    ];
+    this.#inventory.idioms = {
+      ...this.#inventory.idioms,
+      ...inventory.idioms,
+    };
+  }
+
   embedderOptions(options: EmbedderOptions | undefined): EmbedderOptions {
     return {
       ...this.embedderConfig,
@@ -90,6 +124,7 @@ class Runtime {
 
   indexerOptions(options: IndexerOptions | undefined): IndexerOptions {
     return {
+      embedder: embed,
       ...this.embedderConfig,
       ...this.indexerConfig,
       ...options,
@@ -183,6 +218,13 @@ class Runtime {
     return this.inventory.idioms[id]?.embeddings;
   }
 
+  async toolIndex(options?: IndexerOptions): Promise<Index<readonly Tool[]>> {
+    const tools = (
+      await Promise.all(this.toolkits.map((toolkit) => toolkit.tools?.() ?? []))
+    ).flat();
+    return await this.index(tools, options);
+  }
+
   static systemPrompt(): string {
     return "You are an AI function embedded in a computer program.";
   }
@@ -192,6 +234,7 @@ class Runtime {
   ): Promise<RuntimeConfig> {
     return {
       plugins: await resolvePlugins(config?.plugins),
+      toolkits: await resolveToolkits(config?.toolkits),
       embedder: config?.embedder,
       indexer: config?.indexer,
       generator: config?.generator,

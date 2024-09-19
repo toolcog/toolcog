@@ -125,7 +125,7 @@ class AgentContext extends Emitter<AgentContextEvents> {
   ): R {
     const parent = this.#current.get();
     const child =
-      parent !== undefined ? parent.spawn(options) : new this(parent, options);
+      parent !== undefined ? parent.spawn(options) : this.create(options);
     return this.#current.run(child, func, child);
   }
 }

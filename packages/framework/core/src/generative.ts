@@ -49,7 +49,13 @@ const resolveTool = async (
     | undefined);
 };
 
-const resolveTools = async (
+const resolveTools: {
+  (tools: readonly ToolSource[], args: unknown): Promise<Tool[]>;
+  (
+    tools: readonly ToolSource[] | null | undefined,
+    args: unknown,
+  ): Promise<Tool[] | undefined>;
+} = (async (
   tools: readonly ToolSource[] | null | undefined,
   args: unknown,
 ): Promise<Tool[] | undefined> => {
@@ -68,7 +74,7 @@ const resolveTools = async (
     }
     return tools;
   }, []);
-};
+}) as typeof resolveTools;
 
 type InstructionsSource =
   | ((args: unknown) => Promise<string | undefined> | string | undefined)

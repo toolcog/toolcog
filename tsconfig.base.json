@@ -34,7 +34,12 @@
       "@toolcog/node": ["./packages/adapters/node/src/lib.ts"],
       "@toolcog/node/quiet": ["./packages/adapters/node/quiet/src/mod.ts"],
       "@toolcog/node/loader": ["./packages/adapters/node/loader/src/mod.ts"],
-      "@toolcog/node/register": ["./packages/adapters/node/register/src/mod.ts"],
+      "@toolcog/node/register": [
+        "./packages/adapters/node/register/src/mod.ts"
+      ],
+      "@toolcog/node/installer": [
+        "./packages/adapters/node/installer/src/mod.ts"
+      ],
       "toolcog": ["./packages/toolcog/src/lib.ts"]
     },
     "resolveJsonModule": true,
