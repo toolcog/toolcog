@@ -1,11 +1,13 @@
 import { Emitter } from "@toolcog/util/emit";
 import { AsyncContext } from "@toolcog/util/async";
-import type { ToolSource } from "@toolcog/core";
+import type { EmbeddingVector, ToolSource } from "@toolcog/core";
 import type { Message } from "./message.ts";
 
 interface AgentContextOptions {
   messages?: Message[] | undefined;
   tools?: ToolSource[] | undefined;
+  queryHysteresis?: number | undefined;
+  queryDecay?: number | undefined;
 }
 
 type AgentContextEvents = {
@@ -18,6 +20,9 @@ class AgentContext extends Emitter<AgentContextEvents> {
   readonly #parent: AgentContext | null;
   readonly #messages: Message[];
   readonly #tools: ToolSource[];
+  readonly #queryVectors: EmbeddingVector[];
+  #queryHysteresis: number;
+  #queryDecay: number;
   #query: string | undefined;
 
   constructor(
@@ -29,6 +34,11 @@ class AgentContext extends Emitter<AgentContextEvents> {
     this.#parent = parent;
     this.#messages = options?.messages ?? [];
     this.#tools = options?.tools ?? [];
+
+    this.#queryVectors = [];
+    this.#queryHysteresis =
+      options?.queryHysteresis ?? parent?.queryHysteresis ?? 5;
+    this.#queryDecay = options?.queryDecay ?? parent?.queryDecay ?? 0.8;
     this.#query = undefined;
   }
 
@@ -42,6 +52,21 @@ class AgentContext extends Emitter<AgentContextEvents> {
 
   get tools(): readonly ToolSource[] {
     return this.#tools;
+  }
+
+  /** @internal */
+  get queryVectors(): readonly EmbeddingVector[] {
+    return this.#queryVectors;
+  }
+
+  /** @internal */
+  get queryHysteresis(): number {
+    return this.#queryHysteresis;
+  }
+
+  /** @internal */
+  get queryDecay(): number {
+    return this.#queryDecay;
   }
 
   get query(): string | undefined {
@@ -71,9 +96,87 @@ class AgentContext extends Emitter<AgentContextEvents> {
     this.#query = query;
   }
 
+  /** @internal */
+  addQueryVector(queryVector: EmbeddingVector): void {
+    const vectorCount = this.#queryVectors.length;
+    if (vectorCount !== 0) {
+      const lastVector = this.#queryVectors[vectorCount - 1]!;
+      if (queryVector === lastVector) {
+        return;
+      }
+      const vectorDim = lastVector.length;
+      if (queryVector.length !== vectorDim) {
+        throw new Error("Dimension mismatch");
+      }
+      let i = 0;
+      while (i < vectorDim) {
+        if (queryVector[i]! !== lastVector[i]!) {
+          break;
+        }
+        i += 1;
+      }
+      if (i === vectorDim) {
+        return;
+      }
+    }
+
+    if (vectorCount >= this.#queryHysteresis) {
+      this.#queryVectors.splice(0, vectorCount - this.#queryHysteresis + 1);
+    }
+    this.#queryVectors.push(queryVector);
+  }
+
+  /** @internal */
+  decayedQueryVector(): EmbeddingVector {
+    const vectors = this.#queryVectors;
+    const vectorCount = vectors.length;
+    if (vectorCount === 0) {
+      throw new Error("No query vectors");
+    } else if (vectorCount === 1) {
+      return vectors[0]!;
+    }
+
+    const vectorDim = vectors[0]!.length;
+    const decayRate = this.#queryDecay;
+
+    const queryVector = new Float32Array(vectorDim);
+    let sumOfWeights = 0;
+
+    // Compute the weighted sum of the query vector embeddings.
+    for (let i = 0; i < vectorCount; i += 1) {
+      const vector = vectors[i]!;
+      if (vector.length !== vectorDim) {
+        throw new Error("Dimension mismatch");
+      }
+
+      const weight = Math.pow(decayRate, vectorCount - i - 1);
+      sumOfWeights += weight;
+
+      for (let j = 0; j < vectorDim; j += 1) {
+        queryVector[j]! += vector[j]! * weight;
+      }
+    }
+
+    // Normalize the weighted sum by the total sum of weights.
+    for (let j = 0; j < vectorDim; j += 1) {
+      queryVector[j]! /= sumOfWeights;
+    }
+
+    // Normalize the vector to unit length.
+    const norm = Math.hypot(...queryVector);
+    if (norm !== 0) {
+      for (let j = 0; j < vectorDim; j += 1) {
+        queryVector[j]! /= norm;
+      }
+    }
+
+    return queryVector;
+  }
+
   clear(): void {
     this.#messages.length = 0;
     this.#tools.length = 0;
+    this.#queryVectors.length = 0;
     this.#query = undefined;
   }
 
