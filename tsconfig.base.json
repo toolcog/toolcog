@@ -29,6 +29,7 @@
       "@toolcog/util/timer": ["./packages/framework/util/timer/src/mod.ts"],
       "@toolcog/util/tty": ["./packages/framework/util/tty/src/mod.ts"],
       "@toolcog/util/tui": ["./packages/framework/util/tui/src/mod.ts"],
+      "@toolcog/util/graphql": ["./packages/framework/util/graphql/src/mod.ts"],
       "@toolcog/anthropic": ["./packages/plugins/anthropic/src/lib.ts"],
       "@toolcog/openai": ["./packages/plugins/openai/src/lib.ts"],
       "@toolcog/node": ["./packages/adapters/node/src/lib.ts"],
