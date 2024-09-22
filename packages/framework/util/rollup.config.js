@@ -19,4 +19,5 @@ export default [
   ...defineLib({ input: "./timer/src/mod.ts" }),
   ...defineLib({ input: "./tty/src/mod.ts" }),
   ...defineLib({ input: "./tui/src/mod.ts" }),
+  ...defineLib({ input: "./graphql/src/mod.ts" }),
 ];
