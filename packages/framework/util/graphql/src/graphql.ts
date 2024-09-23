@@ -307,6 +307,10 @@ type VariablesType<
   SelectionDirectiveVariablesType<T> &
   SelectionFieldVariablesType<T>;
 
+const defineSelection = <const T extends Selection>(selection: T): T => {
+  return selection;
+};
+
 /** @internal */
 const collectParameterVariable = (
   argumentName: string,
@@ -373,6 +377,7 @@ const collectFieldVariables = (
   return variables;
 };
 
+/** @internal */
 const collectVariables = (
   selection: Selection | Fragment,
   variables: Record<string, Parameter> = {},
@@ -429,6 +434,7 @@ const formatNamedType = (parameter: Parameter | string): string => {
   return typeName;
 };
 
+/** @internal */
 const formatTypeName = (parameter: Parameter): string => {
   let nullable = typeof parameter === "object" ? parameter.nullable : undefined;
 
@@ -485,6 +491,7 @@ const formatArgument = (name: string, arg: Argument): string => {
   return output;
 };
 
+/** @internal */
 const formatArguments = (args: Arguments): string => {
   let output = "";
   let i = 0;
@@ -501,6 +508,7 @@ const formatDirective = (name: string, args: Arguments): string => {
   return "@" + name + "(" + formatArguments(args) + ")";
 };
 
+/** @internal */
 const formatDirectives = (directives: Directives): string => {
   let output = "";
   let i = 0;
@@ -579,6 +587,7 @@ const formatInlineFragment = (fragment: Fragment, depth: number): string => {
   return output;
 };
 
+/** @internal */
 const formatFields = (fields: Fields, depth: number = 0): string => {
   let output = "";
   for (const name in fields) {
@@ -599,6 +608,7 @@ const formatVariable = (name: string, variable: Parameter): string => {
   return "$" + name + ": " + typeName;
 };
 
+/** @internal */
 const formatVariables = (
   variables: Record<string, Parameter>,
 ): string | undefined => {
@@ -622,9 +632,13 @@ const formatVariables = (
 };
 
 const formatOperation: {
-  (type: Op, fields: Fields): string;
-  (type: Op, name: string | undefined, fields: Fields): string;
-} = (type: Op, name: Fields | string | undefined, fields?: Fields): string => {
+  (kind: OperationKind, fields: Fields): string;
+  (kind: OperationKind, name: string | undefined, fields: Fields): string;
+} = (
+  kind: OperationKind,
+  name: Fields | string | undefined,
+  fields?: Fields,
+): string => {
   if (fields !== undefined) {
     name = name as string;
   } else {
@@ -632,7 +646,7 @@ const formatOperation: {
     name = undefined;
   }
 
-  let output = type;
+  let output = kind;
 
   if (name !== undefined) {
     output += " " + name;
@@ -651,17 +665,37 @@ const formatOperation: {
   return output;
 };
 
-const defineSelection = <const T extends Selection>(selection: T): T => {
-  return selection;
+const formatQuery: {
+  (fields: Fields): string;
+  (name: string | undefined, fields: Fields): string;
+} = (name: Fields | string | undefined, fields?: Fields): string => {
+  return formatOperation("query", name as string | undefined, fields!);
 };
 
-type Op = "query" | "mutation" | "subscription";
+const formatMutation: {
+  (fields: Fields): string;
+  (name: string | undefined, fields: Fields): string;
+} = (name: Fields | string | undefined, fields?: Fields): string => {
+  return formatOperation("mutation", name as string | undefined, fields!);
+};
 
-interface Operation<O extends Op = Op, F extends Fields = Fields> {
+const formatSubscription: {
+  (fields: Fields): string;
+  (name: string | undefined, fields: Fields): string;
+} = (name: Fields | string | undefined, fields?: Fields): string => {
+  return formatOperation("subscription", name as string | undefined, fields!);
+};
+
+type OperationKind = "query" | "mutation" | "subscription";
+
+interface Operation<
+  K extends OperationKind = OperationKind,
+  F extends Fields = Fields,
+> {
   (
     variables: FieldVariablesType<F>,
   ): [query: string, variables: FieldVariablesType<F>];
-  readonly type: Op;
+  readonly kind: K;
   readonly name: string | undefined;
   readonly fields: F;
   readonly query: string;
@@ -672,17 +706,17 @@ type OperationType<T extends { readonly fields: Fields }> = FieldsType<
 >;
 
 const createOperation: {
-  <const O extends Op, const F extends Fields>(
-    type: O,
+  <const K extends OperationKind, const F extends Fields>(
+    kind: K,
     fields: F,
-  ): Operation<O, F>;
-  <const O extends Op, const F extends Fields>(
-    type: O,
+  ): Operation<K, F>;
+  <const K extends OperationKind, const F extends Fields>(
+    kind: K,
     name: string | undefined,
     fields: F,
-  ): Operation<O, F>;
+  ): Operation<K, F>;
 } = ((
-  type: Op,
+  kind: OperationKind,
   name: Fields | string | undefined,
   fields?: Fields,
 ): Operation => {
@@ -693,16 +727,16 @@ const createOperation: {
     name = undefined;
   }
 
-  const query = formatOperation(type, name, fields);
+  const query = formatOperation(kind, name, fields);
 
   const operation = Object.assign(
     (
       variables: FieldVariablesType<Fields>,
     ): [query: string, variables: FieldVariablesType<Fields>] => {
-      return [query, variables];
+      return [operation.query, variables];
     },
     {
-      type,
+      kind,
       fields,
       query,
     },
@@ -715,6 +749,45 @@ const createOperation: {
   });
   return operation;
 }) as unknown as typeof createOperation;
+
+const createQuery: {
+  <const F extends Fields>(fields: F): Operation<"query", F>;
+  <const F extends Fields>(
+    name: string | undefined,
+    fields: F,
+  ): Operation<"query", F>;
+} = <const F extends Fields>(
+  name: F | string | undefined,
+  fields?: F,
+): Operation<"query", F> => {
+  return createOperation("query", name as string | undefined, fields!);
+};
+
+const createMutation: {
+  <const F extends Fields>(fields: F): Operation<"mutation", F>;
+  <const F extends Fields>(
+    name: string | undefined,
+    fields: F,
+  ): Operation<"mutation", F>;
+} = <const F extends Fields>(
+  name: F | string | undefined,
+  fields?: F,
+): Operation<"mutation", F> => {
+  return createOperation("mutation", name as string | undefined, fields!);
+};
+
+const createSubscription: {
+  <const F extends Fields>(fields: F): Operation<"subscription", F>;
+  <const F extends Fields>(
+    name: string | undefined,
+    fields: F,
+  ): Operation<"subscription", F>;
+} = <const F extends Fields>(
+  name: F | string | undefined,
+  fields?: F,
+): Operation<"subscription", F> => {
+  return createOperation("subscription", name as string | undefined, fields!);
+};
 
 export type {
   Scalar,
@@ -755,18 +828,18 @@ export type {
   DirectiveVariablesType,
   FieldVariablesType,
   VariablesType,
-  Op,
+  OperationKind,
   Operation,
   OperationType,
 };
 export {
-  collectVariables,
-  formatTypeName,
-  formatArguments,
-  formatDirectives,
-  formatFields,
-  formatVariables,
-  formatOperation,
   defineSelection,
+  formatOperation,
+  formatQuery,
+  formatMutation,
+  formatSubscription,
   createOperation,
+  createQuery,
+  createMutation,
+  createSubscription,
 };
