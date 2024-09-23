@@ -252,13 +252,13 @@ const createNodeCommand = (name: string): Command => {
     .option<string[]>(
       "--plugin <pluginModule...>",
       "Load the specified plugin",
-      (moduleName, moduleNames) => [...moduleNames, moduleName],
+      (moduleName, moduleNames) => [...moduleNames, ...moduleName.split(",")],
       [],
     )
     .option<string[]>(
       "--toolkit <toolkitModule...>",
       "Load the specified toolkit",
-      (moduleName, moduleNames) => [...moduleNames, moduleName],
+      (moduleName, moduleNames) => [...moduleNames, ...moduleName.split(",")],
       [],
     )
     .option<number>(
