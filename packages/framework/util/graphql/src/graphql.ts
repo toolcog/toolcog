@@ -89,14 +89,7 @@ interface Fragment {
   fields: Fields;
 }
 
-type FragmentType<T extends Fragment> = Partial<FieldsType<T["fields"]>>;
-
-/** @internal */
-type FragmentsType<T extends Fields> = {
-  [K in keyof T as T[K] extends Fragment ? K : never]: T[K] extends Fragment ?
-    FragmentType<T[K]>
-  : never;
-};
+type FragmentType<T extends Fragment> = FieldsType<T["fields"]>;
 
 type Field = Selection | Alias | Fragment;
 
@@ -110,10 +103,25 @@ interface Fields {
   readonly [key: string]: Field;
 }
 
-type FieldsType<T extends Fields> = {
+/** @internal */
+type OrdinaryFieldsType<T extends Fields> = {
   -readonly [K in keyof T as T[K] extends Selection | Alias ? K
   : never]: FieldType<T[K]>;
-} & UnionToIntersection<FragmentsType<T>[keyof FragmentsType<T>]>;
+};
+
+/** @internal */
+type FragmentFieldsType<T extends Fields> = {
+  [K in keyof T as T[K] extends Fragment ? K : never]: T[K] extends Fragment ?
+    FragmentType<T[K]>
+  : never;
+};
+
+type FieldsType<T extends Fields> =
+  [keyof FragmentFieldsType<T>] extends [never] ? OrdinaryFieldsType<T>
+  : {
+      [K in keyof FragmentFieldsType<T>]: OrdinaryFieldsType<T> &
+        FragmentFieldsType<T>[K];
+    }[keyof FragmentFieldsType<T>];
 
 interface Object {
   readonly name?: string;
