@@ -1,8 +1,8 @@
 import { it, expect } from "vitest";
-import { formatOperation } from "./graphql.ts";
+import { formatQuery } from "./graphql.ts";
 
 it("should format queries", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     thoughts: {
       fields: {
         id: "String!",
@@ -21,7 +21,7 @@ it("should format queries", () => {
 });
 
 it("should format queries with variables", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     thought: {
       arguments: {
         id: "Int",
@@ -43,7 +43,7 @@ it("should format queries with variables", () => {
 });
 
 it("should format queries with custom scalar type variables", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     thought: {
       arguments: {
         id: { name: "ThoughtId", scalar: "Int!", nullable: true },
@@ -65,7 +65,7 @@ it("should format queries with custom scalar type variables", () => {
 });
 
 it("should format queries with nested selections", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     orders: {
       fields: {
         id: "String!",
@@ -104,7 +104,7 @@ it("should format queries with nested selections", () => {
 });
 
 it("should format queries with required variables", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     userLogin: {
       arguments: {
         email: "String!",
@@ -125,7 +125,7 @@ it("should format queries with required variables", () => {
 });
 
 it("should format queries with renamed parameters", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     foo: {
       arguments: {
         id1: { parameter: "id", type: "ID" },
@@ -152,7 +152,7 @@ it("should format queries with renamed parameters", () => {
 });
 
 it("should format queries with operation names", () => {
-  const query = formatOperation("query", "whoami", {
+  const query = formatQuery("whoami", {
     viewer: {
       fields: {
         id: "String!",
@@ -169,7 +169,7 @@ it("should format queries with operation names", () => {
 });
 
 it("should format queries with aliased properties", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     ideas: {
       property: "thoughts",
       type: {
@@ -191,7 +191,7 @@ it("should format queries with aliased properties", () => {
 });
 
 it("should format queries with directives", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     thought: {
       arguments: {
         id: "Int",
@@ -218,7 +218,7 @@ it("should format queries with directives", () => {
 });
 
 it("should format queries with inline fragments", () => {
-  const query = formatOperation("query", {
+  const query = formatQuery({
     entry: {
       fields: {
         name: "String!",
