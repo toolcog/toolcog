@@ -11,7 +11,7 @@ type NullableType<T, D> =
     : T
   : T;
 
-type Primitive =
+type Scalar =
   | "Boolean"
   | "Boolean!"
   | "Int"
@@ -31,7 +31,7 @@ type Primitive =
   | "Base64String"
   | "Base64String!";
 
-type PrimitiveType<T extends Primitive> =
+type ScalarType<T extends Scalar> =
   T extends "Boolean" ? boolean | null
   : T extends "Boolean!" ? boolean
   : T extends "Int" ? number | null
@@ -52,6 +52,19 @@ type PrimitiveType<T extends Primitive> =
   : T extends "Base64String!" ? string
   : never;
 
+interface ScalarExt {
+  readonly name: string;
+  readonly arguments?: Arguments;
+  readonly directives?: Directives;
+  readonly scalar: Scalar;
+  readonly nullable?: boolean;
+}
+
+type ScalarExtType<T extends ScalarExt> = NullableType<
+  ScalarType<T["scalar"]>,
+  T
+>;
+
 interface Enum {
   readonly name?: string;
   readonly arguments?: Arguments;
@@ -70,7 +83,8 @@ interface Alias {
 type AliasType<T extends Alias> = SelectionType<T["type"]>;
 
 interface Fragment {
-  condition: Selection | null;
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  condition: Selection | string | null;
   directives?: Directives;
   fields: Fields;
 }
@@ -102,9 +116,9 @@ type FieldsType<T extends Fields> = {
 } & UnionToIntersection<FragmentsType<T>[keyof FragmentsType<T>]>;
 
 interface Object {
-  readonly condition?: never;
   readonly name?: string;
   readonly arguments?: Arguments;
+  readonly condition?: never;
   readonly directives?: Directives;
   readonly fields: Fields;
   readonly nullable?: boolean;
@@ -135,10 +149,11 @@ type ReferenceType<T extends Reference> = NullableType<
   T
 >;
 
-type Selection = Primitive | Enum | Object | List | Reference;
+type Selection = Scalar | ScalarExt | Enum | Object | List | Reference;
 
 type SelectionType<T extends Selection> =
-  T extends Primitive ? PrimitiveType<T>
+  T extends Scalar ? ScalarType<T>
+  : T extends ScalarExt ? ScalarExtType<T>
   : T extends Enum ? EnumType<T>
   : T extends Object ? ObjectType<T>
   : T extends List ? ListType<T>
@@ -350,7 +365,7 @@ const collectFieldVariables = (
 ): Record<string, Parameter> => {
   for (const fieldName in fields) {
     let field = fields[fieldName]!;
-    if (typeof field === "object" && "type" in field) {
+    if (typeof field === "object" && !("scalar" in field) && "type" in field) {
       field = field.type;
     }
     variables = collectVariables(field, variables);
@@ -364,12 +379,13 @@ const collectVariables = (
 ): Record<string, Parameter> => {
   while (
     typeof selection === "object" &&
-    ("list" in selection || "type" in selection)
+    !("scalar" in selection) &&
+    ("type" in selection || "list" in selection)
   ) {
-    if ("list" in selection) {
-      selection = selection.list;
-    } else if ("type" in selection) {
+    if ("type" in selection) {
       selection = selection.type;
+    } else if ("list" in selection) {
+      selection = selection.list;
     }
   }
   if (typeof selection === "object") {
@@ -387,8 +403,13 @@ const collectVariables = (
 };
 
 /** @internal */
-const formatNamedType = (parameter: Parameter): string => {
-  while (typeof parameter === "object" && "type" in parameter) {
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+const formatNamedType = (parameter: Parameter | string): string => {
+  while (
+    typeof parameter === "object" &&
+    !("scalar" in parameter) &&
+    "type" in parameter
+  ) {
     parameter = parameter.type;
   }
 
@@ -411,7 +432,11 @@ const formatNamedType = (parameter: Parameter): string => {
 const formatTypeName = (parameter: Parameter): string => {
   let nullable = typeof parameter === "object" ? parameter.nullable : undefined;
 
-  while (typeof parameter === "object" && "type" in parameter) {
+  while (
+    typeof parameter === "object" &&
+    !("scalar" in parameter) &&
+    "type" in parameter
+  ) {
     if (nullable === undefined) {
       nullable = parameter.nullable;
     }
@@ -500,11 +525,15 @@ const formatField = (
     field = field.type;
   }
 
-  while (typeof field === "object" && ("list" in field || "type" in field)) {
-    if ("list" in field) {
-      field = field.list;
-    } else if ("type" in field) {
+  while (
+    typeof field === "object" &&
+    !("scalar" in field) &&
+    ("type" in field || "list" in field)
+  ) {
+    if ("type" in field) {
       field = field.type;
+    } else if ("list" in field) {
+      field = field.list;
     }
   }
 
@@ -688,8 +717,10 @@ const createOperation: {
 }) as unknown as typeof createOperation;
 
 export type {
-  Primitive,
-  PrimitiveType,
+  Scalar,
+  ScalarType,
+  ScalarExt,
+  ScalarExtType,
   Enum,
   EnumType,
   Alias,

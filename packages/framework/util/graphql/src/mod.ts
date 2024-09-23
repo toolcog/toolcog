@@ -1,6 +1,8 @@
 export type {
-  Primitive,
-  PrimitiveType,
+  Scalar,
+  ScalarType,
+  ScalarExt,
+  ScalarExtType,
   Enum,
   EnumType,
   Alias,
