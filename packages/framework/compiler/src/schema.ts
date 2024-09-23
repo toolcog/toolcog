@@ -59,8 +59,8 @@ const typeToSchema = (
   type = checker.getBaseConstraintOfType(type) ?? type;
 
   if ((type.flags & ts.TypeFlags.Void) !== 0) {
-    if (description === undefined && comment?.constants !== undefined) {
-      description = comment.constants.void;
+    if (description === undefined && comment?.values !== undefined) {
+      description = comment.values.void;
     }
     return {
       ...(description !== undefined ? { description } : undefined),
@@ -69,8 +69,8 @@ const typeToSchema = (
   }
 
   if ((type.flags & ts.TypeFlags.Undefined) !== 0) {
-    if (description === undefined && comment?.constants !== undefined) {
-      description = comment.constants.undefined;
+    if (description === undefined && comment?.values !== undefined) {
+      description = comment.values.undefined;
     }
     return {
       ...(description !== undefined ? { description } : undefined),
@@ -79,8 +79,8 @@ const typeToSchema = (
   }
 
   if ((type.flags & ts.TypeFlags.Null) !== 0) {
-    if (description === undefined && comment?.constants !== undefined) {
-      description = comment.constants.null;
+    if (description === undefined && comment?.values !== undefined) {
+      description = comment.values.null;
     }
     return {
       ...(description !== undefined ? { description } : undefined),
@@ -90,8 +90,8 @@ const typeToSchema = (
 
   if ((type.flags & ts.TypeFlags.BooleanLiteral) !== 0) {
     const value = (type as ts.IntrinsicType).intrinsicName === "true";
-    if (description === undefined && comment?.constants !== undefined) {
-      description = comment.constants[String(value)];
+    if (description === undefined && comment?.values !== undefined) {
+      description = comment.values[String(value)];
     }
     return {
       ...(description !== undefined ? { description } : undefined),
@@ -101,8 +101,8 @@ const typeToSchema = (
 
   if ((type.flags & ts.TypeFlags.NumberLiteral) !== 0) {
     const value = (type as ts.NumberLiteralType).value;
-    if (description === undefined && comment?.constants !== undefined) {
-      description = comment.constants[String(value)];
+    if (description === undefined && comment?.values !== undefined) {
+      description = comment.values[String(value)];
     }
     return {
       ...(description !== undefined ? { description } : undefined),
@@ -112,8 +112,8 @@ const typeToSchema = (
 
   if ((type.flags & ts.TypeFlags.StringLiteral) !== 0) {
     const value = (type as ts.StringLiteralType).value;
-    if (description === undefined && comment?.constants !== undefined) {
-      description = comment.constants[value];
+    if (description === undefined && comment?.values !== undefined) {
+      description = comment.values[value];
     }
     return {
       ...(description !== undefined ? { description } : undefined),
