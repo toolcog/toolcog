@@ -42,6 +42,28 @@ it("should format queries with variables", () => {
 }`);
 });
 
+it("should format queries with custom scalar type variables", () => {
+  const query = formatOperation("query", {
+    thought: {
+      arguments: {
+        id: { name: "ThoughtId", scalar: "Int!", nullable: true },
+      },
+      fields: {
+        id: { name: "ThoughtId", scalar: "Int!" },
+        name: "String",
+        thought: "String",
+      },
+    },
+  });
+  expect(query).toBe(`query ($id: ThoughtId) {
+  thought(id: $id) {
+    id
+    name
+    thought
+  }
+}`);
+});
+
 it("should format queries with nested selections", () => {
   const query = formatOperation("query", {
     orders: {
@@ -200,7 +222,7 @@ it("should format queries with inline fragments", () => {
     entry: {
       fields: {
         name: "String!",
-        org: {
+        _org: {
           condition: {
             name: "File",
             fields: {},
@@ -209,16 +231,13 @@ it("should format queries with inline fragments", () => {
             size: "Int!",
           },
         },
-        user: {
-          condition: {
-            name: "Directory",
-            fields: {},
-          },
+        _user: {
+          condition: "Directory",
           fields: {
             count: "Int!",
           },
         },
-        all: {
+        _all: {
           condition: null,
           directives: {
             include: {
