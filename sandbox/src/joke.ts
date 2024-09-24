@@ -1,4 +1,4 @@
-import { defineFunction } from "@toolcog/core";
+import { definePrompt } from "@toolcog/core";
 import { currentLocation } from "./location.js";
 
 /**
@@ -13,7 +13,7 @@ import { currentLocation } from "./location.js";
  * @param ideas - Some joke ideas to consider for inspiration.
  * @returns The generated joke.
  */
-export const joke = defineFunction<
+export const joke = definePrompt<
   (subject: string, funniness?: number, ideas?: string[]) => string
 >({
   defaults: { funniness: 5 },

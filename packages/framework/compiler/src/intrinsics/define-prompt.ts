@@ -6,6 +6,7 @@ import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
 import { getNodeId, getNodeIdentifier } from "../node-id.ts";
 import { signatureToSchema } from "../schema.ts";
+import { defineIdiomStatements } from "./define-idiom.ts";
 
 const definePromptExpression = (
   ts: typeof import("typescript"),
@@ -15,6 +16,7 @@ const definePromptExpression = (
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   moduleDef: ModuleDef,
+  idiomResolverExpression: ts.Expression | undefined,
   generatorExpression: ts.Expression,
   contextToolsExpression: ts.Expression | undefined,
   callExpression: ts.CallExpression,
@@ -155,17 +157,17 @@ const definePromptExpression = (
     );
   }
 
-  // Define the context tools parameter.
+  // Define the idiom resolver parameter.
 
-  let contextToolsParameterName: ts.Identifier | undefined;
-  let contextToolsParameterDeclaration: ts.ParameterDeclaration | undefined;
+  let idiomResolverParameterName: ts.Identifier | undefined;
+  let idiomResolverParameterDeclaration: ts.ParameterDeclaration | undefined;
 
-  if (contextToolsExpression !== undefined) {
-    contextToolsParameterName = factory.createIdentifier("contextTools");
-    contextToolsParameterDeclaration = factory.createParameterDeclaration(
+  if (idiomResolverExpression !== undefined) {
+    idiomResolverParameterName = factory.createIdentifier("idiomResolver");
+    idiomResolverParameterDeclaration = factory.createParameterDeclaration(
       undefined, // modifiers
       undefined, // dotDotDotToken
-      contextToolsParameterName,
+      idiomResolverParameterName,
       undefined, // questionToken
       undefined, // type
       undefined, // initializer
@@ -183,6 +185,23 @@ const definePromptExpression = (
     undefined, // type
     undefined, // initializer
   );
+
+  // Define the context tools parameter.
+
+  let contextToolsParameterName: ts.Identifier | undefined;
+  let contextToolsParameterDeclaration: ts.ParameterDeclaration | undefined;
+
+  if (contextToolsExpression !== undefined) {
+    contextToolsParameterName = factory.createIdentifier("contextTools");
+    contextToolsParameterDeclaration = factory.createParameterDeclaration(
+      undefined, // modifiers
+      undefined, // dotDotDotToken
+      contextToolsParameterName,
+      undefined, // questionToken
+      undefined, // type
+      undefined, // initializer
+    );
+  }
 
   // Define generative function parameters and argument assignments.
 
@@ -573,6 +592,27 @@ const definePromptExpression = (
     instructions,
   };
 
+  // Define embeddings statements.
+
+  const valueAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(functionIdentifier, "value"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      functionIdentifier,
+    ),
+  );
+
+  const [embeddingsVariableDeclaration, embedsAssignment] =
+    defineIdiomStatements(
+      ts,
+      factory,
+      moduleDef,
+      idiomResolverParameterName,
+      promptId,
+      functionIdentifier,
+      comment,
+    );
+
   // Create and return an IIFE wrapper.
 
   const iifeExpression = factory.createCallExpression(
@@ -583,10 +623,13 @@ const definePromptExpression = (
         ...(configParameterDeclaration !== undefined ?
           [configParameterDeclaration]
         : []),
+        ...(idiomResolverParameterDeclaration !== undefined ?
+          [idiomResolverParameterDeclaration]
+        : []),
+        generatorParameterDeclaration,
         ...(contextToolsParameterDeclaration !== undefined ?
           [contextToolsParameterDeclaration]
         : []),
-        generatorParameterDeclaration,
       ],
       undefined, // type
       undefined, // equalsGreaterThanToken,
@@ -595,14 +638,17 @@ const definePromptExpression = (
           ...(configVariableDeclaration !== undefined ?
             [configVariableDeclaration]
           : []),
+          embeddingsVariableDeclaration,
           generativeFunctionDeclaration,
           idAssignment,
           ...(nameAssignment !== undefined ? [nameAssignment] : []),
+          valueAssignment,
           descriptionAssignment,
           parametersAssignment,
           returnsAssignment,
           instructionsAssignment,
           toolsAssignment,
+          embedsAssignment,
           factory.createReturnStatement(functionIdentifier),
         ],
         true, // multiLine
@@ -611,8 +657,11 @@ const definePromptExpression = (
     undefined, // typeArguments
     [
       ...(configExpression !== undefined ? [configExpression] : []),
-      ...(contextToolsExpression !== undefined ? [contextToolsExpression] : []),
+      ...(idiomResolverExpression !== undefined ?
+        [idiomResolverExpression]
+      : []),
       generatorExpression,
+      ...(contextToolsExpression !== undefined ? [contextToolsExpression] : []),
     ],
   );
 

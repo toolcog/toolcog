@@ -55,6 +55,6 @@ export {
   resolveTool,
   resolveTools,
   resolveInstructions,
-  defineFunction,
+  definePrompt,
   prompt,
 } from "./generative.ts";

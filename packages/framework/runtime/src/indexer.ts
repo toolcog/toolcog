@@ -43,7 +43,7 @@ const indexer = (<T extends readonly unknown[]>(
 
     for (const idiom of index.idioms) {
       let nearestIdiom: number | undefined;
-      const idiomEmbeddings = idiom();
+      const idiomEmbeddings = idiom.embeds();
       for (const text in idiomEmbeddings) {
         const embedding = idiomEmbeddings[text]!;
         const embeddingVector = embedding[model];
@@ -90,7 +90,7 @@ const indexer = (<T extends readonly unknown[]>(
     const embeddings: Embedding[] = [];
 
     for (const idiom of index.idioms) {
-      const idiomEmbeddings = idiom();
+      const idiomEmbeddings = idiom.embeds();
       for (const text in idiomEmbeddings) {
         const embedding = idiomEmbeddings[text]!;
         if (!(model in embedding)) {

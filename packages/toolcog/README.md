@@ -151,7 +151,7 @@ and used the output of the tool to generate a relevant response.
 
 We can make LLM interactions repeatable by defining _generative functions_.
 A generative function is a TypeScript function that uses an LLM to generate
-its return value. Toolcog's `defineFunction` intrinsic can "magically" implement
+its return value. Toolcog's `definePrompt` intrinsic can "magically" implement
 almost any TypeScript function signature with generative AI! Paste the
 following code into the REPL to define a generative function that creates
 character profiles.
@@ -162,7 +162,7 @@ character profiles.
  * @param role - The role the character plays.
  * @param alignment - The morality of the character.
  */
-const createCharacter = defineFunction<(role: string, alignment: "good" | "evil") => {
+const createCharacter = definePrompt<(role: string, alignment: "good" | "evil") => {
   // The name of the character,
   name: string;
   // The age of the character.
@@ -319,7 +319,7 @@ to an unbounded number of possible tools.
 Toolcog enables TAG with four intrinsic operations:
 
 - **defineTool:** Generates LLM tools from TypeScript functions
-- **defineFunction:** Implements TypeScript functions with LLM structured outputs
+- **definePrompt:** Implements TypeScript functions with LLM structured outputs
 - **defineIdiom:** Associates arbitrary program values with idiomatic text embeddings
 - **defineIndex:** Bundles prefetched vector indexes for fast natural language preprocessing
 

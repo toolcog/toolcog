@@ -1,4 +1,4 @@
-import { defineFunction } from "@toolcog/core";
+import { definePrompt } from "@toolcog/core";
 import type { Character } from "./characters.js";
 import { createCharacters } from "./characters.js";
 
@@ -45,6 +45,6 @@ interface Story {
  *
  * @param genre - The genre of the story.
  */
-export const writeStory = defineFunction<(genre: string) => Story>({
+export const writeStory = definePrompt<(genre: string) => Story>({
   tools: [createCharacters],
 });

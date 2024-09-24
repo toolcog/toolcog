@@ -90,7 +90,7 @@ const transformToolcog = (
       "defineIndex",
       "defineTool",
       "defineTools",
-      "defineFunction",
+      "definePrompt",
       "prompt",
     ],
     "@toolcog/core",
@@ -125,7 +125,7 @@ const transformToolcog = (
       | "defineIndex"
       | "defineTool"
       | "defineTools"
-      | "defineFunction"
+      | "definePrompt"
       | "prompt"
     >;
 
@@ -142,7 +142,7 @@ const transformToolcog = (
           defineIndex: intrinsicTypes.defineIndex,
           defineTool: intrinsicTypes.defineTool,
           defineTools: intrinsicTypes.defineTools,
-          defineFunction: intrinsicTypes.defineFunction,
+          definePrompt: intrinsicTypes.definePrompt,
           prompt: intrinsicTypes.prompt,
         },
         intrinsicImports,
@@ -252,7 +252,7 @@ const transformToolcog = (
       );
     }
 
-    if (idiomResolverExpression === undefined) {
+    if (idiomResolverExpression === undefined && !standalone) {
       idiomResolverExpression = factory.createUniqueName(
         idiomResolverImportName,
         ts.GeneratedIdentifierFlags.ReservedInNestedScopes |
@@ -380,6 +380,7 @@ const transformToolcog = (
         intrinsicTypes.defineTool !== undefined &&
         isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineTool)
       ) {
+        needsIdiomResolver = true;
         const funcExpression = node.arguments[0]!;
         node = defineToolExpression(
           ts,
@@ -390,6 +391,7 @@ const transformToolcog = (
           addDiagnostic,
           moduleDef,
           intrinsicTypes.AnyTool,
+          idiomResolverExpression,
           funcExpression,
           checker.getTypeAtLocation(funcExpression),
           funcExpression,
@@ -403,6 +405,7 @@ const transformToolcog = (
         intrinsicTypes.defineTools !== undefined &&
         isFunctionCallExpression(ts, checker, node, intrinsicTypes.defineTools)
       ) {
+        needsIdiomResolver = true;
         const funcsExpression = node.arguments[0]!;
         node = defineToolsExpression(
           ts,
@@ -414,22 +417,19 @@ const transformToolcog = (
           moduleDef,
           intrinsicTypes.AnyTool,
           intrinsicTypes.AnyTools,
+          idiomResolverExpression,
           funcsExpression,
           checker.getTypeAtLocation(funcsExpression),
           funcsExpression,
         );
       }
 
-      // Transform `defineFunction` intrinsics.
+      // Transform `definePrompt` intrinsics.
       if (
-        intrinsicTypes.defineFunction !== undefined &&
-        isFunctionCallExpression(
-          ts,
-          checker,
-          node,
-          intrinsicTypes.defineFunction,
-        )
+        intrinsicTypes.definePrompt !== undefined &&
+        isFunctionCallExpression(ts, checker, node, intrinsicTypes.definePrompt)
       ) {
+        needsIdiomResolver = true;
         needsGenerator = true;
         needsContextTools = true;
         node = definePromptExpression(
@@ -440,6 +440,7 @@ const transformToolcog = (
           checker,
           addDiagnostic,
           moduleDef,
+          idiomResolverExpression,
           generatorExpression!,
           contextToolsExpression,
           node,
@@ -490,7 +491,7 @@ const transformToolcog = (
           intrinsicTypes.defineIndex,
           intrinsicTypes.defineTool,
           intrinsicTypes.defineTools,
-          intrinsicTypes.defineFunction,
+          intrinsicTypes.definePrompt,
           intrinsicTypes.prompt,
         ],
         "@toolcog/core",
@@ -541,7 +542,7 @@ const transformToolcog = (
         factory,
         sourceFile,
         factory.createIdentifier(idiomResolverImportName),
-        idiomResolverExpression,
+        idiomResolverExpression!,
         idiomResolverModuleName,
       );
     }

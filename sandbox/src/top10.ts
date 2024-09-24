@@ -1,4 +1,4 @@
-import { defineFunction } from "@toolcog/core";
+import { definePrompt } from "@toolcog/core";
 
 /**
  * Make a David Letterman style top-10 list about the given subject.
@@ -6,7 +6,7 @@ import { defineFunction } from "@toolcog/core";
  * @param subject - The subject of the top-10 list.
  * @returns The top-10 list.
  */
-const makeList = defineFunction<(subject: string) => string[]>();
+const makeList = definePrompt<(subject: string) => string[]>();
 
 /**
  * Give feedback on the given David Letterman style top-10 list.
@@ -16,7 +16,7 @@ const makeList = defineFunction<(subject: string) => string[]>();
  * @param list - The top-10 list to review.
  * @returns Feedback about ways to improve the top-10 list.
  */
-const reviewList = defineFunction<(list: string[]) => string>();
+const reviewList = definePrompt<(list: string[]) => string>();
 
 /**
  * Improve the given David Letterman style top-10 list by incorporating
@@ -28,7 +28,7 @@ const reviewList = defineFunction<(list: string[]) => string>();
  * @returns An improved top-10 list.
  */
 const improveList =
-  defineFunction<(list: string[], feedback: string) => string[]>();
+  definePrompt<(list: string[], feedback: string) => string[]>();
 
 /**
  * Score how well an improved David Letterman style top-10 list incorporated
@@ -44,7 +44,7 @@ const improveList =
  * @returns A number between 1 and 10 rating the level of improvement.
  */
 const scoreImprovements =
-  defineFunction<
+  definePrompt<
     (originalList: string[], feedback: string, improvedList: string[]) => number
   >();
 

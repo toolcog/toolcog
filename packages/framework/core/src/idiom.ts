@@ -10,11 +10,11 @@ import type {
  * A collection of embeddings associated with a value.
  */
 interface Idiom<T> {
-  (): Embeddings;
-
   readonly id: string;
 
   readonly value: T;
+
+  readonly embeds: () => Embeddings;
 }
 
 type Idioms<T extends readonly unknown[]> =
