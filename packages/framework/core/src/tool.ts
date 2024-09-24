@@ -1,4 +1,5 @@
 import type { Schema } from "@toolcog/util/json";
+import type { Embeddings } from "./embedding.ts";
 
 interface Tool<
   F extends (...args: any[]) => unknown = (...args: any[]) => unknown,
@@ -9,11 +10,15 @@ interface Tool<
 
   readonly name: string;
 
+  readonly value: this;
+
   readonly description: string | undefined;
 
   readonly parameters: Schema | undefined;
 
   readonly returns: Schema | undefined;
+
+  readonly embeds: () => Embeddings;
 }
 
 type Tools<F extends readonly ((...args: any[]) => unknown)[]> =

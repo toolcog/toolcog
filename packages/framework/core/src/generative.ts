@@ -1,4 +1,5 @@
 import type { Schema } from "@toolcog/util/json";
+import type { Embeddings } from "./embedding.ts";
 import type { Tool } from "./tool.ts";
 
 /**
@@ -222,6 +223,8 @@ interface GenerativeFunction<
 
   readonly name: string;
 
+  readonly value: this;
+
   readonly description: string | undefined;
 
   readonly parameters: Schema | undefined;
@@ -231,9 +234,11 @@ interface GenerativeFunction<
   readonly instructions: InstructionsSource;
 
   readonly tools: readonly ToolSource[];
+
+  readonly embeds: () => Embeddings;
 }
 
-const defineFunction: {
+const definePrompt: {
   <F extends (...args: any[]) => unknown>(
     config?: GenerativeConfig,
   ): GenerativeFunction<F>;
@@ -247,9 +252,9 @@ const defineFunction: {
     throw new Error("Uncompiled generative function");
   },
   {
-    brand: Symbol("toolcog.defineFunction"),
+    brand: Symbol("toolcog.definePrompt"),
   } as const,
-) as typeof defineFunction;
+) as typeof definePrompt;
 
 const prompt: {
   <T = string>(
@@ -291,10 +296,4 @@ export type {
   GenerativeReturnType,
   GenerativeFunction,
 };
-export {
-  resolveTool,
-  resolveTools,
-  resolveInstructions,
-  defineFunction,
-  prompt,
-};
+export { resolveTool, resolveTools, resolveInstructions, definePrompt, prompt };

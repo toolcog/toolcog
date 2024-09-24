@@ -8,6 +8,7 @@ import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
 import { getNodeTypeId } from "../node-id.ts";
 import { signatureToSchema } from "../schema.ts";
+import { defineIdiomStatements } from "./define-idiom.ts";
 
 const defineToolExpression = (
   ts: typeof import("typescript"),
@@ -18,6 +19,7 @@ const defineToolExpression = (
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
   moduleDef: ModuleDef,
   toolType: ts.Type,
+  idiomResolverExpression: ts.Expression | undefined,
   funcExpression: ts.Expression,
   funcType: ts.Type,
   errorNode: ts.Node,
@@ -92,6 +94,23 @@ const defineToolExpression = (
     undefined, // type
     undefined, // initializer
   );
+
+  // Define the idiom resolver parameter.
+
+  let idiomResolverParameterName: ts.Identifier | undefined;
+  let idiomResolverParameterDeclaration: ts.ParameterDeclaration | undefined;
+
+  if (idiomResolverExpression !== undefined) {
+    idiomResolverParameterName = factory.createIdentifier("idiomResolver");
+    idiomResolverParameterDeclaration = factory.createParameterDeclaration(
+      undefined, // modifiers
+      undefined, // dotDotDotToken
+      idiomResolverParameterName,
+      undefined, // questionToken
+      undefined, // type
+      undefined, // initializer
+    );
+  }
 
   // Define the id property.
 
@@ -207,30 +226,64 @@ const defineToolExpression = (
     ...toolSchema,
   };
 
+  // Define embeddings statements.
+
+  const valueAssignment = factory.createExpressionStatement(
+    factory.createBinaryExpression(
+      factory.createPropertyAccessExpression(toolIdentifier, "value"),
+      factory.createToken(ts.SyntaxKind.EqualsToken),
+      toolIdentifier,
+    ),
+  );
+
+  const [embeddingsVariableDeclaration, embedsAssignment] =
+    defineIdiomStatements(
+      ts,
+      factory,
+      moduleDef,
+      idiomResolverParameterName,
+      toolId,
+      toolIdentifier,
+      comment,
+    );
+
   // Create and return an IIFE wrapper.
 
   const iifeExpression = factory.createCallExpression(
     factory.createArrowFunction(
       undefined, // modifiers,
       undefined, // typeParameters,
-      [funcParameterDeclaration],
+      [
+        funcParameterDeclaration,
+        ...(idiomResolverParameterDeclaration !== undefined ?
+          [idiomResolverParameterDeclaration]
+        : []),
+      ],
       undefined, // type
       undefined, // equalsGreaterThanToken,
       factory.createBlock(
         [
+          embeddingsVariableDeclaration,
           toolFunctionDeclaration,
           idAssignment,
           ...(nameAssignment !== undefined ? [nameAssignment] : []),
+          valueAssignment,
           descriptionAssignment,
           parametersAssignment,
           returnsAssignment,
+          embedsAssignment,
           factory.createReturnStatement(toolIdentifier),
         ],
         true, // multiLine
       ),
     ),
     undefined, // typeArguments
-    [funcExpression],
+    [
+      funcExpression,
+      ...(idiomResolverExpression !== undefined ?
+        [idiomResolverExpression]
+      : []),
+    ],
   );
 
   moveLeadingComments(ts, funcExpression, iifeExpression);

@@ -1,11 +1,11 @@
-import type { Idiom, Tool } from "@toolcog/core";
+import type { Tool } from "@toolcog/core";
 
 interface Toolkit {
   readonly name: string;
 
   readonly version?: string;
 
-  readonly tools?: () => Promise<readonly Idiom<Tool>[]>;
+  readonly tools?: () => Promise<readonly Tool[]>;
 }
 
 type ToolkitSource =

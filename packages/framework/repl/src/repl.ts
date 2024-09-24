@@ -1241,7 +1241,7 @@ class Repl {
           name: "defineTools",
         },
         {
-          name: "defineFunction",
+          name: "definePrompt",
         },
         {
           name: "prompt",
