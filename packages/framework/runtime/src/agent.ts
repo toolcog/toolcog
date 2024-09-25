@@ -1,9 +1,17 @@
+import { deepEqual } from "@toolcog/util";
 import { Emitter } from "@toolcog/util/emit";
 import { AsyncContext } from "@toolcog/util/async";
 import type { EmbeddingVector, ToolSource } from "@toolcog/core";
 import type { Message } from "./message.ts";
 
-interface AgentContextOptions {
+/**
+ * Agent configuration options.
+ *
+ * Toolkits and adapters may augment this type with additional options.
+ */
+interface AgentConfig {}
+
+interface AgentContextOptions extends AgentConfig {
   messages?: Message[] | undefined;
   tools?: ToolSource[] | undefined;
   queryHysteresis?: number | undefined;
@@ -18,6 +26,7 @@ type AgentContextEvents = {
 
 class AgentContext extends Emitter<AgentContextEvents> {
   readonly #parent: AgentContext | null;
+  readonly #config: AgentConfig;
   readonly #messages: Message[];
   readonly #tools: ToolSource[];
   readonly #queryVectors: EmbeddingVector[];
@@ -27,23 +36,35 @@ class AgentContext extends Emitter<AgentContextEvents> {
 
   constructor(
     parent: AgentContext | null = null,
-    options?: AgentContextOptions,
+    options: AgentContextOptions = {},
   ) {
     super();
 
+    const {
+      messages = [],
+      tools = [],
+      queryHysteresis = parent?.queryHysteresis ?? 5,
+      queryDecay = parent?.queryDecay ?? 0.8,
+      ...config
+    } = options;
+
     this.#parent = parent;
-    this.#messages = options?.messages ?? [];
-    this.#tools = options?.tools ?? [];
+    this.#config = config;
+    this.#messages = messages;
+    this.#tools = tools;
 
     this.#queryVectors = [];
-    this.#queryHysteresis =
-      options?.queryHysteresis ?? parent?.queryHysteresis ?? 5;
-    this.#queryDecay = options?.queryDecay ?? parent?.queryDecay ?? 0.8;
+    this.#queryHysteresis = queryHysteresis;
+    this.#queryDecay = queryDecay;
     this.#query = undefined;
   }
 
   get parent(): AgentContext | null {
     return this.#parent;
+  }
+
+  get config(): AgentConfig {
+    return this.#config;
   }
 
   get messages(): readonly Message[] {
@@ -98,36 +119,20 @@ class AgentContext extends Emitter<AgentContextEvents> {
 
   /** @internal */
   addQueryVector(queryVector: EmbeddingVector): void {
-    const vectorCount = this.#queryVectors.length;
-    if (vectorCount !== 0) {
-      const lastVector = this.#queryVectors[vectorCount - 1]!;
-      if (queryVector === lastVector) {
-        return;
-      }
-      const vectorDim = lastVector.length;
-      if (queryVector.length !== vectorDim) {
-        throw new Error("Dimension mismatch");
-      }
-      let i = 0;
-      while (i < vectorDim) {
-        if (queryVector[i]! !== lastVector[i]!) {
-          break;
-        }
-        i += 1;
-      }
-      if (i === vectorDim) {
-        return;
-      }
+    const vectors = this.#queryVectors;
+    const vectorCount = vectors.length;
+    if (deepEqual(queryVector, vectors[vectorCount - 1])) {
+      return;
     }
 
     if (vectorCount >= this.#queryHysteresis) {
-      this.#queryVectors.splice(0, vectorCount - this.#queryHysteresis + 1);
+      vectors.splice(0, vectorCount - this.#queryHysteresis + 1);
     }
-    this.#queryVectors.push(queryVector);
+    vectors.push(queryVector);
   }
 
   /** @internal */
-  decayedQueryVector(): EmbeddingVector {
+  averageQueryVector(): EmbeddingVector {
     const vectors = this.#queryVectors;
     const vectorCount = vectors.length;
     if (vectorCount === 0) {
@@ -233,6 +238,10 @@ class AgentContext extends Emitter<AgentContextEvents> {
   }
 }
 
+const currentConfig = (): AgentConfig | undefined => {
+  return AgentContext.get()?.config;
+};
+
 const currentQuery = (): string | undefined => {
   return AgentContext.get()?.query;
 };
@@ -251,5 +260,12 @@ const useTools = <const T extends readonly ToolSource[]>(tools: T): T => {
   return context.useTools(tools);
 };
 
-export type { AgentContextOptions, AgentContextEvents };
-export { AgentContext, currentQuery, currentTools, useTool, useTools };
+export type { AgentConfig, AgentContextOptions, AgentContextEvents };
+export {
+  AgentContext,
+  currentConfig,
+  currentQuery,
+  currentTools,
+  useTool,
+  useTools,
+};

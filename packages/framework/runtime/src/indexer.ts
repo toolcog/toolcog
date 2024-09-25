@@ -143,7 +143,7 @@ const indexer = (<T extends readonly unknown[]>(
 
     if (agentContext !== null) {
       agentContext.addQueryVector(query);
-      query = agentContext.decayedQueryVector();
+      query = agentContext.averageQueryVector();
     }
 
     let neighbors = nearest(model, query, options.limit);
