@@ -12,23 +12,6 @@ export type {
   Message,
 } from "./message.ts";
 
-export type { AgentContextOptions, AgentContextEvents } from "./agent.ts";
-export {
-  AgentContext,
-  currentQuery,
-  currentTools,
-  useTool,
-  useTools,
-} from "./agent.ts";
-
-export { cosineDistance, indexer } from "./indexer.ts";
-
-export type { Plugin, PluginSource } from "./plugin.ts";
-export { resolvePlugin, resolvePlugins } from "./plugin.ts";
-
-export type { Toolkit, ToolkitSource } from "./toolkit.ts";
-export { resolveToolkit, resolveToolkits } from "./toolkit.ts";
-
 export type {
   IdiomDef,
   IndexDef,
@@ -58,6 +41,28 @@ export {
   createInventory,
   resolveInventory,
 } from "./inventory.ts";
+
+export type { Plugin, PluginSource } from "./plugin.ts";
+export { resolvePlugin, resolvePlugins } from "./plugin.ts";
+
+export type { Toolkit, ToolkitSource } from "./toolkit.ts";
+export { resolveToolkit, resolveToolkits } from "./toolkit.ts";
+
+export type {
+  AgentConfig,
+  AgentContextOptions,
+  AgentContextEvents,
+} from "./agent.ts";
+export {
+  AgentContext,
+  currentConfig,
+  currentQuery,
+  currentTools,
+  useTool,
+  useTools,
+} from "./agent.ts";
+
+export { cosineDistance, indexer } from "./indexer.ts";
 
 export type { RuntimeConfigSource, RuntimeConfig } from "./runtime.ts";
 export { Runtime, embed, index, generate, resolveIdiom } from "./runtime.ts";
