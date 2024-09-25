@@ -2,8 +2,8 @@ import type ts from "typescript";
 import { getCommentForNode } from "./comment.ts";
 
 interface NodeIdOptions {
-  package?: boolean | undefined;
-  module?: boolean | undefined;
+  package?: string | boolean | undefined;
+  module?: string | boolean | undefined;
 
   host?: ts.ModuleResolutionHost | undefined;
   program?: ts.Program | undefined;
@@ -111,7 +111,9 @@ const getNodePath = (
 
   if (ts.isSourceFile(node)) {
     let packageName: string | undefined;
-    if (options?.package === true) {
+    if (typeof options?.package === "string") {
+      packageName = options?.package;
+    } else if (options?.package === true) {
       let packageJsonInfo = node.packageJsonScope;
       if (
         packageJsonInfo === undefined &&
@@ -133,7 +135,9 @@ const getNodePath = (
     }
 
     let moduleName: string | undefined;
-    if (options?.module === true && options.program !== undefined) {
+    if (typeof options?.module === "string") {
+      moduleName = options.module;
+    } else if (options?.module === true && options.program !== undefined) {
       moduleName = ts.getExternalModuleNameFromPath(
         {
           getCanonicalFileName: options.program.getCanonicalFileName,

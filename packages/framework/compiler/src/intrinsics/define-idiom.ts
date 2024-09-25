@@ -105,6 +105,8 @@ const defineIdiomExpression = (
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  packageId: string | boolean,
+  moduleId: string | boolean,
   moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomResolverExpression: ts.Expression | undefined,
@@ -125,8 +127,8 @@ const defineIdiomExpression = (
 
   let idiomId =
     getNodeTypeId(ts, valueExpression, valueType, {
-      package: true,
-      module: true,
+      package: packageId,
+      module: moduleId,
       host,
       program,
     }) ?? "";
