@@ -34,6 +34,9 @@ interface ToolcogTransformerConfig {
 
   keepIntrinsicImports?: boolean | undefined;
 
+  packageId?: boolean | string | undefined;
+  moduleId?: boolean | string | undefined;
+
   standalone?: boolean | undefined;
 
   manifestFile?: string | undefined;
@@ -95,6 +98,9 @@ const transformToolcog = (
     ],
     "@toolcog/core",
   );
+
+  const packageId = config?.packageId ?? true;
+  const moduleId = config?.moduleId ?? true;
 
   const standalone = config?.standalone ?? false;
 
@@ -286,14 +292,14 @@ const transformToolcog = (
       manifest = createManifest();
     }
 
-    const moduleId = getNodeId(ts, sourceFile, {
+    const sourceFileId = getNodeId(ts, sourceFile, {
       package: true,
       module: true,
       host,
       program,
     })!;
     const moduleDef = createModuleDef();
-    manifest.modules[moduleId] = moduleDef;
+    manifest.modules[sourceFileId] = moduleDef;
 
     // Transform the source file.
     const transformNode = (node: ts.Node): ts.Node => {
@@ -312,6 +318,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           intrinsicTypes.AnyIdiom,
           idiomResolverExpression,
@@ -337,6 +345,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           intrinsicTypes.AnyIdiom,
           intrinsicTypes.AnyIdioms,
@@ -364,6 +374,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           intrinsicTypes.AnyIdiom,
           intrinsicTypes.AnyIdioms,
@@ -389,6 +401,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           intrinsicTypes.AnyTool,
           idiomResolverExpression,
@@ -414,6 +428,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           intrinsicTypes.AnyTool,
           intrinsicTypes.AnyTools,
@@ -439,6 +455,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           idiomResolverExpression,
           generatorExpression!,
@@ -461,6 +479,8 @@ const transformToolcog = (
           factory,
           checker,
           addDiagnostic,
+          packageId,
+          moduleId,
           moduleDef,
           generatorExpression!,
           contextToolsExpression,

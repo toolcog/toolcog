@@ -15,6 +15,8 @@ const definePromptExpression = (
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  packageId: string | boolean,
+  moduleId: string | boolean,
   moduleDef: ModuleDef,
   idiomResolverExpression: ts.Expression | undefined,
   generatorExpression: ts.Expression,
@@ -37,8 +39,8 @@ const definePromptExpression = (
 
   let promptId =
     getNodeId(ts, callExpression, {
-      package: true,
-      module: true,
+      package: packageId,
+      module: moduleId,
       host,
       program,
     }) ?? "";

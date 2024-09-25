@@ -10,6 +10,8 @@ const defineIndexExpression = (
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  packageId: string | boolean,
+  moduleId: string | boolean,
   moduleDef: ModuleDef,
   idiomType: ts.Type,
   idiomsType: ts.Type,
@@ -27,8 +29,8 @@ const defineIndexExpression = (
 
   let indexId =
     getNodeId(ts, callExpression, {
-      package: true,
-      module: true,
+      package: packageId,
+      module: moduleId,
       host,
       program,
     }) ?? "";
@@ -285,6 +287,8 @@ const defineIndexExpression = (
     factory,
     checker,
     addDiagnostic,
+    packageId,
+    moduleId,
     moduleDef,
     idiomType,
     idiomsType,

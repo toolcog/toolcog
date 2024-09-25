@@ -17,6 +17,8 @@ const defineToolExpression = (
   factory: ts.NodeFactory,
   checker: ts.TypeChecker,
   addDiagnostic: (diagnostic: ts.Diagnostic) => void,
+  packageId: string | boolean,
+  moduleId: string | boolean,
   moduleDef: ModuleDef,
   toolType: ts.Type,
   idiomResolverExpression: ts.Expression | undefined,
@@ -39,8 +41,8 @@ const defineToolExpression = (
 
   let toolId =
     getNodeTypeId(ts, funcExpression, funcType, {
-      package: true,
-      module: true,
+      package: packageId,
+      module: moduleId,
       host,
       program,
     }) ?? "";
