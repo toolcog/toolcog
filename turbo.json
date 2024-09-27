@@ -18,7 +18,9 @@
         "rollup.config.js",
         ".toolcog/precache.yaml",
         "src/**",
-        "*/src/**"
+        "*/src/**",
+        "!src/**/*.test.ts",
+        "!*/src/**/*.test.ts"
       ],
       "outputs": ["dist/**", "toolcog-manifest.yaml"],
       "outputLogs": "new-only",

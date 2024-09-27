@@ -100,6 +100,11 @@
       "import": "./dist/tui.js",
       "require": "./dist/tui.cjs"
     },
+    "./nlp": {
+      "types": "./dist/nlp.d.ts",
+      "import": "./dist/nlp.js",
+      "require": "./dist/nlp.cjs"
+    },
     "./graphql": {
       "types": "./dist/graphql.d.ts",
       "import": "./dist/graphql.js",
