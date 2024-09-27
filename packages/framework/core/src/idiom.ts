@@ -69,14 +69,48 @@ const defineIdioms: {
  * Options for configuring an {@link Index} function.
  */
 interface IndexConfig extends EmbedderConfig {
+  /**
+   * The default maximum number of results to return.
+   */
   limit?: number | undefined;
+
+  /**
+   * The default distance penalty rate to apply to older prompts.
+   * Used to artificially reduce the relevance of older prompts without
+   * entirely eliminating their influence.
+   *
+   * The penalty factor for any given prompt embedding is computed as
+   * `Math.pow(1 + historyPenalty, indexFromEnd)`. The distance between a
+   * given prompt embedding and an index entry is multiplied by the penalty
+   * factory to obtain an effective distance metric. The effective distance
+   * metric is then used to rank the similarity of the match.
+   */
+  historyPenalty?: number | undefined;
 }
 
 /**
  * Options for controlling an {@link Index} call.
  */
 interface IndexOptions extends EmbedderOptions {
+  /**
+   * The maximum number of results to return.
+   */
   limit?: number | undefined;
+
+  /**
+   * The distance penalty rate to apply to older prompts.
+   * Used to artificially reduce the relevance of older prompts without
+   * entirely eliminating their influence.
+   *
+   * The penalty factor for any given prompt embedding is computed as
+   * `Math.pow(1 + historyPenalty, indexFromEnd)`. The distance between a
+   * given prompt embedding and an index entry is multiplied by the penalty
+   * factory to obtain an effective distance metric. The effective distance
+   * metric is then used to rank the similarity of the match.
+   *
+   * @default 0.1
+   */
+  historyPenalty?: number | undefined;
 }
 
 /**
@@ -85,8 +119,8 @@ interface IndexOptions extends EmbedderOptions {
 interface Index<T extends readonly unknown[]> {
   /**
    * Returns the indexed values that are most similar to the given `query`.
-   * The `query` will be converted into an `EmbeddingVector`, if it isn't
-   * already one.
+   * `query` should be a string, but is typed as `unknown` to make `Index`
+   * compatible with `ToolSource`.
    */
   (query?: unknown, options?: IndexOptions): Promise<T[number][]>;
 

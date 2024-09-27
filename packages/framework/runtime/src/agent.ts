@@ -1,7 +1,7 @@
-import { deepEqual } from "@toolcog/util";
 import { Emitter } from "@toolcog/util/emit";
 import { AsyncContext } from "@toolcog/util/async";
-import type { EmbeddingVector, ToolSource } from "@toolcog/core";
+import { splitSentences } from "@toolcog/util/nlp";
+import type { Embeddings, ToolSource } from "@toolcog/core";
 import type { Message } from "./message.ts";
 
 /**
@@ -12,27 +12,26 @@ import type { Message } from "./message.ts";
 interface AgentConfig {}
 
 interface AgentContextOptions extends AgentConfig {
-  messages?: Message[] | undefined;
   tools?: ToolSource[] | undefined;
-  queryHysteresis?: number | undefined;
-  queryDecay?: number | undefined;
+  messages?: Message[] | undefined;
+  promptHysteresis?: number | undefined;
+  splitPrompt?: ((prompt: string) => string[]) | boolean | undefined;
 }
 
 type AgentContextEvents = {
-  message: [message: Message, context: AgentContext];
   useTool: [tool: ToolSource, context: AgentContext];
+  message: [message: Message, context: AgentContext];
   spawn: [child: AgentContext, parent: AgentContext];
 };
 
 class AgentContext extends Emitter<AgentContextEvents> {
   readonly #parent: AgentContext | null;
   readonly #config: AgentConfig;
-  readonly #messages: Message[];
   readonly #tools: ToolSource[];
-  readonly #queryVectors: EmbeddingVector[];
-  #queryHysteresis: number;
-  #queryDecay: number;
-  #query: string | undefined;
+  readonly #messages: Message[];
+  readonly #promptEmbeddings: Embeddings[];
+  readonly #promptHysteresis: number;
+  readonly #splitPrompt: ((prompt: string) => string[]) | undefined;
 
   constructor(
     parent: AgentContext | null = null,
@@ -41,22 +40,24 @@ class AgentContext extends Emitter<AgentContextEvents> {
     super();
 
     const {
-      messages = [],
       tools = [],
-      queryHysteresis = parent?.queryHysteresis ?? 5,
-      queryDecay = parent?.queryDecay ?? 0.8,
+      messages = [],
+      promptHysteresis = parent?.promptHysteresis ?? 5,
+      splitPrompt,
       ...config
     } = options;
 
     this.#parent = parent;
     this.#config = config;
-    this.#messages = messages;
     this.#tools = tools;
+    this.#messages = messages;
 
-    this.#queryVectors = [];
-    this.#queryHysteresis = queryHysteresis;
-    this.#queryDecay = queryDecay;
-    this.#query = undefined;
+    this.#promptEmbeddings = [];
+    this.#promptHysteresis = promptHysteresis;
+    this.#splitPrompt =
+      splitPrompt === undefined || splitPrompt === true ? splitSentences
+      : splitPrompt === false ? undefined
+      : splitPrompt;
   }
 
   get parent(): AgentContext | null {
@@ -67,36 +68,24 @@ class AgentContext extends Emitter<AgentContextEvents> {
     return this.#config;
   }
 
-  get messages(): readonly Message[] {
-    return this.#messages;
-  }
-
   get tools(): readonly ToolSource[] {
     return this.#tools;
   }
 
-  /** @internal */
-  get queryVectors(): readonly EmbeddingVector[] {
-    return this.#queryVectors;
+  get messages(): readonly Message[] {
+    return this.#messages;
   }
 
-  /** @internal */
-  get queryHysteresis(): number {
-    return this.#queryHysteresis;
+  get promptEmbeddings(): readonly Embeddings[] {
+    return this.#promptEmbeddings;
   }
 
-  /** @internal */
-  get queryDecay(): number {
-    return this.#queryDecay;
+  get promptHysteresis(): number {
+    return this.#promptHysteresis;
   }
 
-  get query(): string | undefined {
-    return this.#query;
-  }
-
-  addMessage(message: Message): void {
-    this.#messages.push(message);
-    this.emit("message", message, this);
+  get splitPrompt(): ((prompt: string) => string[]) | undefined {
+    return this.#splitPrompt;
   }
 
   useTool<const T extends ToolSource>(tool: T): T {
@@ -113,76 +102,28 @@ class AgentContext extends Emitter<AgentContextEvents> {
     return tools;
   }
 
-  setQuery(query: string | undefined): void {
-    this.#query = query;
+  addMessage(message: Message): void {
+    this.#messages.push(message);
+    this.emit("message", message, this);
   }
 
-  /** @internal */
-  addQueryVector(queryVector: EmbeddingVector): void {
-    const vectors = this.#queryVectors;
-    const vectorCount = vectors.length;
-    if (deepEqual(queryVector, vectors[vectorCount - 1])) {
-      return;
+  addPrompt(prompt: string): void {
+    const promptEmbeddings = this.#promptEmbeddings;
+    const promptCount = promptEmbeddings.length;
+    if (promptCount >= this.#promptHysteresis) {
+      promptEmbeddings.splice(0, promptCount - this.#promptHysteresis + 1);
     }
 
-    if (vectorCount >= this.#queryHysteresis) {
-      vectors.splice(0, vectorCount - this.#queryHysteresis + 1);
-    }
-    vectors.push(queryVector);
-  }
-
-  /** @internal */
-  averageQueryVector(): EmbeddingVector {
-    const vectors = this.#queryVectors;
-    const vectorCount = vectors.length;
-    if (vectorCount === 0) {
-      throw new Error("No query vectors");
-    } else if (vectorCount === 1) {
-      return vectors[0]!;
-    }
-
-    const vectorDim = vectors[0]!.length;
-    const decayRate = this.#queryDecay;
-
-    const queryVector = new Float32Array(vectorDim);
-    let sumOfWeights = 0;
-
-    // Compute the weighted sum of the query vector embeddings.
-    for (let i = 0; i < vectorCount; i += 1) {
-      const vector = vectors[i]!;
-      if (vector.length !== vectorDim) {
-        throw new Error("Dimension mismatch");
-      }
-
-      const weight = Math.pow(decayRate, vectorCount - i - 1);
-      sumOfWeights += weight;
-
-      for (let j = 0; j < vectorDim; j += 1) {
-        queryVector[j]! += vector[j]! * weight;
-      }
-    }
-
-    // Normalize the weighted sum by the total sum of weights.
-    for (let j = 0; j < vectorDim; j += 1) {
-      queryVector[j]! /= sumOfWeights;
-    }
-
-    // Normalize the vector to unit length.
-    const norm = Math.hypot(...queryVector);
-    if (norm !== 0) {
-      for (let j = 0; j < vectorDim; j += 1) {
-        queryVector[j]! /= norm;
-      }
-    }
-
-    return queryVector;
+    const fragments = this.splitPrompt?.(prompt) ?? [prompt];
+    const embeddings = Object.fromEntries(
+      fragments.map((fragment) => [fragment, {}]),
+    );
+    promptEmbeddings.push(embeddings);
   }
 
   clear(): void {
     this.#messages.length = 0;
-    this.#tools.length = 0;
-    this.#queryVectors.length = 0;
-    this.#query = undefined;
+    this.#promptEmbeddings.length = 0;
   }
 
   spawn(options?: AgentContextOptions): AgentContext {
@@ -242,10 +183,6 @@ const currentConfig = (): AgentConfig | undefined => {
   return AgentContext.get()?.config;
 };
 
-const currentQuery = (): string | undefined => {
-  return AgentContext.get()?.query;
-};
-
 const currentTools = (): readonly ToolSource[] => {
   return AgentContext.get()?.tools ?? [];
 };
@@ -261,11 +198,4 @@ const useTools = <const T extends readonly ToolSource[]>(tools: T): T => {
 };
 
 export type { AgentConfig, AgentContextOptions, AgentContextEvents };
-export {
-  AgentContext,
-  currentConfig,
-  currentQuery,
-  currentTools,
-  useTool,
-  useTools,
-};
+export { AgentContext, currentConfig, currentTools, useTool, useTools };

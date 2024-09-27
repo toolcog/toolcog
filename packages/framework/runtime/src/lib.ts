@@ -56,7 +56,6 @@ export type {
 export {
   AgentContext,
   currentConfig,
-  currentQuery,
   currentTools,
   useTool,
   useTools,

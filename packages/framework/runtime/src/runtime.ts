@@ -16,7 +16,6 @@ import type {
   GeneratorOptions,
   Generator,
 } from "@toolcog/core";
-import { AgentContext } from "./agent.ts";
 import { indexer } from "./indexer.ts";
 import type { Plugin, PluginSource } from "./plugin.ts";
 import { resolvePlugins } from "./plugin.ts";
@@ -199,19 +198,8 @@ class Runtime {
 
   async generate(args: unknown, options?: GeneratorOptions): Promise<unknown> {
     options = this.generatorOptions(options);
-
-    let context: AgentContext | null = null;
-    if (typeof args === "string") {
-      context = AgentContext.get();
-      context?.setQuery(args);
-    }
-
-    try {
-      const generator = await this.generator(options);
-      return await generator(args, options);
-    } finally {
-      context?.setQuery(undefined);
-    }
+    const generator = await this.generator(options);
+    return await generator(args, options);
   }
 
   resolveIdiom(id: string, value: unknown): Embeddings | undefined {

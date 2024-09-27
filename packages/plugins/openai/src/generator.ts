@@ -140,6 +140,8 @@ const generate = (async (
   args: unknown,
   options?: OpenAIGeneratorOptions,
 ): Promise<unknown> => {
+  const context = AgentContext.getOrCreate();
+
   const client =
     options?.openai instanceof OpenAI ?
       options.openai
@@ -159,6 +161,9 @@ const generate = (async (
     args = undefined;
   } else {
     instructions = await resolveInstructions(options?.instructions, args);
+  }
+  if (instructions !== undefined) {
+    context?.addPrompt(instructions);
   }
 
   let jsonMode = options?.jsonMode;
@@ -248,8 +253,6 @@ const generate = (async (
     tools !== undefined && tools.length !== 0 ?
       tools.map(toOpenAITool)
     : undefined;
-
-  const context = AgentContext.getOrCreate();
 
   const systemMessage: OpenAI.ChatCompletionSystemMessageParam | undefined =
     options?.system !== undefined ?

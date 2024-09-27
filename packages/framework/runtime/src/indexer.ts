@@ -3,6 +3,7 @@ import type {
   EmbeddingVector,
   EmbeddingDistance,
   Embedding,
+  Embeddings,
   EmbedderOptions,
   Embedder,
   Idioms,
@@ -35,9 +36,13 @@ const indexer = (<T extends readonly unknown[]>(
 ): Promise<Index<T>> => {
   const nearest = (
     model: EmbeddingModel,
-    query: EmbeddingVector,
-    limit: number | undefined,
+    promptEmbeddingsArray: readonly Embeddings[],
+    options: IndexOptions,
   ): T[number][] | undefined => {
+    const limit = options.limit;
+    const penaltyRate = 1.0 + (options.historyPenalty ?? 0.1);
+
+    const promptEmbeddingsCount = promptEmbeddingsArray.length;
     const distances: number[] = [];
     const values: T[number][] = [];
 
@@ -45,35 +50,45 @@ const indexer = (<T extends readonly unknown[]>(
       let nearestIdiom: number | undefined;
       const idiomEmbeddings = idiom.embeds();
       for (const text in idiomEmbeddings) {
-        const embedding = idiomEmbeddings[text]!;
-        const embeddingVector = embedding[model];
-        if (embeddingVector === undefined) {
-          return undefined; // Trap to load missing embeddings.
+        const idiomEmbedding = idiomEmbeddings[text]!;
+        const idiomEmbeddingVector = idiomEmbedding[model];
+        if (idiomEmbeddingVector === undefined) {
+          return undefined; // Trap to load missing idiom embeddings.
         }
 
-        const distance = index.distance(query, embeddingVector);
-        if (nearestIdiom !== undefined) {
-          if (distance > distances[nearestIdiom]!) {
-            continue;
+        for (let i = 0; i < promptEmbeddingsCount; i += 1) {
+          const penalty = Math.pow(penaltyRate, promptEmbeddingsCount - i - 1);
+
+          const promptEmbeddings = promptEmbeddingsArray[i]!;
+          for (const text in promptEmbeddings) {
+            const promptEmbedding = promptEmbeddings[text]!;
+            const promptVector = promptEmbedding[model]!;
+            const distance =
+              index.distance(promptVector, idiomEmbeddingVector) * penalty;
+            if (nearestIdiom !== undefined) {
+              if (distance > distances[nearestIdiom]!) {
+                continue;
+              }
+              distances.splice(nearestIdiom, 1);
+              values.splice(nearestIdiom, 1);
+              nearestIdiom = undefined;
+            }
+
+            let position = distances.length;
+            while (position > 0 && distance < distances[position - 1]!) {
+              position -= 1;
+            }
+
+            if (limit === undefined || position < limit) {
+              if (limit !== undefined && distances.length === limit) {
+                distances.pop();
+                values.pop();
+              }
+              distances.splice(position, 0, distance);
+              values.splice(position, 0, idiom.value);
+              nearestIdiom = position;
+            }
           }
-          distances.splice(nearestIdiom, 1);
-          values.splice(nearestIdiom, 1);
-          nearestIdiom = undefined;
-        }
-
-        let position = distances.length;
-        while (position > 0 && distance < distances[position - 1]!) {
-          position -= 1;
-        }
-
-        if (limit === undefined || position < limit) {
-          if (limit !== undefined && distances.length === limit) {
-            distances.pop();
-            values.pop();
-          }
-          distances.splice(position, 0, distance);
-          values.splice(position, 0, idiom.value);
-          nearestIdiom = position;
         }
       }
     }
@@ -84,35 +99,35 @@ const indexer = (<T extends readonly unknown[]>(
   const embed = async (
     model: EmbeddingModel,
     embedder: Embedder,
+    embeddingsArray: readonly Embeddings[],
     options: EmbedderOptions | undefined,
   ): Promise<void> => {
     const texts: string[] = [];
-    const embeddings: Embedding[] = [];
+    const textEmbeddings: Embedding[] = [];
 
-    for (const idiom of index.idioms) {
-      const idiomEmbeddings = idiom.embeds();
-      for (const text in idiomEmbeddings) {
-        const embedding = idiomEmbeddings[text]!;
+    for (const embeddings of embeddingsArray) {
+      for (const text in embeddings) {
+        const embedding = embeddings[text]!;
         if (!(model in embedding)) {
           texts.push(text);
-          embeddings.push(embedding);
+          textEmbeddings.push(embedding);
         }
       }
     }
 
     if (texts.length !== 0) {
-      const embeddingVectors = await embedder(texts, options);
-      for (let i = 0; i < embeddingVectors.length; i += 1) {
-        const embedding = embeddings[i] as {
+      const vectors = await embedder(texts, options);
+      for (let i = 0; i < vectors.length; i += 1) {
+        const embedding = textEmbeddings[i] as {
           [Model in EmbeddingModel]?: EmbeddingVector;
         };
-        embedding[model] = embeddingVectors[i]!;
+        embedding[model] = vectors[i]!;
       }
     }
   };
 
   const index = (async (
-    query?: string | EmbeddingVector,
+    query?: readonly Embeddings[] | Embeddings | string,
     options?: IndexOptions,
   ): Promise<T[number][]> => {
     const model = options?.model ?? index.model;
@@ -131,29 +146,27 @@ const indexer = (<T extends readonly unknown[]>(
       model,
     };
 
-    const agentContext = AgentContext.get();
-    if (query === undefined) {
-      query = agentContext?.query;
-    }
+    let agentContext: AgentContext | null;
+    let promptEmbeddingsArray: readonly Embeddings[] | undefined;
     if (typeof query === "string") {
-      query = await embedder(query, options);
+      promptEmbeddingsArray = [{ [query]: {} }];
+    } else if (((agentContext = AgentContext.get()), agentContext !== null)) {
+      promptEmbeddingsArray = agentContext.promptEmbeddings;
     } else {
       throw new Error("Unspecified query");
     }
 
-    if (agentContext !== null) {
-      agentContext.addQueryVector(query);
-      query = agentContext.averageQueryVector();
-    }
+    await embed(model, embedder, promptEmbeddingsArray, options);
 
-    let neighbors = nearest(model, query, options.limit);
+    let neighbors = nearest(model, promptEmbeddingsArray, options);
 
     if (neighbors === undefined) {
-      await embed(model, embedder, options);
+      const idiomEmbeddingsArray = index.idioms.map((idiom) => idiom.embeds());
+      await embed(model, embedder, idiomEmbeddingsArray, options);
 
-      neighbors = nearest(model, query, options.limit);
+      neighbors = nearest(model, promptEmbeddingsArray, options);
       if (neighbors === undefined) {
-        throw new Error("Failed to resolve all embeddings");
+        throw new Error("Failed to resolve all idiom embeddings");
       }
     }
 

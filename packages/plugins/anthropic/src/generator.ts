@@ -96,6 +96,8 @@ const generate = (async (
   args: unknown,
   options?: AnthropicGeneratorOptions,
 ): Promise<unknown> => {
+  const context = AgentContext.getOrCreate();
+
   const client =
     options?.anthropic instanceof Anthropic ?
       options.anthropic
@@ -115,6 +117,9 @@ const generate = (async (
     args = undefined;
   } else {
     instructions = await resolveInstructions(options?.instructions, args);
+  }
+  if (instructions !== undefined) {
+    context?.addPrompt(instructions);
   }
 
   const parametersSchema = options?.parameters;
@@ -156,8 +161,6 @@ const generate = (async (
     : undefined;
 
   let toolChoice = options?.tool_choice;
-
-  const context = AgentContext.getOrCreate();
 
   const system = options?.system;
 
