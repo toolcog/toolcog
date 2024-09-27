@@ -43,6 +43,7 @@ export type {
 } from "./graphql.ts";
 export {
   defineSelection,
+  enumValue,
   formatOperation,
   formatQuery,
   formatMutation,

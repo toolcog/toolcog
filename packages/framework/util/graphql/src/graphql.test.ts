@@ -1,5 +1,5 @@
 import { it, expect } from "vitest";
-import { formatQuery } from "./graphql.ts";
+import { enumValue, formatQuery, formatMutation } from "./graphql.ts";
 
 it("should format queries", () => {
   const query = formatQuery({
@@ -267,6 +267,31 @@ it("should format queries with inline fragments", () => {
       mtime
       ctime
     }
+  }
+}`);
+});
+
+it("should format mutations with input values", () => {
+  const mutation = formatMutation({
+    post: {
+      arguments: {
+        input: {
+          value: {
+            title: "New Idea",
+            category: enumValue("IDEAS"),
+          },
+        },
+      },
+      fields: {
+        title: "String!",
+        message: "String!",
+      },
+    },
+  });
+  expect(mutation).toBe(`mutation {
+  post(input: { title: "New Idea", category: IDEAS }) {
+    title
+    message
   }
 }`);
 });
