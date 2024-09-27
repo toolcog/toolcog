@@ -483,6 +483,64 @@ const formatTypeName = (parameter: Parameter): string => {
 };
 
 /** @internal */
+const enumSymbol = Symbol("graphql.enumValue");
+
+/**
+ * Returns an opaque object that serializes as a GraphQL enum input value.
+ */
+const enumValue = (value: string): object => {
+  return {
+    [enumSymbol]: value,
+  };
+};
+
+/** @internal */
+const formatValue = (value: unknown): string => {
+  let output: string;
+  if (value === null) {
+    output = "null";
+  } else if (typeof value === "boolean") {
+    output = value ? "true" : "false";
+  } else if (typeof value === "number") {
+    output = String(value);
+  } else if (typeof value === "string") {
+    output = JSON.stringify(value);
+  } else if (Array.isArray(value)) {
+    output = "[";
+    for (let i = 0; i < value.length; i += 1) {
+      if (i !== 0) {
+        output += ", ";
+      }
+      output += formatValue(value[i]);
+    }
+    output += "]";
+  } else if (typeof value === "object" && enumSymbol in value) {
+    output = value[enumSymbol] as string;
+  } else if (typeof value === "object") {
+    output = "{";
+    const keys = Object.keys(value);
+    if (keys.length !== 0) {
+      output += " ";
+      for (let i = 0; i < keys.length; i += 1) {
+        const key = keys[i]!;
+        const val = (value as Record<string, unknown>)[key];
+        if (i !== 0) {
+          output += ", ";
+        }
+        output += key + ": " + formatValue(val);
+      }
+      output += " ";
+    }
+    output += "}";
+  } else {
+    throw new Error(
+      "Unsupported GraphQL input value: " + JSON.stringify(value),
+    );
+  }
+  return output;
+};
+
+/** @internal */
 const formatArgument = (name: string, arg: Argument): string => {
   let output = "";
   if (typeof arg === "object" && "parameter" in arg) {
@@ -492,7 +550,7 @@ const formatArgument = (name: string, arg: Argument): string => {
   }
   output += ": ";
   if (typeof arg === "object" && "value" in arg) {
-    output += JSON.stringify(arg.value);
+    output += formatValue(arg.value);
   } else {
     output += "$" + name;
   }
@@ -842,6 +900,7 @@ export type {
 };
 export {
   defineSelection,
+  enumValue,
   formatOperation,
   formatQuery,
   formatMutation,
