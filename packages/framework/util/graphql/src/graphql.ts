@@ -760,11 +760,11 @@ interface Operation<
 > {
   (
     variables: FieldVariablesType<F>,
-  ): [query: string, variables: FieldVariablesType<F>];
+  ): [document: string, variables: FieldVariablesType<F>];
   readonly kind: K;
   readonly name: string | undefined;
   readonly fields: F;
-  readonly query: string;
+  readonly document: string;
 }
 
 type OperationType<T extends { readonly fields: Fields }> = FieldsType<
@@ -793,18 +793,18 @@ const createOperation: {
     name = undefined;
   }
 
-  const query = formatOperation(kind, name, fields);
+  const document = formatOperation(kind, name, fields);
 
   const operation = Object.assign(
     (
       variables: FieldVariablesType<Fields>,
-    ): [query: string, variables: FieldVariablesType<Fields>] => {
-      return [operation.query, variables];
+    ): [document: string, variables: FieldVariablesType<Fields>] => {
+      return [operation.document, variables];
     },
     {
       kind,
       fields,
-      query,
+      document,
     },
   );
   Object.defineProperty(operation, "name", {
