@@ -1,3 +1,5 @@
+/** @module . */
+
 export { typeToSchema, signatureToSchema, callSiteToSchema } from "./schema.ts";
 
 export {
@@ -27,3 +29,5 @@ export {
   toolcogTransformer,
   toolcogTransformer as default,
 } from "./transformer.ts";
+
+export { version } from "./package-info.ts";

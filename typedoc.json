@@ -1,0 +1,16 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "extends": ["./typedoc.base.json"],
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/framework/util",
+    "packages/framework/core",
+    "packages/framework/runtime",
+    "packages/framework/compiler",
+    "packages/framework/repl",
+    "packages/adapters/node",
+    "packages/plugins/anthropic",
+    "packages/plugins/openai",
+    "packages/toolcog"
+  ]
+}

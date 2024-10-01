@@ -1,5 +1,8 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "excludeInternal": true,
-  "excludePrivate": true
+  "excludePrivate": true,
+  "hideGenerator": true,
+  "hideParameterTypesInTitle": false,
+  "readme": "none"
 }

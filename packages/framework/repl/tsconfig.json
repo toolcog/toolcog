@@ -2,8 +2,11 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../../tsconfig.base.json",
   "include": ["src"],
-  "exclude": ["node_modules", "dist"],
-  "compilerOptions": {
-    "types": ["node", "ts-expose-internals"]
-  }
+  "exclude": ["**/*.test.ts"],
+  "references": [
+    { "path": "../util" },
+    { "path": "../core" },
+    { "path": "../runtime" },
+    { "path": "../compiler" }
+  ]
 }

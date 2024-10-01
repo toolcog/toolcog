@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { Runtime } from "@toolcog/runtime";
-import { createCompilerCommand, version } from "@toolcog/compiler/cli";
+import { version } from "@toolcog/compiler";
+import { createCompilerCommand } from "@toolcog/compiler/cli";
 
 const runtime = await Runtime.create({
   embedder: {

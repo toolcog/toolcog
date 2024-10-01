@@ -17,30 +17,37 @@
     "toolcog-compiler": "./bin/toolcog-compiler.js"
   },
   "scripts": {
-    "build": "rollup --config",
+    "generate:package-info": "node ../../../scripts/generate-package-info",
+    "build:esm": "tsc --build",
+    "build:cjs": "swc --config-file ../../../swc.cjs.json --strip-leading-paths --out-file-extension cjs --out-dir dist src",
+    "build": "pnpm run build:esm && pnpm run build:cjs",
     "check": "tsc --noEmit",
-    "lint": "eslint src/ */src/",
-    "format": "prettier --check src/ */src/",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules"
+    "clean": "rimraf .swc .turbo dist",
+    "clean-all": "rimraf src/package-info.ts .swc .turbo dist node_modules",
+    "postinstall": "pnpm run generate:package-info"
   },
   "files": [
     "bin/",
-    "dist/"
+    "dist/",
+    "src/"
   ],
   "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
+      "source": "./src/lib.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     },
     "./cli": {
-      "types": "./dist/cli.d.ts",
-      "import": "./dist/cli.js",
-      "require": "./dist/cli.cjs"
+      "types": "./dist/cli/mod.d.ts",
+      "source": "./src/cli/mod.ts",
+      "import": "./dist/cli/mod.js",
+      "require": "./dist/cli/mod.cjs"
     }
   },
   "peerDependencies": {
@@ -58,12 +65,6 @@
     "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
-    "eslint": "catalog:build",
-    "prettier": "catalog:build",
-    "rimraf": "catalog:build",
-    "rollup": "catalog:build",
-    "ts-expose-internals": "catalog:build",
-    "tslib": "catalog:build",
     "typescript": "catalog:build"
   }
 }
