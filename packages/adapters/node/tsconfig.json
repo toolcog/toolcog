@@ -1,9 +1,13 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "../../../tsconfig.base.json",
-  "include": ["src", "*/src"],
-  "exclude": ["node_modules", "dist"],
-  "compilerOptions": {
-    "types": ["node", "ts-expose-internals"]
-  }
+  "include": ["src"],
+  "exclude": ["**/*.test.ts"],
+  "references": [
+    { "path": "../../framework/util" },
+    { "path": "../../framework/core" },
+    { "path": "../../framework/runtime" },
+    { "path": "../../framework/compiler" },
+    { "path": "../../framework/repl" }
+  ]
 }

@@ -1,5 +1,5 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "extends": ["../../../typedoc.base.json"],
-  "entryPoints": ["src/lib.ts"]
+  "entryPoints": ["src/lib.ts", "src/cli/mod.ts"]
 }

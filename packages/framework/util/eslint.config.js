@@ -4,8 +4,8 @@ export default [
   ...config,
   {
     ignores: [
-      "emit/src/emitter.ts", // crashes typescript-eslint 8.6
-      "tty/src/width.ts", // takes an eternity to lint
+      "src/emit/emitter.ts", // crashes typescript-eslint 8.6
+      "src/tty/width.ts", // takes an eternity to lint
     ],
   },
 ];

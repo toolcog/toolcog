@@ -1,3 +1,5 @@
+/** @module . */
+
 export { deepEqual } from "./equal.ts";
 
 export {

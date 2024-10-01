@@ -1,3 +1,3 @@
 export { createToolcogCommand } from "./toolcog.ts";
 
-export const version = __version__;
+export { version } from "./package-info.ts";

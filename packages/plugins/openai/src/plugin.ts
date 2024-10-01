@@ -7,6 +7,7 @@ import type {
   Generator,
 } from "@toolcog/core";
 import type { Plugin } from "@toolcog/runtime";
+import { version } from "./package-info.ts";
 import type { OpenAIEmbedderConfig } from "./embedder.ts";
 import { embedder } from "./embedder.ts";
 import type { OpenAIGeneratorConfig } from "./generator.ts";
@@ -30,7 +31,7 @@ const openai = (config?: OpenAIPluginConfig): Plugin => {
 
   return {
     name: "openai",
-    version: __version__,
+    version,
 
     embedder: (options?: EmbedderOptions): Promise<Embedder | undefined> => {
       return Promise.resolve(

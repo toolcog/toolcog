@@ -13,6 +13,7 @@ import type { Style } from "@toolcog/util/tty";
 import { stylize, wrapText } from "@toolcog/util/tty";
 import { toolcogTransformer } from "@toolcog/compiler";
 import { AgentContext, Job, generate, currentTools } from "@toolcog/runtime";
+import { version } from "./package-info.ts";
 import { classifyInput } from "./classify-input.ts";
 import { transformImportDeclaration } from "./transform-import.ts";
 import { transformTopLevelAwait } from "./transform-await.ts";
@@ -265,7 +266,7 @@ class Repl {
   }
 
   get version(): string {
-    return __version__;
+    return version;
   }
 
   get input(): NodeJS.ReadableStream {

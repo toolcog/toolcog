@@ -6,7 +6,13 @@
 node_modules/
 
 # Build outputs
+coverage/
 dist/
+typedoc/
 
 # Build caches
+.swc/
 .turbo/
+
+# Generated files
+package-info.ts

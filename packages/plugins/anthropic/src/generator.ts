@@ -280,7 +280,16 @@ const generate = (async (
 
         const toolResult = Job.spawn(tool.id, async (toolJob) => {
           return AgentContext.spawn(undefined, async () => {
-            const result = await callTool(tool, block.input);
+            let result: string;
+            try {
+              result = await callTool(tool, block.input);
+            } catch (error) {
+              if (!(error instanceof Error)) {
+                throw error;
+              }
+              console.error(error);
+              result = String(error.message);
+            }
 
             toolJob.finish(result);
 

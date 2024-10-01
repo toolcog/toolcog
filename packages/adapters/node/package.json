@@ -17,52 +17,63 @@
     "toolcog-node": "./bin/toolcog-node.js"
   },
   "scripts": {
-    "build": "rollup --config",
+    "generate:package-info": "node ../../../scripts/generate-package-info",
+    "build:esm": "tsc --build",
+    "build:cjs": "swc --config-file ../../../swc.cjs.json --strip-leading-paths --out-file-extension cjs --out-dir dist src",
+    "build": "pnpm run build:esm && pnpm run build:cjs",
     "check": "tsc --noEmit",
-    "lint": "eslint src/ */src/",
-    "format": "prettier --check src/ */src/",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules"
+    "clean": "rimraf .swc .turbo dist",
+    "clean-all": "rimraf src/package-info.ts .swc .turbo dist node_modules",
+    "postinstall": "pnpm run generate:package-info"
   },
   "files": [
     "bin/",
-    "dist/"
+    "dist/",
+    "src/"
   ],
   "sideEffects": false,
   "imports": {
     "#loader": {
-      "types": "./dist/loader.d.ts",
-      "import": "./dist/loader.js",
-      "require": "./dist/loader.cjs"
+      "types": "./dist/loader/mod.d.ts",
+      "source": "./src/loader/mod.ts",
+      "import": "./dist/loader/mod.js",
+      "require": "./dist/loader/mod.cjs"
     }
   },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
+      "source": "./src/lib.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     },
     "./quiet": {
-      "types": "./dist/quiet.d.ts",
-      "import": "./dist/quiet.js",
-      "require": "./dist/quiet.cjs"
+      "types": "./dist/quiet/mod.d.ts",
+      "source": "./src/quiet/mod.ts",
+      "import": "./dist/quiet/mod.js",
+      "require": "./dist/quiet/mod.cjs"
     },
     "./loader": {
-      "types": "./dist/loader.d.ts",
-      "import": "./dist/loader.js",
-      "require": "./dist/loader.cjs"
+      "types": "./dist/loader/mod.d.ts",
+      "source": "./src/loader/mod.ts",
+      "import": "./dist/loader/mod.js",
+      "require": "./dist/loader/mod.cjs"
     },
     "./register": {
-      "types": "./dist/register.d.ts",
-      "import": "./dist/register.js",
-      "require": "./dist/register.cjs"
+      "types": "./dist/register/mod.d.ts",
+      "source": "./src/register/mod.ts",
+      "import": "./dist/register/mod.js",
+      "require": "./dist/register/mod.cjs"
     },
     "./installer": {
-      "types": "./dist/installer.d.ts",
-      "import": "./dist/installer.js",
-      "require": "./dist/installer.cjs"
+      "types": "./dist/installer/mod.d.ts",
+      "source": "./src/installer/mod.ts",
+      "import": "./dist/installer/mod.js",
+      "require": "./dist/installer/mod.cjs"
     }
   },
   "peerDependencies": {
@@ -83,12 +94,6 @@
     "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
-    "eslint": "catalog:build",
-    "prettier": "catalog:build",
-    "rimraf": "catalog:build",
-    "rollup": "catalog:build",
-    "ts-expose-internals": "catalog:build",
-    "tslib": "catalog:build",
     "typescript": "catalog:build"
   }
 }

@@ -1,5 +1,11 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "extends": ["../../../typedoc.base.json"],
-  "entryPoints": ["src/lib.ts"]
+  "entryPoints": [
+    "src/lib.ts",
+    "src/quiet/mod.ts",
+    "src/loader/mod.ts",
+    "src/register/mod.ts",
+    "src/installer/mod.ts"
+  ]
 }

@@ -3,8 +3,8 @@
   "name": "@toolcog/sandbox",
   "type": "module",
   "scripts": {
-    "dev": "tspc --watch",
-    "build": "tspc && toolcog-compiler inventory generate --precache --manifest dist/toolcog-manifest.yaml --yaml --js",
+    "generate:inventory": "toolcog-compiler inventory generate --precache --manifest dist/toolcog-manifest.yaml --yaml --js",
+    "build": "TSP_COMPILER_TS_PATH=\"node_modules/typescript\" tspc && pnpm run generate:inventory",
     "clean": "rimraf .turbo dist",
     "clean-all": "rimraf .turbo dist node_modules"
   },
@@ -20,8 +20,7 @@
     "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
-    "rimraf": "catalog:build",
     "ts-patch": "catalog:build",
-    "typescript": "catalog:build"
+    "typescript": "catalog:default"
   }
 }

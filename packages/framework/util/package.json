@@ -14,109 +14,133 @@
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
   "scripts": {
-    "build": "rollup --config",
+    "generate:package-info": "node ../../../scripts/generate-package-info",
+    "build:esm": "tsc --build",
+    "build:cjs": "swc --config-file ../../../swc.cjs.json --strip-leading-paths --out-file-extension cjs --out-dir dist src",
+    "build": "pnpm run build:esm && pnpm run build:cjs",
     "check": "tsc --noEmit",
-    "lint": "eslint src/ */src/",
-    "format": "prettier --check src/ */src",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
     "test": "vitest run --passWithNoTests",
     "coverage": "vitest run --coverage",
-    "clean": "rimraf .turbo dist",
-    "clean-all": "rimraf .turbo dist node_modules"
+    "clean": "rimraf .swc .turbo dist",
+    "clean-all": "rimraf src/package-info.ts .swc .turbo dist node_modules",
+    "postinstall": "pnpm run generate:package-info"
   },
   "files": [
-    "dist/"
+    "dist/",
+    "src/"
   ],
   "sideEffects": false,
+  "imports": {
+    "#async-scope": {
+      "bun": {
+        "types": "./dist/async/scope.node.d.ts",
+        "source": "./src/async/scope.node.ts",
+        "import": "./dist/async/scope.node.js",
+        "require": "./dist/async/scope.node.cjs"
+      },
+      "deno": {
+        "types": "./dist/async/scope.node.d.ts",
+        "source": "./src/async/scope.node.ts",
+        "import": "./dist/async/scope.node.js",
+        "require": "./dist/async/scope.node.cjs"
+      },
+      "node": {
+        "types": "./dist/async/scope.node.d.ts",
+        "source": "./src/async/scope.node.ts",
+        "import": "./dist/async/scope.node.js",
+        "require": "./dist/async/scope.node.cjs"
+      },
+      "workerd": {
+        "types": "./dist/async/scope.node.d.ts",
+        "source": "./src/async/scope.node.ts",
+        "import": "./dist/async/scope.node.js",
+        "require": "./dist/async/scope.node.cjs"
+      },
+      "import": {
+        "types": "./dist/async/scope.polyfill.d.ts",
+        "source": "./src/async/scope.polyfill.ts",
+        "import": "./dist/async/scope.polyfill.js",
+        "require": "./dist/async/scope.polyfill.cjs"
+      }
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
+      "source": "./src/lib.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
     },
     "./json": {
-      "types": "./dist/json.d.ts",
-      "import": "./dist/json.js",
-      "require": "./dist/json.cjs"
+      "types": "./dist/json/mod.d.ts",
+      "source": "./src/json/mod.ts",
+      "import": "./dist/json/mod.js",
+      "require": "./dist/json/mod.cjs"
     },
     "./cache": {
-      "types": "./dist/cache.d.ts",
-      "import": "./dist/cache.js",
-      "require": "./dist/cache.cjs"
+      "types": "./dist/cache/mod.d.ts",
+      "source": "./src/cache/mod.ts",
+      "import": "./dist/cache/mod.js",
+      "require": "./dist/cache/mod.cjs"
     },
     "./queue": {
-      "types": "./dist/queue.d.ts",
-      "import": "./dist/queue.js",
-      "require": "./dist/queue.cjs"
+      "types": "./dist/queue/mod.d.ts",
+      "source": "./src/queue/mod.ts",
+      "import": "./dist/queue/mod.js",
+      "require": "./dist/queue/mod.cjs"
     },
     "./emit": {
-      "types": "./dist/emit.d.ts",
-      "import": "./dist/emit.js",
-      "require": "./dist/emit.cjs"
+      "types": "./dist/emit/mod.d.ts",
+      "source": "./src/emit/mod.ts",
+      "import": "./dist/emit/mod.js",
+      "require": "./dist/emit/mod.cjs"
     },
     "./task": {
-      "types": "./dist/task.d.ts",
-      "import": "./dist/task.js",
-      "require": "./dist/task.cjs"
+      "types": "./dist/task/mod.d.ts",
+      "source": "./src/task/mod.ts",
+      "import": "./dist/task/mod.js",
+      "require": "./dist/task/mod.cjs"
     },
     "./async": {
-      "bun": {
-        "types": "./dist/async.node.d.ts",
-        "import": "./dist/async.node.js",
-        "require": "./dist/async.node.cjs"
-      },
-      "deno": {
-        "types": "./dist/async.node.d.ts",
-        "import": "./dist/async.node.js",
-        "require": "./dist/async.node.cjs"
-      },
-      "node": {
-        "types": "./dist/async.node.d.ts",
-        "import": "./dist/async.node.js",
-        "require": "./dist/async.node.cjs"
-      },
-      "workerd": {
-        "types": "./dist/async.node.d.ts",
-        "import": "./dist/async.node.js",
-        "require": "./dist/async.node.cjs"
-      },
-      "default": {
-        "types": "./dist/async.polyfill.d.ts",
-        "import": "./dist/async.polyfill.js",
-        "require": "./dist/async.polyfill.cjs"
-      }
+      "types": "./dist/async/mod.d.ts",
+      "source": "./src/async/mod.ts",
+      "import": "./dist/async/mod.js",
+      "require": "./dist/async/mod.cjs"
     },
     "./timer": {
-      "types": "./dist/timer.d.ts",
-      "import": "./dist/timer.js",
-      "require": "./dist/timer.cjs"
+      "types": "./dist/timer/mod.d.ts",
+      "source": "./src/timer/mod.ts",
+      "import": "./dist/timer/mod.js",
+      "require": "./dist/timer/mod.cjs"
     },
     "./tty": {
-      "types": "./dist/tty.d.ts",
-      "import": "./dist/tty.js",
-      "require": "./dist/tty.cjs"
+      "types": "./dist/tty/mod.d.ts",
+      "source": "./src/tty/mod.ts",
+      "import": "./dist/tty/mod.js",
+      "require": "./dist/tty/mod.cjs"
     },
     "./tui": {
-      "types": "./dist/tui.d.ts",
-      "import": "./dist/tui.js",
-      "require": "./dist/tui.cjs"
+      "types": "./dist/tui/mod.d.ts",
+      "source": "./src/tui/mod.ts",
+      "import": "./dist/tui/mod.js",
+      "require": "./dist/tui/mod.cjs"
     },
     "./nlp": {
-      "types": "./dist/nlp.d.ts",
-      "import": "./dist/nlp.js",
-      "require": "./dist/nlp.cjs"
+      "types": "./dist/nlp/mod.d.ts",
+      "source": "./src/nlp/mod.ts",
+      "import": "./dist/nlp/mod.js",
+      "require": "./dist/nlp/mod.cjs"
     },
     "./graphql": {
-      "types": "./dist/graphql.d.ts",
-      "import": "./dist/graphql.js",
-      "require": "./dist/graphql.cjs"
+      "types": "./dist/graphql/mod.d.ts",
+      "source": "./src/graphql/mod.ts",
+      "import": "./dist/graphql/mod.js",
+      "require": "./dist/graphql/mod.cjs"
     }
   },
   "devDependencies": {
-    "eslint": "catalog:build",
-    "prettier": "catalog:build",
-    "rimraf": "catalog:build",
-    "rollup": "catalog:build",
-    "tslib": "catalog:build",
     "typescript": "catalog:build"
   }
 }

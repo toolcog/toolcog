@@ -2,6 +2,7 @@ import type { ClientOptions } from "@anthropic-ai/sdk";
 import { Dispatcher } from "@toolcog/util/task";
 import type { GeneratorOptions, Generator } from "@toolcog/core";
 import type { Plugin } from "@toolcog/runtime";
+import { version } from "./package-info.ts";
 import type { AnthropicGeneratorConfig } from "./generator.ts";
 import { generator } from "./generator.ts";
 
@@ -20,7 +21,7 @@ const anthropic = (config?: AnthropicPluginConfig): Plugin => {
 
   return {
     name: "anthropic",
-    version: __version__,
+    version,
 
     generator: (options?: GeneratorOptions): Promise<Generator | undefined> => {
       return Promise.resolve(
