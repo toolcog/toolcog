@@ -11,6 +11,7 @@ import ts from "typescript";
 import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
 import { stylize, wrapText } from "@toolcog/util/tty";
+import type { Tool } from "@toolcog/core";
 import { toolcogTransformer } from "@toolcog/compiler";
 import { AgentContext, Job, generate, currentTools } from "@toolcog/runtime";
 import { version } from "./package-info.ts";
@@ -47,6 +48,11 @@ interface ReplOptions {
   terminal?: boolean | undefined;
   styled?: boolean | undefined;
 
+  printMarkdown?: boolean | undefined;
+  printTools?: boolean | undefined;
+  printToolArgs?: boolean | undefined;
+  printToolResults?: boolean | undefined;
+
   imports?: ReplImports[] | undefined;
 
   commands?: Record<string, ReplCommand> | undefined;
@@ -69,6 +75,11 @@ class Repl {
   readonly #terminal: boolean | undefined;
   readonly #styled: boolean;
   readonly #style: Style;
+
+  readonly #printMarkdown: boolean;
+  readonly #printTools: boolean;
+  readonly #printToolArgs: boolean;
+  readonly #printToolResults: boolean;
 
   readonly #imports: readonly ReplImports[];
 
@@ -113,6 +124,11 @@ class Repl {
       (this.#terminal === true ||
         (this.#output as Partial<NodeJS.WriteStream>).isTTY === true);
     this.#style = stylize(this.#styled);
+
+    this.#printMarkdown = options?.printMarkdown ?? false;
+    this.#printTools = options?.printTools ?? false;
+    this.#printToolArgs = options?.printToolArgs ?? false;
+    this.#printToolResults = options?.printToolResults ?? false;
 
     this.#imports = [
       this.coreImports,
@@ -653,6 +669,32 @@ class Repl {
     return line;
   }
 
+  readonly #formatJobOutput = (job: Job): string | undefined => {
+    if (job.name === "llm.tool.call" && !this.#printToolResults) {
+      return undefined;
+    }
+
+    return job.output;
+  };
+
+  readonly #formatJobAttributes = (
+    job: Job,
+  ): Record<string, unknown> | undefined => {
+    const attributes: Record<string, unknown> = {};
+
+    if ("llm.tools" in job.attributes && this.#printTools) {
+      const tools = job.attributes["llm.tools"] as readonly Tool[];
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      attributes["Tools"] = tools.map((tool) => tool.id);
+    }
+
+    if ("llm.tool.args" in job.attributes && this.#printToolArgs) {
+      attributes["Tool Arguments"] = job.attributes["llm.tool.args"];
+    }
+
+    return attributes;
+  };
+
   async #runCommand(
     keyword: string,
     argument: string | undefined,
@@ -674,10 +716,15 @@ class Repl {
   }
 
   async #runLang(input: string): Promise<unknown> {
-    return await Job.spawn(undefined, async (root) => {
+    return await Job.spawn("lang", async (root) => {
       // Print job updates.
       const finished = reportJobs(
-        { root },
+        {
+          root,
+          printMarkdown: this.#printMarkdown,
+          formatOutput: this.#formatJobOutput,
+          formatAttributes: this.#formatJobAttributes,
+        },
         {
           input: this.#input,
           output: this.#output,
@@ -720,10 +767,15 @@ class Repl {
   }
 
   async #runCode(input: string): Promise<Record<string, unknown> | undefined> {
-    return await Job.spawn(undefined, async (root) => {
+    return await Job.spawn("code", async (root) => {
       // Print job updates.
       const finished = reportJobs(
-        { root },
+        {
+          root,
+          printMarkdown: this.#printMarkdown,
+          formatOutput: this.#formatJobOutput,
+          formatAttributes: this.#formatJobAttributes,
+        },
         {
           input: this.#input,
           output: this.#output,

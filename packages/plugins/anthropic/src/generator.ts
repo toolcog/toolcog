@@ -97,6 +97,7 @@ const generate = (async (
   options?: AnthropicGeneratorOptions,
 ): Promise<unknown> => {
   const context = AgentContext.getOrCreate();
+  const root = Job.get();
 
   const client =
     options?.anthropic instanceof Anthropic ?
@@ -151,6 +152,9 @@ const generate = (async (
   }
 
   const tools = await resolveTools(options?.tools, args);
+  if (root !== null) {
+    root.setAttribute("llm.tools", tools);
+  }
 
   const anthropicTools =
     returnTool !== undefined || (tools !== undefined && tools.length !== 0) ?
@@ -214,7 +218,9 @@ const generate = (async (
 
     let message: Anthropic.Message | undefined;
 
-    await Job.spawn(model, async (job) => {
+    await Job.spawn("llm.generate", async (job) => {
+      job.update({ title: model });
+
       const response = await dispatcher.enqueue(
         () => createMessage(client, request, { signal }),
         { signal },
@@ -278,29 +284,7 @@ const generate = (async (
           throw new Error("Unknown tool " + JSON.stringify(block.name));
         }
 
-        const toolResult = Job.spawn(tool.id, async (toolJob) => {
-          return AgentContext.spawn(undefined, async () => {
-            let result: string;
-            try {
-              result = await callTool(tool, block.input);
-            } catch (error) {
-              if (!(error instanceof Error)) {
-                throw error;
-              }
-              console.error(error);
-              result = String(error.message);
-            }
-
-            toolJob.finish(result);
-
-            return {
-              type: "tool_result",
-              tool_use_id: block.id,
-              content: result,
-            } satisfies Anthropic.ToolResultBlockParam;
-          });
-        });
-
+        const toolResult = callTool(block.id, tool, block.input);
         toolResults.push(toolResult);
       }
 
@@ -509,42 +493,66 @@ const createPrompt = (
   return prompt;
 };
 
-const parseToolArguments = (tool: Tool, args: unknown): unknown[] => {
-  const parametersSchema = tool.parameters;
-  const parameters = parametersSchema?.properties;
-  if (parameters === undefined) {
-    return [];
-  }
+const callTool = async (
+  toolCallId: string,
+  tool: Tool,
+  args: unknown,
+): Promise<Anthropic.ToolResultBlockParam> => {
+  return Job.spawn("llm.tool.call", async (job) => {
+    job.update({ title: tool.id });
 
-  const parsedArgs = args as Record<string, unknown> | null | undefined;
-  if (
-    parsedArgs === undefined ||
-    parsedArgs === null ||
-    typeof parsedArgs !== "object"
-  ) {
-    throw new Error(
-      "Invalid arguments " +
-        JSON.stringify(parsedArgs) +
-        " for tool " +
-        JSON.stringify(tool.name),
-    );
-  }
+    const toolOutput = await AgentContext.spawn(undefined, async () => {
+      let toolOutput: string;
+      try {
+        const parsedArgs = args as Record<string, unknown> | null | undefined;
+        if (
+          parsedArgs === undefined ||
+          parsedArgs === null ||
+          typeof parsedArgs !== "object"
+        ) {
+          throw new Error(
+            "Invalid arguments " +
+              JSON.stringify(parsedArgs) +
+              " for tool " +
+              JSON.stringify(tool.name),
+          );
+        }
 
-  return Object.entries(parameters).map(([parameterName, parameterSchema]) => {
-    const argument = parsedArgs[parameterName];
-    // TODO: Validate argument.
-    return argument;
+        job.setAttribute("llm.tool.args", parsedArgs);
+
+        const toolParameters = tool.parameters?.properties ?? {};
+        const toolArguments = Object.entries(toolParameters).map(
+          ([parameterName, parameterSchema]) => {
+            const toolArgument = parsedArgs[parameterName];
+            // TODO: Validate argument.
+            return toolArgument;
+          },
+        );
+
+        const toolResult = await Promise.resolve(
+          tool.call(undefined, ...toolArguments),
+        );
+
+        toolOutput = formatJson(toolResult, tool.returns);
+      } catch (error) {
+        if (!(error instanceof Error)) {
+          throw error;
+        }
+        console.error(error);
+        toolOutput = String(error.message);
+      }
+
+      return toolOutput;
+    });
+
+    job.finish({ output: toolOutput });
+
+    return {
+      type: "tool_result",
+      tool_use_id: toolCallId,
+      content: toolOutput,
+    } satisfies Anthropic.ToolResultBlockParam;
   });
-};
-
-const callTool = async (tool: Tool, args: unknown): Promise<string> => {
-  const toolArguments = parseToolArguments(tool, args);
-
-  const toolResult = await Promise.resolve(
-    tool.call(undefined, ...toolArguments),
-  );
-
-  return formatJson(toolResult, tool.returns);
 };
 
 export type { AnthropicGeneratorConfig, AnthropicGeneratorOptions };

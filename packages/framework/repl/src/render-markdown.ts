@@ -83,6 +83,21 @@ const markdownTheme: MarkdownTheme = {
   text: (text: string) => text,
 };
 
+const markdownTextTheme: MarkdownTheme = {
+  ...markdownTheme,
+  h1: (text: string) => style.magentaBright(style.bold(style.underline(text))),
+  h2: (text: string) => style.magenta(style.bold(style.underline(text))),
+  h3: (text: string) => style.magenta(style.bold(text)),
+  h4: (text: string) => style.gray(style.bold(text)),
+  h5: (text: string) => style.dim(style.bold(text)),
+  h6: (text: string) => style.dim(style.bold(style.italic(text))),
+  strong: (text: string) => style.bold(text),
+  em: (text: string) => style.italic(text),
+  codespan: (text: string) => style.yellow(text),
+  del: (text: string) => style.red(style.strikethrough(text)),
+  url: (url: string) => link(style.blue(style.underline(url)), url),
+};
+
 const renderMarkdown = (
   tokens: Token[] & { links?: Links },
   theme: MarkdownTheme = markdownTheme,
@@ -91,6 +106,7 @@ const renderMarkdown = (
   top: boolean = true,
 ): string => {
   let output = "";
+
   for (let i = 0; i < tokens.length; i += 1) {
     const token = tokens[i] as MarkedToken;
     if (token.type === "space") {
@@ -354,6 +370,7 @@ const renderMarkdownInline = (
   theme: MarkdownTheme,
 ): string => {
   let output = "";
+
   for (const token of tokens as MarkedToken[]) {
     if (token.type === "escape") {
       output += token.text;
@@ -395,6 +412,7 @@ const renderMarkdownInline = (
       throw new Error("Unexpected token " + JSON.stringify(token.type));
     }
   }
+
   return output;
 };
 
@@ -412,4 +430,9 @@ const unescape = (text: string): string => {
 };
 
 export type { MarkdownTheme };
-export { markdownTheme, renderMarkdown, renderMarkdownInline };
+export {
+  markdownTheme,
+  markdownTextTheme,
+  renderMarkdown,
+  renderMarkdownInline,
+};

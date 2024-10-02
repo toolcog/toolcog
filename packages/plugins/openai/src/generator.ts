@@ -141,6 +141,7 @@ const generate = (async (
   options?: OpenAIGeneratorOptions,
 ): Promise<unknown> => {
   const context = AgentContext.getOrCreate();
+  const root = Job.get();
 
   const client =
     options?.openai instanceof OpenAI ?
@@ -248,6 +249,9 @@ const generate = (async (
   }
 
   const tools = await resolveTools(options?.tools, args);
+  if (root !== null) {
+    root.setAttribute("llm.tools", tools);
+  }
 
   const openAITools =
     tools !== undefined && tools.length !== 0 ?
@@ -333,7 +337,9 @@ const generate = (async (
 
     let response: ChatCompletion | undefined;
 
-    await Job.spawn(model, async (job) => {
+    await Job.spawn("llm.generate", async (job) => {
+      job.update({ title: model });
+
       const completion = await dispatcher.enqueue(
         () => createChatCompletion(client, request, { signal }),
         { signal },
@@ -387,29 +393,7 @@ const generate = (async (
           throw new Error("Unknown tool " + JSON.stringify(toolFunction.name));
         }
 
-        const toolResult = Job.spawn(tool.id, async (toolJob) => {
-          return AgentContext.spawn(undefined, async () => {
-            let result: string;
-            try {
-              result = await callTool(tool, toolFunction.arguments);
-            } catch (error) {
-              if (!(error instanceof Error)) {
-                throw error;
-              }
-              console.error(error);
-              result = String(error.message);
-            }
-
-            toolJob.finish(result);
-
-            return {
-              role: "tool",
-              tool_call_id: toolCall.id,
-              content: result,
-            } satisfies OpenAI.ChatCompletionToolMessageParam;
-          });
-        });
-
+        const toolResult = callTool(toolCall.id, tool, toolFunction.arguments);
         toolResults.push(toolResult);
       }
 
@@ -709,56 +693,81 @@ const createPrompt = (
   return prompt;
 };
 
-const parseToolArguments = (tool: Tool, args: string): unknown[] => {
-  const parametersSchema = tool.parameters;
-  const parameters = parametersSchema?.properties;
-  if (parameters === undefined) {
-    return [];
-  }
+const callTool = async (
+  toolCallId: string,
+  tool: Tool,
+  args: string,
+): Promise<OpenAI.ChatCompletionToolMessageParam> => {
+  return Job.spawn("llm.tool.call", async (job) => {
+    job.update({ title: tool.id });
 
-  let parsedArgs: Record<string, unknown> | null | undefined;
-  try {
-    parsedArgs =
-      args.length !== 0 ?
-        (JSON.parse(args) as Record<string, unknown> | null)
-      : undefined;
-  } catch (cause) {
-    throw new Error(
-      "Malformed arguments " +
-        JSON.stringify(args) +
-        " for tool " +
-        JSON.stringify(tool.name),
-      { cause },
-    );
-  }
-  if (
-    parsedArgs === undefined ||
-    parsedArgs === null ||
-    typeof parsedArgs !== "object"
-  ) {
-    throw new Error(
-      "Invalid arguments " +
-        JSON.stringify(parsedArgs) +
-        " for tool " +
-        JSON.stringify(tool.name),
-    );
-  }
+    const toolOutput = await AgentContext.spawn(undefined, async () => {
+      let toolOutput: string;
+      try {
+        let parsedArgs: Record<string, unknown> | null | undefined;
+        try {
+          parsedArgs =
+            args.length !== 0 ?
+              (JSON.parse(args) as Record<string, unknown> | null)
+            : undefined;
+        } catch (cause) {
+          throw new Error(
+            "Malformed arguments " +
+              JSON.stringify(args) +
+              " for tool " +
+              JSON.stringify(tool.name),
+            { cause },
+          );
+        }
 
-  return Object.entries(parameters).map(([parameterName, parameterSchema]) => {
-    const argument = parsedArgs[parameterName];
-    // TODO: Validate argument.
-    return argument;
+        if (
+          parsedArgs === undefined ||
+          parsedArgs === null ||
+          typeof parsedArgs !== "object"
+        ) {
+          throw new Error(
+            "Invalid arguments " +
+              JSON.stringify(parsedArgs) +
+              " for tool " +
+              JSON.stringify(tool.name),
+          );
+        }
+
+        job.setAttribute("llm.tool.args", parsedArgs);
+
+        const toolParameters = tool.parameters?.properties ?? {};
+        const toolArguments = Object.entries(toolParameters).map(
+          ([parameterName, parameterSchema]) => {
+            const toolArgument = parsedArgs[parameterName];
+            // TODO: Validate argument.
+            return toolArgument;
+          },
+        );
+
+        const toolResult = await Promise.resolve(
+          tool.call(undefined, ...toolArguments),
+        );
+
+        toolOutput = formatJson(toolResult, tool.returns);
+      } catch (error) {
+        if (!(error instanceof Error)) {
+          throw error;
+        }
+        console.error(error);
+        toolOutput = String(error.message);
+      }
+
+      return toolOutput;
+    });
+
+    job.finish({ output: toolOutput });
+
+    return {
+      role: "tool",
+      tool_call_id: toolCallId,
+      content: toolOutput,
+    } satisfies OpenAI.ChatCompletionToolMessageParam;
   });
-};
-
-const callTool = async (tool: Tool, args: string): Promise<string> => {
-  const toolArguments = parseToolArguments(tool, args);
-
-  const toolResult = await Promise.resolve(
-    tool.call(undefined, ...toolArguments),
-  );
-
-  return formatJson(toolResult, tool.returns);
 };
 
 export type { OpenAIGeneratorConfig, OpenAIGeneratorOptions };

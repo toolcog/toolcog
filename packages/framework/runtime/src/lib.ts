@@ -66,7 +66,12 @@ export { cosineDistance, indexer } from "./indexer.ts";
 export type { RuntimeConfigSource, RuntimeConfig } from "./runtime.ts";
 export { Runtime, embed, index, generate, resolveIdiom } from "./runtime.ts";
 
-export type { JobOutputType, JobInfo, JobEvents } from "./job.ts";
+export type {
+  JobAttributes,
+  JobOutputType,
+  JobInfo,
+  JobEvents,
+} from "./job.ts";
 export { Job } from "./job.ts";
 
 export type { Precache } from "./precache.ts";
