@@ -16,35 +16,58 @@ import {
   useTheme,
 } from "@toolcog/util/tui";
 import { Job } from "@toolcog/runtime";
-import type { MarkdownTheme } from "./markdown.ts";
-import { markdownTheme, renderMarkdown } from "./markdown.ts";
+import type { MarkdownTheme } from "./render-markdown.ts";
+import {
+  markdownTheme,
+  markdownTextTheme,
+  renderMarkdown,
+} from "./render-markdown.ts";
+import type { YamlishTheme } from "./render-yamlish.ts";
+import { yamlishTheme, renderYamlish } from "./render-yamlish.ts";
 
-interface JobsTheme {
+interface ReportJobsTheme {
   readonly style: {
     readonly title: (text: string) => string;
     readonly ellipsis: (text: string) => string;
   };
   readonly markdown: MarkdownTheme;
+  readonly yamlish: YamlishTheme;
 }
 
-const jobsTheme = makeTheme<JobsTheme>({
+const reportJobsTheme = makeTheme<ReportJobsTheme>({
   style: {
     title: style.cyan,
     ellipsis: style.gray,
   },
   markdown: markdownTheme,
+  yamlish: yamlishTheme,
 });
 
-interface JobsProps {
+const reportJobsTextTheme = makeTheme<ReportJobsTheme>({
+  style: reportJobsTheme.style,
+  markdown: markdownTextTheme,
+  yamlish: yamlishTheme,
+});
+
+interface ReportJobsProps {
   root: Job;
-  theme?: PartialTheme<JobsTheme & RootTheme> | undefined;
+  theme?: PartialTheme<ReportJobsTheme & RootTheme> | undefined;
+  printMarkdown?: boolean | undefined;
+  formatOutput?: ((job: Job) => string | undefined) | undefined;
+  formatAttributes?:
+    | ((job: Job) => Record<string, unknown> | undefined)
+    | undefined;
 }
 
 const reportJobs = createComponent(
-  (props: JobsProps, finish: (value: void) => void): string => {
+  (props: ReportJobsProps, finish: (value: void) => void): string => {
     const root = props.root;
-
-    const theme = useTheme(props.theme, jobsTheme);
+    const theme = useTheme(
+      props.theme,
+      props.printMarkdown === true ? reportJobsTheme : reportJobsTextTheme,
+    );
+    const formatOutput = props.formatOutput;
+    const formatAttributes = props.formatAttributes;
 
     const marked = new Marked({
       gfm: true,
@@ -54,6 +77,7 @@ const reportJobs = createComponent(
 
     const view = useView();
     const width = view.columns - 1;
+    const height = view.rows ?? 10;
 
     useEffect(() => {
       const onUpdate = throttle(update, 100);
@@ -82,21 +106,37 @@ const reportJobs = createComponent(
       };
     }, []);
 
+    let jobs = [...root.descendants()];
+    if (!root.finished) {
+      jobs = jobs.slice(-height);
+    }
     let content = "";
-    let jobCount = 0;
-    for (const job of root.descendants()) {
-      if (jobCount !== 0) {
+
+    if (root.finished) {
+      const attributes = formatAttributes?.(root);
+      if (attributes !== undefined) {
+        for (const key in attributes) {
+          content += renderYamlish(key, attributes[key], theme.yamlish, width);
+          content += EOL;
+        }
+      }
+    }
+
+    for (let i = 0; i < jobs.length; i += 1) {
+      const job = jobs[i]!;
+      if (i !== 0) {
         content += EOL;
       }
       content += renderJobOutput(
         job,
         theme,
+        formatOutput,
+        formatAttributes,
         marked,
         width,
         frame,
         root.finished,
       );
-      jobCount += 1;
     }
 
     if (root.finished) {
@@ -109,7 +149,11 @@ const reportJobs = createComponent(
 
 export const renderJobOutput = (
   job: Job,
-  theme: JobsTheme & RootTheme,
+  theme: ReportJobsTheme & RootTheme,
+  formatOutput: ((job: Job) => string | undefined) | undefined,
+  formatAttributes:
+    | ((job: Job) => Record<string, unknown> | undefined)
+    | undefined,
   marked: Marked,
   width: number,
   frame: number,
@@ -136,21 +180,37 @@ export const renderJobOutput = (
       line += theme.style.ellipsis("...");
     }
   } else if (job.output !== undefined) {
-    line += EOL;
+    const attributes = formatAttributes?.(job);
+    if (attributes !== undefined) {
+      for (const key in attributes) {
+        line += EOL;
+        line += renderYamlish(
+          key,
+          attributes[key],
+          theme.yamlish,
+          width,
+          2 * job.depth,
+        );
+      }
+    }
 
-    const indent = "  ".repeat(job.depth);
-    if (job.outputType === "markdown") {
-      line += renderMarkdown(
-        marked.lexer(job.output),
-        theme.markdown,
-        width,
-        2 * job.depth,
-      );
-    } else {
-      line += replaceLines(
-        wrapText(job.output, width - indent.length),
-        (line) => indent + line,
-      );
+    const output = formatOutput !== undefined ? formatOutput(job) : job.output;
+    if (output !== undefined && output.length !== 0) {
+      line += EOL;
+      if (job.outputType === "markdown") {
+        line += renderMarkdown(
+          marked.lexer(output),
+          theme.markdown,
+          width,
+          2 * job.depth,
+        );
+      } else {
+        const indent = "  ".repeat(job.depth);
+        line += replaceLines(
+          wrapText(output, width - indent.length),
+          (line) => indent + line,
+        );
+      }
     }
   }
 
@@ -159,7 +219,7 @@ export const renderJobOutput = (
 
 const renderJobPrefix = (
   job: Job,
-  theme: JobsTheme & RootTheme,
+  theme: ReportJobsTheme & RootTheme,
   frame: number,
 ): string => {
   let prefix = "  ".repeat(job.depth - 1);
@@ -171,5 +231,5 @@ const renderJobPrefix = (
   return prefix;
 };
 
-export type { JobsTheme, JobsProps };
-export { jobsTheme, reportJobs };
+export type { ReportJobsTheme, ReportJobsProps };
+export { reportJobsTheme, reportJobsTextTheme, reportJobs };
