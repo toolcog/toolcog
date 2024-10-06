@@ -301,73 +301,51 @@ const compareArrayConstraints = (
   subschema: Schema,
   superSchema: Schema,
 ): boolean => {
-  if (subschema.items !== undefined) {
-    if (superSchema.items === undefined) {
+  if (subschema.prefixItems !== undefined) {
+    if (superSchema.prefixItems === undefined) {
       // `subschema` is more restrictive.
     } else {
-      if (Array.isArray(subschema.items) && Array.isArray(superSchema.items)) {
-        if (subschema.items.length !== superSchema.items.length) {
-          return false;
-        }
-        for (let i = 0; i < subschema.items.length; i += 1) {
-          if (
-            !isSubtype(
-              (subschema.items as readonly SchemaDefinition[])[i]!,
-              (superSchema.items as readonly SchemaDefinition[])[i]!,
-            )
-          ) {
-            return false;
-          }
-        }
-      } else if (
-        !Array.isArray(subschema.items) &&
-        !Array.isArray(superSchema.items)
-      ) {
+      if (subschema.prefixItems.length !== superSchema.prefixItems.length) {
+        return false;
+      }
+      for (let i = 0; i < subschema.prefixItems.length; i += 1) {
         if (
-          !isSubtype(
-            subschema.items as SchemaDefinition,
-            superSchema.items as SchemaDefinition,
-          )
+          !isSubtype(subschema.prefixItems[i]!, superSchema.prefixItems[i]!)
         ) {
           return false;
         }
-      } else {
-        // Incompatible items definitions.
-        return false;
       }
     }
   }
 
-  if (subschema.additionalItems !== undefined) {
-    if (superSchema.additionalItems === undefined) {
+  if (subschema.items !== undefined) {
+    if (superSchema.items === undefined) {
       // `superSchema` allows any additional items;
       // `subschema` may be more restrictive.
-    } else if (superSchema.additionalItems === false) {
-      if (subschema.additionalItems !== false) {
+    } else if (superSchema.items === false) {
+      if (subschema.items !== false) {
         // `subschema` allows any additional items, but `superSchema` does not.
         return false;
       }
-    } else if (typeof superSchema.additionalItems === "object") {
-      if (subschema.additionalItems === false) {
+    } else if (typeof superSchema.items === "object") {
+      if (subschema.items === false) {
         // `subschema` is more restrictive.
-      } else if (typeof subschema.additionalItems === "object") {
-        if (
-          !isSubtype(subschema.additionalItems, superSchema.additionalItems)
-        ) {
+      } else if (typeof subschema.items === "object") {
+        if (!isSubtype(subschema.items, superSchema.items)) {
           return false;
         }
       } else {
-        // `subschema.additionalItems` is `true` (allows any additional items);
-        // `superSchema.additionalItems` is an object (restricts additional items).
+        // `subschema.items` is `true` (allows any additional items);
+        // `superSchema.items` is an object (restricts additional items).
         return false;
       }
     }
-  } else if (superSchema.additionalItems !== undefined) {
-    if (superSchema.additionalItems === false) {
+  } else if (superSchema.items !== undefined) {
+    if (superSchema.items === false) {
       // `subschema` allows any additional items;
       // `superSchema` does not allow additional items.
       return false;
-    } else if (typeof superSchema.additionalItems === "object") {
+    } else if (typeof superSchema.items === "object") {
       // `subschema` allows any additional items, but `superSchema` restricts them.
       return false;
     }

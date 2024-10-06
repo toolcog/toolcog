@@ -163,8 +163,8 @@ describe("array validation", () => {
   it("should validate tuple items constraints", () => {
     const schema = {
       type: "array",
-      items: [{ type: "number" }, { type: "string" }],
-      additionalItems: false,
+      prefixItems: [{ type: "number" }, { type: "string" }],
+      items: false,
     } as const satisfies Schema;
     expect(validate([1, "two"], schema)).toBe(true);
     expect(validate([1, "two", 3], schema)).toBe(false);

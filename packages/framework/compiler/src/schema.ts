@@ -1,4 +1,5 @@
 import type ts from "typescript";
+import { deepEqual } from "@toolcog/util";
 import type {
   SchemaType,
   SchemaDefinition,
@@ -33,7 +34,7 @@ const typeToSchema = (
       }
     }
   }
-  if (title === null) {
+  if (title === null || title === "__type") {
     title = undefined;
   }
 
@@ -179,73 +180,170 @@ const typeToSchema = (
     };
   }
 
-  if ((type.flags & ts.TypeFlags.Object) !== 0) {
-    const objectType = type as ts.ObjectType;
-    if ((objectType.objectFlags & ts.ObjectFlags.Reference) !== 0) {
-      const objectTypeSymbol = objectType.getSymbol();
-      const typeName =
-        objectTypeSymbol !== undefined ?
-          checker.getFullyQualifiedName(objectTypeSymbol)
-        : undefined;
+  if (checker.isTupleType(type)) {
+    const refType = type as ts.TypeReference;
+    ts.Debug.assert(refType.typeArguments !== undefined);
+    const tupleType = (type as ts.TupleTypeReference).target;
 
-      if (typeName === "Array") {
+    const elementSchemas: Schema[] = [];
+    let restSchema: Schema | undefined;
+
+    for (let i = 0; i < refType.typeArguments.length; i++) {
+      const elementType = refType.typeArguments[i]!;
+      const elementFlags = tupleType.elementFlags[i]!;
+
+      if ((elementFlags & ts.ElementFlags.Rest) !== 0) {
+        if (restSchema !== undefined) {
+          return abort(
+            ts,
+            addDiagnostic,
+            errorNode,
+            Diagnostics.CannotDeriveSchemaForType,
+            checker.typeToString(type),
+          );
+        }
+        restSchema = typeToSchema(
+          ts,
+          checker,
+          addDiagnostic,
+          elementType,
+          undefined,
+          undefined,
+          undefined,
+          errorNode,
+        );
+      } else if ((elementFlags & ts.ElementFlags.Required) !== 0) {
+        elementSchemas.push(
+          typeToSchema(
+            ts,
+            checker,
+            addDiagnostic,
+            elementType,
+            undefined,
+            undefined,
+            comment?.params?.[i.toString()],
+            errorNode,
+          ),
+        );
+      } else {
+        return abort(
+          ts,
+          addDiagnostic,
+          errorNode,
+          Diagnostics.CannotDeriveSchemaForType,
+          checker.typeToString(type),
+        );
+      }
+    }
+
+    if (restSchema === undefined && elementSchemas.length !== 0) {
+      let uniform = true;
+      for (let i = 1; i < elementSchemas.length; i += 1) {
+        if (!deepEqual(elementSchemas[i], elementSchemas[i - 1])) {
+          uniform = false;
+          break;
+        }
+      }
+      if (uniform) {
         return {
+          ...(title !== undefined ? { title } : undefined),
           ...(description !== undefined ? { description } : undefined),
           type: "array",
-          items: typeToSchema(
-            ts,
-            checker,
-            addDiagnostic,
-            (objectType as ts.TypeReference).typeArguments![0]!,
-            undefined,
-            undefined,
-            undefined,
-            errorNode,
-          ),
-        };
-      } else if (typeName === "Set") {
-        return {
-          ...(description !== undefined ? { description } : undefined),
-          type: "array",
-          items: typeToSchema(
-            ts,
-            checker,
-            addDiagnostic,
-            (objectType as ts.TypeReference).typeArguments![0]!,
-            undefined,
-            undefined,
-            undefined,
-            errorNode,
-          ),
-        };
-      } else if (typeName === "Map") {
-        return {
-          ...(description !== undefined ? { description } : undefined),
-          type: "object",
-          additionalProperties: typeToSchema(
-            ts,
-            checker,
-            addDiagnostic,
-            (objectType as ts.TypeReference).typeArguments![1]!,
-            undefined,
-            undefined,
-            undefined,
-            errorNode,
-          ),
+          items: elementSchemas[0],
+          minItems: elementSchemas.length,
+          maxItems: elementSchemas.length,
         };
       }
+    }
+
+    return {
+      ...(title !== undefined ? { title } : undefined),
+      ...(description !== undefined ? { description } : undefined),
+      type: "array",
+      prefixItems: elementSchemas,
+      ...(restSchema !== undefined ? { items: restSchema } : undefined),
+    };
+  }
+
+  if (checker.isArrayType(type)) {
+    return {
+      ...(description !== undefined ? { description } : undefined),
+      type: "array",
+      items: typeToSchema(
+        ts,
+        checker,
+        addDiagnostic,
+        checker.getElementTypeOfArrayType(type)!,
+        undefined,
+        undefined,
+        undefined,
+        errorNode,
+      ),
+    };
+  }
+
+  if ((type.flags & ts.TypeFlags.Object) !== 0) {
+    const typeSymbol = type.getSymbol();
+    const typeName =
+      typeSymbol !== undefined ?
+        checker.getFullyQualifiedName(typeSymbol)
+      : undefined;
+
+    if (typeName === "Set") {
+      return {
+        ...(description !== undefined ? { description } : undefined),
+        type: "array",
+        items: typeToSchema(
+          ts,
+          checker,
+          addDiagnostic,
+          (type as ts.TypeReference).typeArguments![0]!,
+          undefined,
+          undefined,
+          undefined,
+          errorNode,
+        ),
+      };
+    } else if (typeName === "Map") {
+      return {
+        ...(description !== undefined ? { description } : undefined),
+        type: "object",
+        additionalProperties: typeToSchema(
+          ts,
+          checker,
+          addDiagnostic,
+          (type as ts.TypeReference).typeArguments![1]!,
+          undefined,
+          undefined,
+          undefined,
+          errorNode,
+        ),
+      };
     }
 
     const properties: { [key: string]: SchemaDefinition } = {};
     const required: string[] = [];
 
-    const propertySymbols = checker.getPropertiesOfType(objectType);
+    const propertySymbols = checker.getPropertiesOfType(type);
     for (const propertySymbol of propertySymbols) {
+      if ((propertySymbol.getEscapedName() as string).startsWith("__@")) {
+        // Omit properties with symbol names.
+        continue;
+      }
+
       const propertyName = propertySymbol.getName();
       const propertyType = checker.getTypeOfSymbolAtLocation(
         propertySymbol,
         propertySymbol.valueDeclaration!,
       );
+
+      if (
+        checker.getSignaturesOfType(propertyType, ts.SignatureKind.Call)
+          .length !== 0
+      ) {
+        // Skip function properties.
+        continue;
+      }
 
       const propertyDeclaration = propertySymbol.declarations?.[0];
       const propertyComment =
@@ -313,6 +411,13 @@ const typeToSchema = (
   if (type.isUnion()) {
     const memberSchemas: Schema[] = [];
     for (const memberType of type.types) {
+      if (
+        checker.getSignaturesOfType(memberType, ts.SignatureKind.Call)
+          .length !== 0
+      ) {
+        // Skip function members.
+        continue;
+      }
       const memberSchema = typeToSchema(
         ts,
         checker,
@@ -344,6 +449,13 @@ const typeToSchema = (
   if (type.isIntersection()) {
     const memberSchemas: Schema[] = [];
     for (const memberType of type.types) {
+      if (
+        checker.getSignaturesOfType(memberType, ts.SignatureKind.Call)
+          .length !== 0
+      ) {
+        // Skip function members.
+        continue;
+      }
       const memberSchema = typeToSchema(
         ts,
         checker,

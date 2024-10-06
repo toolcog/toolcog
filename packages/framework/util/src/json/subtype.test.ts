@@ -302,30 +302,30 @@ describe("array constraint subtyping", () => {
     expect(isSubtype(subschema, superSchema)).toBe(false);
   });
 
-  it("should return true when subschema additionalItems is false and superSchema additionalItems is true", () => {
+  it("should return true when subschema items is false and superSchema items is true", () => {
     const subschema = {
       type: "array",
-      items: [{ type: "string" }],
-      additionalItems: false,
+      prefixItems: [{ type: "string" }],
+      items: false,
     } as const satisfies Schema;
     const superSchema = {
       type: "array",
-      items: [{ type: "string" }],
-      additionalItems: true,
+      prefixItems: [{ type: "string" }],
+      items: true,
     } as const satisfies Schema;
     expect(isSubtype(subschema, superSchema)).toBe(true);
   });
 
-  it("should return false when subschema additionalItems is true and superSchema additionalItems is false", () => {
+  it("should return false when subschema items is true and superSchema items is false", () => {
     const subschema = {
       type: "array",
-      items: [{ type: "string" }],
-      additionalItems: true,
+      prefixItems: [{ type: "string" }],
+      items: true,
     } as const satisfies Schema;
     const superSchema = {
       type: "array",
-      items: [{ type: "string" }],
-      additionalItems: false,
+      prefixItems: [{ type: "string" }],
+      items: false,
     } as const satisfies Schema;
     expect(isSubtype(subschema, superSchema)).toBe(false);
   });
