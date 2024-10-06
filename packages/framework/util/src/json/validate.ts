@@ -56,8 +56,8 @@ const validate = (value: unknown, schema: SchemaDefinition): boolean => {
   }
 
   if (
+    schema.prefixItems !== undefined ||
     schema.items !== undefined ||
-    schema.additionalItems !== undefined ||
     schema.uniqueItems !== undefined ||
     schema.contains !== undefined ||
     schema.minItems !== undefined ||
@@ -266,33 +266,25 @@ const validateArray = (value: unknown, schema: Schema): boolean => {
     return false;
   }
 
-  if (schema.items !== undefined) {
-    if (Array.isArray(schema.items)) {
-      for (let i = 0; i < schema.items.length; i += 1) {
-        const itemSchema = (schema.items as readonly SchemaDefinition[])[i]!;
-        const itemValue = (value as unknown[])[i];
-        if (!validate(itemValue, itemSchema)) {
-          return false;
-        }
+  if (schema.prefixItems !== undefined) {
+    for (let i = 0; i < schema.prefixItems.length; i += 1) {
+      const itemSchema = schema.prefixItems[i]!;
+      const itemValue = (value as unknown[])[i];
+      if (!validate(itemValue, itemSchema)) {
+        return false;
       }
-      if (schema.additionalItems !== undefined) {
-        if (schema.additionalItems === false) {
-          if (value.length > schema.items.length) {
-            return false;
-          }
-        } else {
-          const additionalSchema = schema.additionalItems;
-          for (let i = schema.items.length; i < value.length; i += 1) {
-            if (!validate(value[i], additionalSchema)) {
-              return false;
-            }
-          }
-        }
+    }
+  }
+
+  if (schema.items !== undefined) {
+    if (schema.items === false) {
+      if (value.length > (schema.prefixItems?.length ?? 0)) {
+        return false;
       }
     } else {
-      const itemSchema = schema.items as SchemaDefinition;
-      for (const item of value) {
-        if (!validate(item, itemSchema)) {
+      const additionalSchema = schema.items;
+      for (let i = schema.prefixItems?.length ?? 0; i < value.length; i += 1) {
+        if (!validate(value[i], additionalSchema)) {
           return false;
         }
       }

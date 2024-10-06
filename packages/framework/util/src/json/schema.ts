@@ -56,8 +56,8 @@ interface Schema {
   readonly pattern?: string | undefined;
 
   // https://tools.ietf.org/html/draft-bhutton-json-schema-validation-01#section-6.4
-  readonly items?: readonly SchemaDefinition[] | SchemaDefinition | undefined;
-  readonly additionalItems?: SchemaDefinition | undefined;
+  readonly prefixItems?: readonly SchemaDefinition[] | undefined;
+  readonly items?: SchemaDefinition | undefined;
   readonly maxItems?: number | undefined;
   readonly minItems?: number | undefined;
   readonly uniqueItems?: boolean | undefined;
