@@ -12,9 +12,19 @@ export default pluginTs.config(
       "jsdoc/check-line-alignment": "error",
       "jsdoc/check-tag-names": [
         "error",
-        { definedTags: ["id", "idiom", "instructions", "noid", "value"] },
+        {
+          definedTags: [
+            "id",
+            "idiom",
+            "instructions",
+            "noid",
+            "typeParam",
+            "value",
+          ],
+        },
       ],
       "jsdoc/no-bad-blocks": "error",
+      "jsdoc/no-multi-asterisks": "off",
       "jsdoc/require-jsdoc": "off",
       "jsdoc/require-param": "off",
       "jsdoc/require-returns": "off",

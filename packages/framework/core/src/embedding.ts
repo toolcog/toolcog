@@ -1,65 +1,81 @@
 /**
- * Each key of this type represents the name of a known embedding model.
- * Embedder plugins augment this type to add supported model names.
- *
- * Use the {@link EmbeddingModel} type for strings that should represent
- * embedding model names. The `EmbeddingModel` type extracts the keys of
- * this type. The indirection through this type is necessary because type
- * aliases cannot be augmented.
+ * A registry for known embedding model names. Embedder plugins augment
+ * this interface to add the names of the embedding models they support.
+ * Use {@link EmbeddingModel} to refer to embedding model names in a
+ * type-safe way.
  */
 interface EmbeddingModelNames {}
 
 /**
- * The identifying name of an embedding model.
+ * The name of an embedding model, either a known model identifier or a string.
+ * To specify a model from a particular plugin, prefix the model name with the
+ * plugin package name followed by a colon. For example, `"openai:custom-model"`
+ * refers to the model `"custom-model"` from the `@toolcog/openai` plugin.
  */
 // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type EmbeddingModel = keyof EmbeddingModelNames | (string & {});
 
 /**
- * The type of an embedding vector. Embedding vectors are stored as float
- * arrays for memory efficiency.
+ * A vector in a high-dimensional space representing the semantic embedding
+ * of a text fragment. Embedding vectors capture the semantic content of text
+ * fragments and are produced by embedding models. Stored as `Float32Array`
+ * for memory efficiency.
  */
 type EmbeddingVector = Float32Array;
 
 /**
- * A distance metric in an embedding vector space.
+ * A function that computes the distance between two embedding vectors in the
+ * metric space prescribed by the implementation. The specific distance metric
+ * can vary (e.g., cosine distance, Euclidean distance).
+ *
+ * @returns The distance between the two embedding vectors.
  */
 type EmbeddingDistance = (a: EmbeddingVector, b: EmbeddingVector) => number;
 
 /**
- * A set of embedding vectors keyed by the model that generated each vector.
+ * Embedding vectors for a text fragment, keyed by the name of the embedding
+ * model that generated each vector. Allows storing embeddings from different
+ * models for the same text fragment.
+ *
+ * @typeParam V - The type of the embedding vectors.
  */
 type Embedding<V = EmbeddingVector> = {
   [Model in EmbeddingModel]?: V;
 };
 
 /**
- * A set of embeddings keyed by the embedded text.
+ * A collection of embeddings for multiple text fragments. Maps text fragments
+ * to their corresponding embeddings, which may include embedding vectors from
+ * multiple models.
+ *
+ * @typeParam V - The type of the embedding vectors.
  */
 interface Embeddings<V = EmbeddingVector> {
   [text: string]: Embedding<V>;
 }
 
 /**
- * Options for configuring an {@link Embedder} function.
- *
- * Note that embedder plugins may augment this type with additional options.
+ * Configuration options for an {@link Embedder} function. Embedder plugins
+ * may augment this interface with additional options specific to their models.
+ * This approach maintains type safety while avoiding a clutter of
+ * plugin-specific options in the core interface.
  */
 interface EmbedderConfig {
   /**
-   * The default model the embedder should use.
+   * The default embedding model to use when generating embeddings.
    */
   model?: EmbeddingModel | undefined;
 }
 
 /**
- * Options for controlling an {@link Embedder} call.
- *
- * Note that embedder plugins may augment this type with additional options.
+ * Options for a specific call to an {@link Embedder} function.
+ * These options can override the defaults specified in {@link EmbedderConfig}.
+ * Embedder plugins may augment this interface with additional options specific
+ * to their models.
  */
 interface EmbedderOptions {
   /**
-   * The model the embedder should use to generate embedding vectors.
+   * The embedding model to use for the embedder call.
    */
   model?: EmbeddingModel | undefined;
 
@@ -70,9 +86,13 @@ interface EmbedderOptions {
 }
 
 /**
- * The return type of an {@link Embedder} call. If the argument is a string,
- * an embedding vector is returned. If the argument is an array of strings,
- * an array of embedding vectors is returned.
+ * The return type of an {@link Embedder} call, matching the type of the input.
+ * If the input is a string, returns an {@link EmbeddingVector}.
+ * If the input is an array of strings, returns an array of
+ * {@link EmbeddingVector}s.
+ *
+ * @typeParam T - The type of the input text, either a string
+ * or an array of strings.
  */
 type Embedded<
   T extends string | readonly string[] = string | readonly string[],
@@ -83,10 +103,18 @@ type Embedded<
   : never;
 
 /**
- * A function that returns an {@link EmbeddingVector} for each provided string.
- * If the `embed` argument is a string, then an embedding vector is returned.
- * If the `embed` argument is an array of strings, then an array of embedding
- * vectors is returned.
+ * A function that generates embedding vectors for provided text input.
+ * If the `embed` argument is a string, returns an {@link EmbeddingVector}.
+ * If the `embed` argument is an array of strings, returns an array of
+ * {@link EmbeddingVector}s.
+ *
+ * @param embed - The text or texts to generate embeddings for.
+ * @param options - Optional parameters to configure the embedding generation.
+ * @returns A promise that resolves to the embedding vector(s) corresponding
+ * to the input text(s), matching the input type.
+ *
+ * @typeParam T - The type of the input text, either a string
+ * or an array of strings.
  */
 interface Embedder {
   <T extends string | readonly string[]>(
@@ -95,6 +123,13 @@ interface Embedder {
   ): Promise<Embedded<T>>;
 }
 
+/**
+ * Decodes a binary `Buffer` into an {@link EmbeddingVector}.
+ *
+ * @param vector - The `Buffer` containing the binary representation
+ * of the embedding vector.
+ * @returns The decoded embedding vector as a `Float32Array`.
+ */
 const decodeEmbeddingVector = (vector: Buffer): EmbeddingVector => {
   return new Float32Array(
     vector.buffer,
@@ -103,10 +138,24 @@ const decodeEmbeddingVector = (vector: Buffer): EmbeddingVector => {
   );
 };
 
+/**
+ * Encodes an {@link EmbeddingVector} into a binary `Buffer`.
+ *
+ * @param vector - The embedding vector to encode.
+ * @returns A `Buffer` containing the binary representation
+ * of the embedding vector.
+ */
 const encodeEmbeddingVector = (vector: EmbeddingVector): Buffer => {
   return Buffer.from(vector.buffer, 0, vector.length * 4);
 };
 
+/**
+ * Decodes an {@link Embedding} with vectors encoded as `Buffer`s into an
+ * {@link Embedding} with vectors as {@link EmbeddingVector}s.
+ *
+ * @param embedding - The embedding with vectors encoded as `Buffer`s.
+ * @returns The embedding with vectors decoded as {@link EmbeddingVector}s.
+ */
 const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {
   return Object.fromEntries(
     Object.entries(embedding).map(([model, vector]) => {
@@ -115,6 +164,13 @@ const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {
   );
 };
 
+/**
+ * Encodes an {@link Embedding} with vectors as {@link EmbeddingVector}s
+ * into an {@link Embedding} with vectors encoded as `Buffer`s.
+ *
+ * @param embedding - The embedding with vectors as {@link EmbeddingVector}s.
+ * @returns The embedding with vectors encoded as `Buffer`s.
+ */
 const encodeEmbedding = (embedding: Embedding): Embedding<Buffer> => {
   return Object.fromEntries(
     Object.entries(embedding)
@@ -125,6 +181,13 @@ const encodeEmbedding = (embedding: Embedding): Embedding<Buffer> => {
   );
 };
 
+/**
+ * Decodes an {@link Embeddings} object with vectors encoded as `Buffer`s into
+ * an {@link Embeddings} object with vectors as {@link EmbeddingVector}s.
+ *
+ * @param embeddings - The embeddings with vectors encoded as `Buffer`s.
+ * @returns The embeddings with vectors decoded as {@link EmbeddingVector}s.
+ */
 const decodeEmbeddings = (embeddings: Embeddings<Buffer>): Embeddings => {
   return Object.fromEntries(
     Object.entries(embeddings).map(([text, embedding]) => {
@@ -133,6 +196,13 @@ const decodeEmbeddings = (embeddings: Embeddings<Buffer>): Embeddings => {
   );
 };
 
+/**
+ * Encodes an {@link Embeddings} object with vectors as {@link EmbeddingVector}s
+ * into an {@link Embeddings} object with vectors encoded as `Buffer`s.
+ *
+ * @param embeddings - The embeddings with vectors as {@link EmbeddingVector}s.
+ * @returns The embeddings with vectors encoded as `Buffer`s.
+ */
 const encodeEmbeddings = (embeddings: Embeddings): Embeddings<Buffer> => {
   return Object.fromEntries(
     Object.entries(embeddings)
