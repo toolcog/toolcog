@@ -67,7 +67,6 @@ const classifyInput = (
             case ts.SyntaxKind.ElseKeyword:
             case ts.SyntaxKind.EnumKeyword:
             case ts.SyntaxKind.ExportKeyword:
-            case ts.SyntaxKind.ExtendsKeyword:
             case ts.SyntaxKind.FalseKeyword:
             case ts.SyntaxKind.FinallyKeyword:
             case ts.SyntaxKind.ForKeyword:
@@ -76,7 +75,6 @@ const classifyInput = (
             case ts.SyntaxKind.GetKeyword:
             case ts.SyntaxKind.GlobalKeyword:
             case ts.SyntaxKind.IfKeyword:
-            case ts.SyntaxKind.ImplementsKeyword:
             case ts.SyntaxKind.ImportKeyword:
             case ts.SyntaxKind.InferKeyword:
             case ts.SyntaxKind.InKeyword:
@@ -135,7 +133,9 @@ const classifyInput = (
                 identifiersInRun = 0;
               }
               break;
+            case ts.SyntaxKind.ExtendsKeyword:
             case ts.SyntaxKind.InstanceOfKeyword:
+            case ts.SyntaxKind.ImplementsKeyword:
             default:
               identifiersInRun = 0;
               break;
