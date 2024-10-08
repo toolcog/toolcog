@@ -7,10 +7,7 @@
     { "path": "../util" },
     { "path": "../core" },
     { "path": "../runtime" },
-    { "path": "../anthropic" },
-    { "path": "../openai" },
     { "path": "../compiler" },
-    { "path": "../repl" },
-    { "path": "../node" }
+    { "path": "../repl" }
   ]
 }
