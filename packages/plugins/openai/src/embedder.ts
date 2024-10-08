@@ -66,7 +66,7 @@ const embedder = (options?: OpenAIEmbedderOptions): Embedder | undefined => {
 };
 
 const embed = (async <T extends string | readonly string[]>(
-  texts: T,
+  input: T,
   options?: OpenAIEmbedderOptions,
 ): Promise<Embedded<T>> => {
   const client =
@@ -83,11 +83,11 @@ const embed = (async <T extends string | readonly string[]>(
   const batchSize = options?.batchSize ?? defaultBatchSize;
 
   const batches: string[][] = [];
-  if (typeof texts === "string") {
-    batches.push([texts]);
+  if (typeof input === "string") {
+    batches.push([input]);
   } else {
-    for (let i = 0; i < texts.length; i += batchSize) {
-      batches.push(texts.slice(i, i + batchSize));
+    for (let i = 0; i < input.length; i += batchSize) {
+      batches.push(input.slice(i, i + batchSize));
     }
   }
 
@@ -115,7 +115,7 @@ const embed = (async <T extends string | readonly string[]>(
   }
 
   return (
-    typeof texts === "string" ?
+    typeof input === "string" ?
       embeddings[0]!
     : embeddings) as Embedded<T>;
 }) satisfies Embedder;

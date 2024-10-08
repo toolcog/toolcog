@@ -87,12 +87,11 @@ interface EmbedderOptions {
 
 /**
  * The return type of an {@link Embedder} call, matching the type of the input.
- * If the input is a string, returns an {@link EmbeddingVector}.
- * If the input is an array of strings, returns an array of
- * {@link EmbeddingVector}s.
+ * Returns an embedding vector for a string input, or an array of embedding
+ * vectors for an array of string inputs.
  *
- * @typeParam T - The type of the input text, either a string
- * or an array of strings.
+ * @typeParam T - The type of the input text, either a string or an array of
+ * strings.
  */
 type Embedded<
   T extends string | readonly string[] = string | readonly string[],
@@ -103,31 +102,27 @@ type Embedded<
   : never;
 
 /**
- * A function that generates embedding vectors for provided text input.
- * If the `embed` argument is a string, returns an {@link EmbeddingVector}.
- * If the `embed` argument is an array of strings, returns an array of
- * {@link EmbeddingVector}s.
+ * A function that generates embedding vectors for the provided input.
+ * Returns an embedding vector for a string input, or an array of embedding
+ * vectors for an array of string inputs.
  *
- * @param embed - The text or texts to generate embeddings for.
+ * @typeParam T - The type of the input, either a string or an array of strings.
+ * @param input - The string or strings for which to generate embeddings.
  * @param options - Optional parameters to configure the embedding generation.
- * @returns A promise that resolves to the embedding vector(s) corresponding
- * to the input text(s), matching the input type.
- *
- * @typeParam T - The type of the input text, either a string
- * or an array of strings.
+ * @returns A promise that resolves to the embedding vector(s) for the input(s).
  */
 interface Embedder {
   <T extends string | readonly string[]>(
-    embed: T,
+    input: T,
     options?: EmbedderOptions,
   ): Promise<Embedded<T>>;
 }
 
 /**
- * Decodes a binary `Buffer` into an {@link EmbeddingVector}.
+ * Decodes a binary `Buffer` into an embedding vector.
  *
- * @param vector - The `Buffer` containing the binary representation
- * of the embedding vector.
+ * @param vector - The `Buffer` containing the binary representation of the
+ * embedding vector.
  * @returns The decoded embedding vector as a `Float32Array`.
  */
 const decodeEmbeddingVector = (vector: Buffer): EmbeddingVector => {
@@ -139,22 +134,22 @@ const decodeEmbeddingVector = (vector: Buffer): EmbeddingVector => {
 };
 
 /**
- * Encodes an {@link EmbeddingVector} into a binary `Buffer`.
+ * Encodes an embedding vector into a binary `Buffer`.
  *
  * @param vector - The embedding vector to encode.
- * @returns A `Buffer` containing the binary representation
- * of the embedding vector.
+ * @returns A `Buffer` containing the binary representation of the embedding
+ * vector.
  */
 const encodeEmbeddingVector = (vector: EmbeddingVector): Buffer => {
   return Buffer.from(vector.buffer, 0, vector.length * 4);
 };
 
 /**
- * Decodes an {@link Embedding} with vectors encoded as `Buffer`s into an
- * {@link Embedding} with vectors as {@link EmbeddingVector}s.
+ * Decodes an embedding with base64-encoded vectors into an embedding with
+ * `Float32Array` vectors.
  *
- * @param embedding - The embedding with vectors encoded as `Buffer`s.
- * @returns The embedding with vectors decoded as {@link EmbeddingVector}s.
+ * @param embedding - The embedding with vectors encoded as base64 strings.
+ * @returns The embedding with vectors decoded as `Float32Array`s.
  */
 const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {
   return Object.fromEntries(
@@ -165,11 +160,11 @@ const decodeEmbedding = (embedding: Embedding<Buffer>): Embedding => {
 };
 
 /**
- * Encodes an {@link Embedding} with vectors as {@link EmbeddingVector}s
- * into an {@link Embedding} with vectors encoded as `Buffer`s.
+ * Encodes an embedding with `Float32Array` vectors into an embedding with
+ * base64-encoded vectors.
  *
- * @param embedding - The embedding with vectors as {@link EmbeddingVector}s.
- * @returns The embedding with vectors encoded as `Buffer`s.
+ * @param embedding - The embedding with `Float32Array` vectors.
+ * @returns The embedding with vectors encoded as base64 strings.
  */
 const encodeEmbedding = (embedding: Embedding): Embedding<Buffer> => {
   return Object.fromEntries(
@@ -182,11 +177,11 @@ const encodeEmbedding = (embedding: Embedding): Embedding<Buffer> => {
 };
 
 /**
- * Decodes an {@link Embeddings} object with vectors encoded as `Buffer`s into
- * an {@link Embeddings} object with vectors as {@link EmbeddingVector}s.
+ * Decodes embeddings with base64-encoded vectors into embeddings with
+ * `Float32Array` vectors.
  *
- * @param embeddings - The embeddings with vectors encoded as `Buffer`s.
- * @returns The embeddings with vectors decoded as {@link EmbeddingVector}s.
+ * @param embeddings - The embeddings with vectors encoded as base64 strings.
+ * @returns The embeddings with vectors decoded as `Float32Array`s.
  */
 const decodeEmbeddings = (embeddings: Embeddings<Buffer>): Embeddings => {
   return Object.fromEntries(
@@ -197,11 +192,11 @@ const decodeEmbeddings = (embeddings: Embeddings<Buffer>): Embeddings => {
 };
 
 /**
- * Encodes an {@link Embeddings} object with vectors as {@link EmbeddingVector}s
- * into an {@link Embeddings} object with vectors encoded as `Buffer`s.
+ * Encodes embeddings with `Float32Array` vectors into embeddings with
+ * base64-encoded vectors.
  *
- * @param embeddings - The embeddings with vectors as {@link EmbeddingVector}s.
- * @returns The embeddings with vectors encoded as `Buffer`s.
+ * @param embeddings - The embeddings with `Float32Array` vectors.
+ * @returns The embeddings with vectors encoded as base64 strings.
  */
 const encodeEmbeddings = (embeddings: Embeddings): Embeddings<Buffer> => {
   return Object.fromEntries(

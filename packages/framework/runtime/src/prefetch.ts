@@ -5,14 +5,33 @@ import type { Inventory } from "./inventory.ts";
 import type { Precache } from "./precache.ts";
 import { createPrecache } from "./precache.ts";
 
+/**
+ * Options for prefetching the AI assets declared by a manifest.
+ */
 interface PrefetchInventoryOptions {
+  /**
+   * The embedding models for which to prefetch embeddings.
+   */
   embeddingModels?: EmbeddingModel[] | undefined;
 
+  /**
+   * The embedder to use for prefetching embeddings.
+   */
   embedder?: Embedder | undefined;
 
+  /**
+   * The precache to use for storing prefetched embeddings.
+   */
   precache?: Precache | undefined;
 }
 
+/**
+ * Prefetches the AI assets declared by a manifest for efficient runtime use.
+ *
+ * @param manifest - The manifest declaring the AI assets to prefetch.
+ * @param options - The options for prefetching the AI assets.
+ * @returns The prefetched inventory.
+ */
 const prefetchInventory = async (
   manifest: Manifest,
   options?: PrefetchInventoryOptions,
@@ -21,13 +40,13 @@ const prefetchInventory = async (
   const embedder = options?.embedder ?? embed;
   const precache = options?.precache ?? createPrecache();
 
-  const texts = new Set<string>();
+  const phrases = new Set<string>();
   for (const moduleId in manifest.modules) {
     const moduleDef = manifest.modules[moduleId]!;
     for (const idiomId in moduleDef.idioms) {
       const idiomDef = moduleDef.idioms[idiomId]!;
-      for (const text of idiomDef.embeds) {
-        texts.add(text);
+      for (const phrase of idiomDef.phrases) {
+        phrases.add(phrase);
       }
     }
   }
@@ -38,31 +57,31 @@ const prefetchInventory = async (
     }),
   );
 
-  for (const text of texts) {
-    let embeddingCache = precache.embeddings[text];
+  for (const phrase of phrases) {
+    let embeddingCache = precache.embeddings[phrase];
     if (embeddingCache === undefined) {
       embeddingCache = {};
-      precache.embeddings[text] = embeddingCache;
+      precache.embeddings[phrase] = embeddingCache;
     }
 
     for (const embeddingModel of embeddingModels) {
       if (embeddingCache[embeddingModel] === undefined) {
-        missingTexts[embeddingModel]!.add(text);
+        missingTexts[embeddingModel]!.add(phrase);
       }
     }
   }
 
-  // Prefetch missing texts for each embedding model.
+  // Prefetch missing phrases for each embedding model.
   for (const embeddingModel in missingTexts) {
     if (missingTexts[embeddingModel]!.size === 0) {
       continue;
     }
 
-    const texts = [...missingTexts[embeddingModel]!];
-    const vectors = await embedder(texts, { model: embeddingModel });
+    const phrases = [...missingTexts[embeddingModel]!];
+    const vectors = await embedder(phrases, { model: embeddingModel });
 
-    for (let i = 0; i < texts.length; i += 1) {
-      precache.embeddings[texts[i]!]![embeddingModel] = vectors[i]!;
+    for (let i = 0; i < phrases.length; i += 1) {
+      precache.embeddings[phrases[i]!]![embeddingModel] = vectors[i]!;
     }
   }
 
@@ -72,8 +91,8 @@ const prefetchInventory = async (
         idiomId,
         {
           embeddings: Object.fromEntries(
-            idiomDef.embeds.map(
-              (text) => [text, precache.embeddings[text] ?? {}] as const,
+            idiomDef.phrases.map(
+              (phrase) => [phrase, precache.embeddings[phrase] ?? {}] as const,
             ),
           ),
         },

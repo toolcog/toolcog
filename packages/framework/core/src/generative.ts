@@ -330,7 +330,7 @@ interface GenerativeFunction<
   readonly parameters: Schema | undefined;
 
   /**
-   * A JSON Schema that describes the value returned by the function.
+   * A JSON Schema that describes the values returned by the function.
    * The `definePrompt` intrinsic generates this schema via static analysis
    * of the function's type signature. Descriptions of all schema elements
    * are extracted from the documentation comments of their associated types.
@@ -397,8 +397,8 @@ interface GenerativeFunction<
  * ```
  *
  * @param config - Configuration options for the generative function.
- * @returns A `GenerativeFunction` that uses a generative model
- * to produce its output.
+ * @returns A generative function that uses a generative model to produce
+ * its output.
  */
 const definePrompt: {
   <F extends (...args: any[]) => unknown>(
@@ -429,9 +429,9 @@ const definePrompt: {
  * ```
  *
  * @param instructions - Instructions for the generative model.
- * @param args - Arguments for the prompt.
+ * @param args - Arguments for the generative function.
  * @param options - Options to control the generator's behavior.
- * @returns A `Promise` resolving to the generated result.
+ * @returns A promise that resolves to the generated result.
  */
 const prompt: {
   <T = string>(
