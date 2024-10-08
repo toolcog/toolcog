@@ -55,7 +55,7 @@ const readTextFile = defineTool((path: string): Promise<string | Error> => {
 });
 ```
 
-#### The `defineTool` build process
+#### The `defineTool` transformation
 
 The Toolcog compiler:
 - detects the `defineTool` call
@@ -95,7 +95,7 @@ const generateRequests = definePrompt<(requestCount: number) => {
 await generateRequests(5);
 ```
 
-#### The `definePrompt` build process
+#### The `definePrompt` transformation
 
 The Toolcog compiler:
 - detects the `definePrompt<F>` call
@@ -141,7 +141,7 @@ const sentiment = defineIndex([
 await sentiment("I'm feeling over the moon today!");
 ```
 
-#### The `defineIndex` build process
+#### The `defineIndex` transformation
 
 The Toolcog compiler:
 - detects the `defineIndex` call

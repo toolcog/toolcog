@@ -21,13 +21,13 @@ const defineIdiomStatements = (
 ] => {
   // Define the embeddings variable.
 
-  const idioms = comment?.idioms ?? [];
-  if (idioms.length === 0 && comment?.description !== undefined) {
-    idioms.push(comment.description);
+  const phrases = comment?.idioms ?? [];
+  if (phrases.length === 0 && comment?.description !== undefined) {
+    phrases.push(comment.description);
   }
 
   const embeddingsObjectLiteral = factory.createObjectLiteralExpression(
-    idioms.map((text) => {
+    phrases.map((text) => {
       return factory.createPropertyAssignment(
         factory.createStringLiteral(text),
         factory.createObjectLiteralExpression(),
@@ -91,7 +91,7 @@ const defineIdiomStatements = (
 
   // Add the idiom to the module manifest.
 
-  moduleDef.idioms[idiomId] = { embeds: idioms };
+  moduleDef.idioms[idiomId] = { phrases };
 
   // Return embeddings statements.
 

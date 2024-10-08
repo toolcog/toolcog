@@ -11,10 +11,7 @@ const runtime = await Runtime.create({
   generator: {
     system: Runtime.systemPrompt(),
   },
-  plugins: [
-    import("@toolcog/openai").then((plugin) => plugin.default()),
-    import("@toolcog/anthropic").then((plugin) => plugin.default()),
-  ],
+  plugins: [import("@toolcog/openai"), import("@toolcog/anthropic")],
 });
 
 await Runtime.run(runtime, () => {

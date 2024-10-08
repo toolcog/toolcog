@@ -31,7 +31,7 @@ interface Tool<
   readonly id: string;
 
   /**
-   * The name of the tool; must be a valid identifier.
+   * The name of the tool. Must be a valid identifier.
    */
   readonly name: string;
 
@@ -56,7 +56,7 @@ interface Tool<
   readonly parameters: Schema | undefined;
 
   /**
-   * A JSON Schema that describes the value returned by the tool.
+   * A JSON Schema that describes the values returned by the tool.
    * The `defineTool` intrinsic generates this schema via static analysis
    * of the function's type signature. Descriptions of all schema elements
    * are extracted from the documentation comments of their associated types.

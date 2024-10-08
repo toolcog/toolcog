@@ -28,6 +28,7 @@ export default pluginTs.config(
       "jsdoc/require-jsdoc": "off",
       "jsdoc/require-param": "off",
       "jsdoc/require-returns": "off",
+      "jsdoc/require-yields": "off",
       "jsdoc/tag-lines": "off",
       "no-control-regex": "off",
       "prefer-const": "warn",
