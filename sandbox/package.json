@@ -20,7 +20,7 @@
     "@toolcog/openai": "workspace:*"
   },
   "devDependencies": {
-    "ts-patch": "catalog:build",
-    "typescript": "catalog:default"
+    "ts-patch": "catalog:development",
+    "typescript": "catalog:runtime"
   }
 }

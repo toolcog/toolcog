@@ -3,14 +3,14 @@
   "extends": ["./typedoc.base.json"],
   "entryPointStrategy": "packages",
   "entryPoints": [
-    "packages/framework/util",
-    "packages/framework/core",
-    "packages/framework/runtime",
-    "packages/framework/compiler",
-    "packages/framework/repl",
-    "packages/adapters/node",
-    "packages/plugins/anthropic",
-    "packages/plugins/openai",
+    "packages/util",
+    "packages/core",
+    "packages/runtime",
+    "packages/openai",
+    "packages/anthropic",
+    "packages/compiler",
+    "packages/repl",
+    "packages/node",
     "packages/toolcog"
   ]
 }

@@ -11,40 +11,40 @@
     "version": "changeset version && pnpm install",
     "release": "pnpm run build && changeset publish",
     "typedoc": "typedoc --out typedoc/",
-    "toolcog-compiler": "turbo --filter=@toolcog/compiler build && node packages/framework/compiler/bin/toolcog-compiler.js",
-    "toolcog-node": "turbo --filter=@toolcog/node build && node packages/adapters/node/bin/toolcog-node.js",
+    "toolcog-compiler": "turbo --filter=@toolcog/compiler build && node packages/compiler/bin/toolcog-compiler.js",
+    "toolcog-node": "turbo --filter=@toolcog/node build && node packages/node/bin/toolcog-node.js",
     "toolcog": "turbo --filter=toolcog build && node packages/toolcog/bin/toolcog.js",
     "clean": "pnpm run -r clean && rimraf .turbo node_modules/.cache typedoc",
     "clean-all": "pnpm run -r clean-all && rimraf .turbo node_modules typedoc"
   },
   "devDependencies": {
-    "@changesets/changelog-github": "catalog:build",
-    "@changesets/cli": "catalog:build",
-    "@eslint/js": "catalog:build",
-    "@swc/cli": "catalog:build",
-    "@swc/core": "catalog:build",
-    "@swc/plugin-transform-imports": "catalog:build",
-    "@types/node": "catalog:build",
-    "@vitest/coverage-v8": "catalog:build",
-    "eslint": "catalog:build",
-    "eslint-plugin-jsdoc": "catalog:build",
-    "prettier": "catalog:build",
-    "rimraf": "catalog:build",
-    "ts-expose-internals": "catalog:build",
-    "turbo": "catalog:build",
-    "tslib": "catalog:build",
-    "typedoc": "catalog:build",
-    "typescript": "catalog:build",
-    "typescript-eslint": "catalog:build",
-    "vitest": "catalog:build"
+    "@changesets/changelog-github": "catalog:development",
+    "@changesets/cli": "catalog:development",
+    "@eslint/js": "catalog:development",
+    "@swc/cli": "catalog:development",
+    "@swc/core": "catalog:development",
+    "@swc/plugin-transform-imports": "catalog:development",
+    "@types/node": "catalog:development",
+    "@vitest/coverage-v8": "catalog:development",
+    "eslint": "catalog:development",
+    "eslint-plugin-jsdoc": "catalog:development",
+    "prettier": "catalog:development",
+    "rimraf": "catalog:development",
+    "ts-expose-internals": "catalog:development",
+    "turbo": "catalog:development",
+    "tslib": "catalog:development",
+    "typedoc": "catalog:development",
+    "typescript": "catalog:development",
+    "typescript-eslint": "catalog:development",
+    "vitest": "catalog:development"
   },
   "engines": {
     "node": ">=20"
   },
   "pnpm": {
     "overrides": {
-      "whatwg-url": "catalog:plugins"
+      "whatwg-url": "catalog:overrides"
     }
   },
-  "packageManager": "pnpm@9.11.0"
+  "packageManager": "pnpm@9.12.1"
 }

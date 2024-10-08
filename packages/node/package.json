@@ -1,20 +1,20 @@
 {
-  "name": "toolcog",
+  "name": "@toolcog/node",
   "version": "0.0.3",
-  "description": "AI Framework for Tool Augmented Generation (TAG)",
+  "description": "Toolcog Node.js adapter",
   "author": "Tool Cognition Inc.",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/toolcog/toolcog#readme",
+  "homepage": "https://github.com/toolcog/toolcog/tree/main/packages/node#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/toolcog/toolcog.git",
-    "directory": "toolcog"
+    "directory": "packages/node"
   },
   "type": "module",
   "types": "./dist/lib.d.ts",
   "main": "./dist/lib.js",
   "bin": {
-    "toolcog": "./bin/toolcog.js"
+    "toolcog-node": "./bin/toolcog-node.js"
   },
   "scripts": {
     "generate:package-info": "node ../../scripts/generate-package-info",
@@ -36,12 +36,44 @@
     "src/"
   ],
   "sideEffects": false,
+  "imports": {
+    "#loader": {
+      "types": "./dist/loader/mod.d.ts",
+      "source": "./src/loader/mod.ts",
+      "import": "./dist/loader/mod.js",
+      "require": "./dist/loader/mod.cjs"
+    }
+  },
   "exports": {
     ".": {
       "types": "./dist/lib.d.ts",
       "source": "./src/lib.ts",
       "import": "./dist/lib.js",
       "require": "./dist/lib.cjs"
+    },
+    "./quiet": {
+      "types": "./dist/quiet/mod.d.ts",
+      "source": "./src/quiet/mod.ts",
+      "import": "./dist/quiet/mod.js",
+      "require": "./dist/quiet/mod.cjs"
+    },
+    "./loader": {
+      "types": "./dist/loader/mod.d.ts",
+      "source": "./src/loader/mod.ts",
+      "import": "./dist/loader/mod.js",
+      "require": "./dist/loader/mod.cjs"
+    },
+    "./register": {
+      "types": "./dist/register/mod.d.ts",
+      "source": "./src/register/mod.ts",
+      "import": "./dist/register/mod.js",
+      "require": "./dist/register/mod.cjs"
+    },
+    "./installer": {
+      "types": "./dist/installer/mod.d.ts",
+      "source": "./src/installer/mod.ts",
+      "import": "./dist/installer/mod.js",
+      "require": "./dist/installer/mod.cjs"
     }
   },
   "peerDependencies": {
@@ -49,9 +81,13 @@
   },
   "dependencies": {
     "@toolcog/compiler": "workspace:*",
-    "@toolcog/node": "workspace:*",
+    "@toolcog/core": "workspace:*",
+    "@toolcog/repl": "workspace:*",
     "@toolcog/runtime": "workspace:*",
-    "commander": "catalog:runtime"
+    "@toolcog/util": "workspace:*",
+    "@types/node": "catalog:runtime",
+    "commander": "catalog:runtime",
+    "fast-glob": "catalog:runtime"
   },
   "optionalDependencies": {
     "@toolcog/anthropic": "workspace:*",
