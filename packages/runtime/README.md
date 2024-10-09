@@ -1,7 +1,7 @@
 # @toolcog/runtime
 
-[![License](https://img.shields.io/github/license/toolcog/toolcog)](LICENSE)
 [![Version](https://img.shields.io/npm/v/@toolcog/runtime)](https://www.npmjs.com/package/@toolcog/runtime)
+[![License](https://img.shields.io/github/license/toolcog/toolcog)](LICENSE)
 
 `@toolcog/runtime` is an AI runtime for Tool Augmented Generation (TAG).
 TAG is an architecture for connecting LLMs to APIs, enabling developers to:

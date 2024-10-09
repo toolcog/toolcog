@@ -1,7 +1,7 @@
 # @toolcog/core
 
-[![License](https://img.shields.io/github/license/toolcog/toolcog)](LICENSE)
 [![Version](https://img.shields.io/npm/v/@toolcog/core)](https://www.npmjs.com/package/@toolcog/core)
+[![License](https://img.shields.io/github/license/toolcog/toolcog)](LICENSE)
 
 `@toolcog/core` is the Toolcog API for Tool Augmented Generation (TAG). TAG is
 an architecture for connecting LLMs to APIs, enabling developers to:

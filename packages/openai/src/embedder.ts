@@ -11,6 +11,7 @@ import type {
 import { decodeEmbeddingVector } from "@toolcog/core";
 
 declare module "@toolcog/core" {
+  // Manually synchronized with OpenAI.EmbeddingModel.
   interface EmbeddingModelNames {
     "text-embedding-ada-002": unknown;
     "text-embedding-3-small": unknown;
