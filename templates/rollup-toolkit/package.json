@@ -1,0 +1,40 @@
+{
+  "private": true,
+  "name": "toolcog-rollup-toolkit-template",
+  "version": "0.0.1",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "build": "rollup --config && npm run generate",
+    "generate": "toolcog inventory generate --precache --manifest dist/toolcog-manifest.yaml --yaml --js",
+    "toolcog": "toolcog --toolkit toolcog-rollup-toolkit-template"
+  },
+  "files": [
+    "dist/"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    },
+    "./toolcog-inventory": {
+      "import": "./dist/toolcog-inventory.js"
+    }
+  },
+  "dependencies": {
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@rollup/plugin-node-resolve": "^15.3",
+    "@rollup/plugin-typescript": "^12.1",
+    "@toolcog/compiler": "workspace:*",
+    "rollup": "^4.24",
+    "rollup-plugin-dts": "^6.1",
+    "rollup-plugin-node-externals": "^7.1",
+    "toolcog": "workspace:*",
+    "typescript": "^5.6"
+  }
+}
