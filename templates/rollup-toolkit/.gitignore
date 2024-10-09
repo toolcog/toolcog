@@ -1,0 +1,10 @@
+# System and IDE files
+.DS_Store
+.idea/
+.vscode/
+
+# Package management
+node_modules/
+
+# Build output
+dist/

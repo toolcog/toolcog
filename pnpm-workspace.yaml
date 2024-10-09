@@ -8,6 +8,7 @@ packages:
   - packages/repl
   - packages/node
   - packages/toolcog
+  - templates/toolkit-rollup
   - sandbox
 
 catalogs:
@@ -35,7 +36,7 @@ catalogs:
     eslint-plugin-jsdoc: ^50.3
     prettier: ^3.3
     rimraf: ^6.0
-    rollup: ^4.23
+    rollup: ^4.24
     rollup-plugin-dts: ^6.1
     rollup-plugin-node-externals: ^7.1
     ts-expose-internals: ^5.5
