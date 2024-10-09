@@ -20,7 +20,7 @@ import { indexer } from "./indexer.ts";
 import type { Plugin, PluginSource } from "./plugin.ts";
 import { resolvePlugins } from "./plugin.ts";
 import type { Toolkit, ToolkitSource } from "./toolkit.ts";
-import { resolveToolkits } from "./toolkit.ts";
+import { resolveToolkitTools, resolveToolkits } from "./toolkit.ts";
 import type { Inventory, InventorySource } from "./inventory.ts";
 import { createInventory, resolveInventory } from "./inventory.ts";
 
@@ -379,7 +379,9 @@ class Runtime {
    */
   async toolIndex(options?: IndexerOptions): Promise<Index<readonly Tool[]>> {
     const tools = (
-      await Promise.all(this.toolkits.map((toolkit) => toolkit.tools?.() ?? []))
+      await Promise.all(
+        this.toolkits.map((toolkit) => resolveToolkitTools(toolkit.tools)),
+      )
     ).flat();
     return await this.index(tools, options);
   }

@@ -195,6 +195,7 @@ const copyLeadingComments = <T extends ts.Node>(
   return toNode;
 };
 
+/** @internal */
 const moveLeadingComments = <T extends ts.Node>(
   ts: typeof import("typescript"),
   fromNode: ts.Node,
@@ -202,12 +203,13 @@ const moveLeadingComments = <T extends ts.Node>(
 ): T => {
   copyLeadingComments(ts, fromNode, toNode);
 
-  ts.setSyntheticLeadingComments(fromNode, undefined);
-
-  ts.setEmitFlags(
-    fromNode,
-    ts.EmitFlags.NoLeadingComments | ts.EmitFlags.NoTrailingComments,
-  );
+  if (fromNode.getSourceFile() !== undefined) {
+    ts.setSyntheticLeadingComments(fromNode, undefined);
+    ts.setEmitFlags(
+      fromNode,
+      ts.EmitFlags.NoLeadingComments | ts.EmitFlags.NoTrailingComments,
+    );
+  }
 
   return toNode;
 };

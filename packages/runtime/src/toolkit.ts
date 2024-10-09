@@ -1,6 +1,29 @@
 import type { Tool } from "@toolcog/core";
 
 /**
+ * The set of LLM tools provided by a toolkit.
+ */
+type ToolkitTools =
+  | (() => Promise<readonly Tool[]> | readonly Tool[] | undefined)
+  | readonly Tool[]
+  | undefined;
+
+/**
+ * Resolves the LLM tools provided by a toolkit into an array of `Tool`s
+ *
+ * @param tools - The set of LLM tools provided by a toolkit.
+ * @returns The LLM tools resolved from the toolkit.
+ */
+const resolveToolkitTools = async (
+  tools: ToolkitTools,
+): Promise<readonly Tool[]> => {
+  if (typeof tools === "function") {
+    tools = await tools();
+  }
+  return tools ?? [];
+};
+
+/**
  * A package of LLM tools related to a particular API or service.
  *
  * Toolkits typically contain more tools than would be used in a single task.
@@ -21,7 +44,7 @@ interface Toolkit {
   /**
    * The LLM tools provided by the toolkit.
    */
-  readonly tools?: () => Promise<readonly Tool[]>;
+  readonly tools?: ToolkitTools;
 }
 
 /**
@@ -101,5 +124,5 @@ const resolveToolkits: {
   }, []);
 }) as typeof resolveToolkits;
 
-export type { Toolkit, ToolkitModule, ToolkitSource };
-export { resolveToolkit, resolveToolkits };
+export type { ToolkitTools, Toolkit, ToolkitModule, ToolkitSource };
+export { resolveToolkitTools, resolveToolkit, resolveToolkits };

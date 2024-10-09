@@ -1,6 +1,7 @@
 import type ts from "typescript";
 import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
+import { moveLeadingComments } from "../utils/comments.ts";
 import { Diagnostics } from "../diagnostics.ts";
 import { defineIdiomExpression } from "./define-idiom.ts";
 
@@ -116,7 +117,15 @@ const defineIdiomsExpression = (
       ),
     );
   }
-  return factory.createArrayLiteralExpression(idiomExpressions, true);
+
+  const arrayExpression = factory.createArrayLiteralExpression(
+    idiomExpressions,
+    true,
+  );
+
+  moveLeadingComments(ts, valuesExpression, arrayExpression);
+
+  return ts.setOriginalNode(arrayExpression, valuesExpression);
 };
 
 export { defineIdiomsExpression };

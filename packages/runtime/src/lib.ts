@@ -45,8 +45,17 @@ export {
 export type { Plugin, PluginModule, PluginSource } from "./plugin.ts";
 export { resolvePlugin, resolvePlugins } from "./plugin.ts";
 
-export type { Toolkit, ToolkitModule, ToolkitSource } from "./toolkit.ts";
-export { resolveToolkit, resolveToolkits } from "./toolkit.ts";
+export type {
+  ToolkitTools,
+  Toolkit,
+  ToolkitModule,
+  ToolkitSource,
+} from "./toolkit.ts";
+export {
+  resolveToolkitTools,
+  resolveToolkit,
+  resolveToolkits,
+} from "./toolkit.ts";
 
 export type {
   AgentConfig,

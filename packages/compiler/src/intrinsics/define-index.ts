@@ -1,5 +1,6 @@
 import type ts from "typescript";
 import type { ModuleDef } from "@toolcog/runtime";
+import { moveLeadingComments } from "../utils/comments.ts";
 import { getNodeId } from "../node-id.ts";
 import { defineIdiomsExpression } from "./define-idioms.ts";
 
@@ -341,6 +342,8 @@ const defineIndexExpression = (
       indexerExpression,
     ],
   );
+
+  moveLeadingComments(ts, callExpression, iifeExpression);
 
   return ts.setOriginalNode(iifeExpression, callExpression);
 };

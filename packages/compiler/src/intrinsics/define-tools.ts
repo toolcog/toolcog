@@ -1,6 +1,7 @@
 import type ts from "typescript";
 import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
+import { moveLeadingComments } from "../utils/comments.ts";
 import { Diagnostics } from "../diagnostics.ts";
 import { defineToolExpression } from "./define-tool.ts";
 
@@ -113,7 +114,15 @@ const defineToolsExpression = (
       ),
     );
   }
-  return factory.createArrayLiteralExpression(toolExpressions, true);
+
+  const arrayExpression = factory.createArrayLiteralExpression(
+    toolExpressions,
+    true,
+  );
+
+  moveLeadingComments(ts, funcsExpression, arrayExpression);
+
+  return ts.setOriginalNode(arrayExpression, funcsExpression);
 };
 
 export { defineToolsExpression };

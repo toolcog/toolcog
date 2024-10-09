@@ -1,5 +1,7 @@
 /** @module . */
 
+export { moveLeadingComments } from "./utils/comments.ts";
+
 export { typeToSchema, signatureToSchema, callSiteToSchema } from "./schema.ts";
 
 export {

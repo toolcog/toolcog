@@ -256,11 +256,7 @@ const getComment = (
   node: ts.Node,
   type?: ts.Type,
 ): Comment | undefined => {
-  if (type === undefined) {
-    type = checker?.getTypeAtLocation(node);
-  }
-  const symbol = checker?.getSymbolAtLocation(node);
-  const declaration = symbol?.declarations?.[0];
+  const declaration = checker?.getSymbolAtLocation(node)?.declarations?.[0];
   return mergeComments(
     type !== undefined ? getCommentForType(ts, type) : undefined,
     declaration !== undefined ? getCommentForNode(ts, declaration) : undefined,

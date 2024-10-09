@@ -1,6 +1,7 @@
 import type ts from "typescript";
 import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
+import { moveLeadingComments } from "../utils/comments.ts";
 import { valueToExpression } from "../utils/literals.ts";
 import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
@@ -666,6 +667,8 @@ const definePromptExpression = (
       ...(contextToolsExpression !== undefined ? [contextToolsExpression] : []),
     ],
   );
+
+  moveLeadingComments(ts, callExpression, iifeExpression);
 
   return ts.setOriginalNode(iifeExpression, callExpression);
 };
