@@ -633,7 +633,7 @@ const callSiteToSchema = (
     ...(parametersSchema !== undefined ?
       { parameters: parametersSchema }
     : undefined),
-    ...(returnSchema !== undefined ? { return: returnSchema } : undefined),
+    ...(returnSchema !== undefined ? { returns: returnSchema } : undefined),
   };
 };
 

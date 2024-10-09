@@ -248,15 +248,14 @@ const loadToolkits = async (
 
   const toolkitSources: ToolkitSource[] = [];
   for (const [moduleName, moduleImport] of Object.entries(toolkitModules)) {
-    const module = moduleImport as { readonly default?: () => Toolkit };
-    if (module.default === undefined) {
+    const toolkitModule = moduleImport as { readonly default?: () => Toolkit };
+    if (toolkitModule.default === undefined) {
       throw new Error(
         "Toolkit " + JSON.stringify(moduleName) + " has no default export",
-        { cause: module },
+        { cause: toolkitModule },
       );
     }
-    const toolkitSource = module.default();
-    toolkitSources.push(toolkitSource);
+    toolkitSources.push(toolkitModule);
   }
   const toolkits = await resolveToolkits(toolkitSources);
 

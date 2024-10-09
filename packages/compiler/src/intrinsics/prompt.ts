@@ -1,6 +1,7 @@
 import type ts from "typescript";
 import type { ModuleDef } from "@toolcog/runtime";
 import { error } from "../utils/errors.ts";
+import { moveLeadingComments } from "../utils/comments.ts";
 import { valueToExpression } from "../utils/literals.ts";
 import { Diagnostics } from "../diagnostics.ts";
 import { getComment } from "../comment.ts";
@@ -168,6 +169,8 @@ const promptExpression = (
       factory.createObjectLiteralExpression(optionsAssignments, true),
     ],
   );
+
+  moveLeadingComments(ts, callExpression, generatorCallExpression);
 
   return ts.setOriginalNode(generatorCallExpression, callExpression);
 };

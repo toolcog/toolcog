@@ -12,7 +12,7 @@ import { replaceLines, splitLines } from "@toolcog/util";
 import type { Style } from "@toolcog/util/tty";
 import { stylize, wrapText } from "@toolcog/util/tty";
 import type { Tool } from "@toolcog/core";
-import { toolcogTransformer } from "@toolcog/compiler";
+import { moveLeadingComments, toolcogTransformer } from "@toolcog/compiler";
 import { AgentContext, Job, generate, currentTools } from "@toolcog/runtime";
 import { version } from "./package-info.ts";
 import { classifyInput } from "./classify-input.ts";
@@ -852,10 +852,15 @@ class Repl {
   }
 
   #preprocess(input: string): string {
-    const sourceFile = ts.createSourceFile(this.#scriptName, input, {
-      languageVersion: this.#languageVersion,
-      impliedNodeFormat: ts.ModuleKind.ESNext,
-    });
+    const sourceFile = ts.createSourceFile(
+      this.#scriptName,
+      input,
+      {
+        languageVersion: this.#languageVersion,
+        impliedNodeFormat: ts.ModuleKind.ESNext,
+      },
+      true, // setParentNodes
+    );
 
     const transformationResult = ts.transform(
       sourceFile,
@@ -977,7 +982,7 @@ class Repl {
         ts.GeneratedIdentifierFlags.Optimistic |
           ts.GeneratedIdentifierFlags.ReservedInNestedScopes,
       );
-      return ts.factory.createVariableStatement(
+      const resultStatement = ts.factory.createVariableStatement(
         undefined, // modifiers
         ts.factory.createVariableDeclarationList(
           [
@@ -991,6 +996,8 @@ class Repl {
           ts.NodeFlags.Const,
         ),
       );
+      moveLeadingComments(ts, statement.expression, resultStatement);
+      return resultStatement;
     };
 
     return (sourceFile: ts.SourceFile): ts.SourceFile => {
