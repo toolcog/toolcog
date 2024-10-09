@@ -31,7 +31,7 @@ const jsConfig = defineConfig({
     typescript({
       transformers: (program) => ({
         before: [
-          // Configure the Toolcog transformer.
+          // Enable the Toolcog transformer.
           toolcogTransformer(program, {
             moduleId: false,
           }),

@@ -1,12 +1,12 @@
-import pluginJs from "@eslint/js";
-import pluginJsdoc from "eslint-plugin-jsdoc";
-import pluginTs from "typescript-eslint";
+import eslint from "@eslint/js";
+import jsdoc from "eslint-plugin-jsdoc";
+import tseslint from "typescript-eslint";
 
-export default pluginTs.config(
-  pluginJs.configs.recommended,
-  pluginJsdoc.configs["flat/recommended-typescript-error"],
-  ...pluginTs.configs.strictTypeChecked,
-  ...pluginTs.configs.stylisticTypeChecked,
+export default tseslint.config(
+  eslint.configs.recommended,
+  jsdoc.configs["flat/recommended-typescript-error"],
+  ...tseslint.configs.strictTypeChecked,
+  ...tseslint.configs.stylisticTypeChecked,
   {
     rules: {
       "jsdoc/check-line-alignment": "error",

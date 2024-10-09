@@ -18,7 +18,7 @@ export const makeDirectory = defineTool(
       // Whether to create parent directories if they don't exist.
       recursive?: boolean;
     },
-  ): Promise<void | Error> => {
+  ): Promise<undefined | Error> => {
     try {
       await mkdir(resolveFile(path), options);
     } catch (error) {
@@ -73,7 +73,7 @@ export const readTextFile = defineTool(
  * @returns `undefined` if the file was written, or an error object.
  */
 export const writeTextFile = defineTool(
-  async (path: string, text: string): Promise<void | Error> => {
+  async (path: string, text: string): Promise<undefined | Error> => {
     try {
       await writeFile(resolveFile(path), text);
     } catch (error) {
@@ -83,8 +83,11 @@ export const writeTextFile = defineTool(
 );
 
 /**
- * Resolves a file path on the local file system.
- * Supports the `~` alias for home directories.
+ * Resolves a file path on the local file system. Supports the `~` alias for
+ * home directories.
+ *
+ * @param path - The path to resolve.
+ * @returns The resolved path.
  */
 const resolveFile = (path: string): string => {
   if (path.startsWith("~/")) {

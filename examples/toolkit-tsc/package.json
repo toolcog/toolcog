@@ -1,0 +1,53 @@
+{
+  "private": true,
+  "name": "@example/toolkit-tsc",
+  "version": "0.0.1",
+  "type": "module",
+  "types": "./dist/lib.d.ts",
+  "main": "./dist/lib.js",
+  "scripts": {
+    "build:esm": "TSP_COMPILER_TS_PATH=\"node_modules/typescript\" tspc",
+    "build:cjs": "swc --strip-leading-paths --out-file-extension cjs --out-dir dist dist",
+    "build": "npm run build:esm && npm run build:cjs && npm run inventory",
+    "inventory": "toolcog inventory generate --precache --manifest dist/toolcog-manifest.yaml --yaml --js",
+    "toolcog": "toolcog --toolkit @example/toolkit-tsc",
+    "check": "tsc --noEmit",
+    "lint": "eslint src/",
+    "format": "prettier --check src/",
+    "clean": "rimraf .swc .turbo dist",
+    "clean-all": "rimraf .swc .turbo dist node_modules"
+  },
+  "files": [
+    "dist/"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js",
+      "require": "./dist/lib.cjs"
+    },
+    "./toolcog-inventory": {
+      "import": "./dist/toolcog-inventory.js"
+    }
+  },
+  "dependencies": {
+    "@toolcog/core": "workspace:*",
+    "@toolcog/runtime": "workspace:*"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.12",
+    "@swc/cli": "^0.4",
+    "@swc/core": "^1.7",
+    "@swc/plugin-transform-imports": "^3.0",
+    "@toolcog/compiler": "workspace:*",
+    "eslint": "^9.12",
+    "eslint-plugin-jsdoc": "^50.3",
+    "prettier": "^3.3",
+    "rimraf": "^6.0",
+    "toolcog": "workspace:*",
+    "ts-patch": "^3.2.1",
+    "turbo": "^2.1",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.8"
+  }
+}
