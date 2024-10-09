@@ -12,7 +12,7 @@ export { makeDirectory, listDirectory, readTextFile, writeTextFile };
  * An example toolkit with LLM tools for interacting with the local file system.
  */
 const toolkit = {
-  name: "toolcog-rollup-toolkit-template",
+  name: "@example/toolkit-tsc",
   version: "0.0.1",
   tools: [makeDirectory, listDirectory, readTextFile, writeTextFile],
 } as const;

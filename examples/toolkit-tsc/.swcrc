@@ -1,0 +1,27 @@
+{
+  "$schema": "https://swc.rs/schema.json",
+  "test": ".*\\.js$",
+  "jsc": {
+    "parser": {
+      "syntax": "ecmascript"
+    },
+    "target": "esnext",
+    "experimental": {
+      "plugins": [
+        [
+          "@swc/plugin-transform-imports",
+          {
+            "^((?:\\./|\\.\\./).*?)(\\.js)$": {
+              "skipDefaultConversion": true,
+              "transform": "{{matches.[1]}}.cjs"
+            }
+          }
+        ]
+      ]
+    }
+  },
+  "module": {
+    "type": "commonjs"
+  },
+  "sourceMaps": true
+}

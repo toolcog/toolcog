@@ -6,5 +6,9 @@
 # Package management
 node_modules/
 
-# Build output
+# Build outputs
 dist/
+
+# Build caches
+.swc/
+.turbo/

@@ -1,17 +1,15 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
   "tasks": {
-    "topo": {
-      "dependsOn": ["^topo"]
-    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": [
         "src/**",
         "!src/**/*.test.ts",
+        ".swcrc",
         ".toolcog/precache.yaml",
         "package.json",
-        "rollup.config.js",
         "tsconfig.json"
       ],
       "outputs": ["dist/**"],
@@ -19,15 +17,12 @@
       "passThroughEnv": ["OPENAI_API_KEY", "ANTHROPIC_API_KEY"]
     },
     "check": {
-      "dependsOn": ["topo"],
       "inputs": ["src/**", "tsconfig.json"]
     },
     "lint": {
-      "dependsOn": ["topo"],
       "inputs": ["src/**", "eslint.config.js"]
     },
     "format": {
-      "dependsOn": ["topo"],
       "inputs": ["src/**", "prettier.config.js"]
     },
     "test": {
