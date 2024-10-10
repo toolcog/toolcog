@@ -19,9 +19,9 @@ e.g. "openai:my-fine-tuned-model".
 
 ### Toolcog CLI
 
-The OpenAI plugin is loaded automatically by the `toolcog` CLI, though it
-can also be explicitly enabled with the `--plugin @toolcog/openai` option.
-To use OpenAI models with the Toolcog CLI, you must have a valid
+The OpenAI plugin is loaded automatically by the [Toolcog CLI][toolcog-cli],
+though it can also be explicitly enabled with the `--plugin @toolcog/openai`
+option. To use OpenAI models with the Toolcog CLI, you must have a valid
 `OPENAI_API_KEY` variable defined in your environment.
 
 Specify the `--generative-model` option to use a particular language model.
@@ -40,6 +40,7 @@ array of your `Runtime` configuration.
 import { Runtime } from "@toolcog/runtime";
 
 const runtime = await Runtime.create({
+  plugins: [import("@toolcog/openai")],
   embedder: {
     model: "text-embedding-3-small",
   },
@@ -47,7 +48,6 @@ const runtime = await Runtime.create({
     model: "gpt-4o-2024-08-06",
     system: Runtime.systemPrompt(),
   },
-  plugins: [import("@toolcog/openai")],
 });
 
 await Runtime.run(runtime, () => {
@@ -121,5 +121,6 @@ const tellJoke = definePrompt<(subject: string) => string>({
 ```
 
 [toolcog]: https://github.com/toolcog/toolcog#readme
-[openai-node]: https://github.com/openai/openai-node#readme
 [toolcog-runtime]: https://github.com/toolcog/toolcog/tree/main/packages/runtime#readme
+[toolcog-cli]: https://github.com/toolcog/toolcog/tree/main/packages/toolcog#readme
+[openai-node]: https://github.com/openai/openai-node#readme

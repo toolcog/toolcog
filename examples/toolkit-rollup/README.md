@@ -66,7 +66,7 @@ The example project is organized as follows:
 
 ## Toolcog Configuration
 
-The Toolcog Compiler is configured via the `transformers` property of the
+The Toolcog compiler is configured via the `transformers` property of the
 `typescript` plugin in `rollup.config.ts`.
 
 ```javascript

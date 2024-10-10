@@ -5,13 +5,13 @@ import { version } from "@toolcog/compiler";
 import { createCompilerCommand } from "@toolcog/compiler/cli";
 
 const runtime = await Runtime.create({
+  plugins: [import("@toolcog/openai"), import("@toolcog/anthropic")],
   embedder: {
     model: "text-embedding-3-small",
   },
   generator: {
     system: Runtime.systemPrompt(),
   },
-  plugins: [import("@toolcog/openai"), import("@toolcog/anthropic")],
 });
 
 await Runtime.run(runtime, () => {

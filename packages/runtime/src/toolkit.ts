@@ -27,7 +27,7 @@ const resolveToolkitTools = async (
  * A package of LLM tools related to a particular API or service.
  *
  * Toolkits typically contain more tools than would be used in a single task.
- * The Toolcog Runtime indexes registered toolkits and performs implicit tool
+ * The Toolcog runtime indexes registered toolkits and performs implicit tool
  * selection, providing only relevant tools to the LLM for a given prompt.
  */
 interface Toolkit {
@@ -76,8 +76,8 @@ type ToolkitSource =
   | undefined;
 
 /**
- * Converts a `ToolkitSource` into a `Toolkit` by resolving promises,
- * invoking functions, or extracting the default export as necessary.
+ * Converts a `ToolkitSource` into a loaded `Toolkit` by resolving promises,
+ * traversing default exports, and invoking functions as necessary.
  *
  * @param toolkit - The toolkit source to resolve.
  * @returns The resolved toolkit, or `undefined` if the source doesn't
@@ -97,8 +97,9 @@ const resolveToolkit = async (
 };
 
 /**
- * Converts an array of `ToolkitSource`s into an array of `Toolkit`s by resolving
- * promises or invoking functions as necessary.
+ * Converts an array of `ToolkitSource`s into an array of loaded `Toolkit`s
+ * by resolving promises, traversing default exports, and invoking functions
+ * as necessary.
  *
  * @param toolkits - The toolkit sources to resolve.
  * @returns The resolved toolkits.

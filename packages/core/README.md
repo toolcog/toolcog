@@ -3,8 +3,9 @@
 [![Version](https://img.shields.io/npm/v/@toolcog/core)](https://www.npmjs.com/package/@toolcog/core)
 [![License](https://img.shields.io/github/license/toolcog/toolcog)](LICENSE)
 
-`@toolcog/core` is the Toolcog API for Tool Augmented Generation (TAG). TAG is
-an architecture for connecting LLMs to APIs, enabling developers to:
+The `@toolcog/core` package contains the Toolcog API for Tool Augmented
+Generation (TAG). TAG is an architecture for connecting LLMs to APIs,
+enabling developers to:
 
 - **Generate LLM Tools:** Make TypeScript functions reliably callable by LLMs
   with minimal boilerplate and prompt engineering.
@@ -14,9 +15,10 @@ an architecture for connecting LLMs to APIs, enabling developers to:
   language input.
 
 This package is designed to be as lightweight as possible, with zero runtime
-dependencies, and only a few small function definitions. `@toolcog/compiler`
-handles transforming intrinsic function calls at build time. `@toolcog/runtime`
-provides a pluggable runtime for interacting with AI models.
+dependencies, and only a few small function definitions.
+The [Toolcog compiler][toolcog-compiler] transforms intrinsic function calls
+at build time. The [Toolcog runtime][toolcog-runtime] provides a pluggable
+runtime for interacting with AI models.
 
 ## Intrinsic Functions
 
@@ -28,7 +30,7 @@ indexes.
 The Toolcog compiler is a transformer plugin for the TypeScript compiler.
 No changes are made to the TypeScript language. The Toolcog compiler can be
 integrated into any build tool that supports custom TypeScript transformers.
-See the `@toolcog/compiler` package for more details.
+See the [`@toolcog/compiler`][toolcog-compiler] package for more details.
 
 ### Generate LLM Tools
 
@@ -198,3 +200,6 @@ const calculateDistance = defineTool((pointA: Point, pointB: Point): number => {
 
 `@toolcog/core` also includes runtime interfaces used by `@toolcog/runtime`
 and its associated plugins. See `@toolcog/runtime` for more details.
+
+[toolcog-runtime]: https://github.com/toolcog/toolcog/tree/main/packages/runtime#readme
+[toolcog-compiler]: https://github.com/toolcog/toolcog/tree/main/packages/compiler#readme

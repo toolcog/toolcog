@@ -66,7 +66,7 @@ The example project is organized as follows:
 
 ## Toolcog Configuration
 
-The Toolcog Compiler is configured via the `plugins` property of the
+The Toolcog compiler is configured via the `plugins` property of the
 `compilerOptions` in `tsconfig.json`.
 
 ```jsonc

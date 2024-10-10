@@ -42,7 +42,7 @@ type ToolSource =
 
 /**
  * Converts a `ToolSource` into one or more `Tool`s by resolving promises
- * or invoking functions as necessary.
+ * and invoking functions as necessary.
  *
  * @param tool - The `ToolSource` to resolve.
  * @param args - Arguments to pass if the `ToolSource` is a function.
@@ -118,7 +118,7 @@ type InstructionsSource =
 
 /**
  * Converts an `InstructionsSource` into a string by resolving promises
- * or invoking functions as necessary.
+ * and invoking functions as necessary.
  *
  * @param instructions - The `InstructionsSource` to resolve.
  * @param args - Arguments to pass if the `InstructionsSource` is a function.

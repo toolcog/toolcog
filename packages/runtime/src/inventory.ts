@@ -153,26 +153,43 @@ const createInventory = (): Inventory => {
 };
 
 /**
+ * A module that exports a default `Inventory` implementation.
+ */
+interface InventoryModule {
+  /**
+   * The default export of the module.
+   */
+  default?:
+    | (() => Promise<Inventory | undefined> | Inventory | undefined)
+    | Inventory
+    | undefined;
+}
+
+/**
  * Specifies the various ways to provide an AI inventory.
  * An `InventorySource` can be:
- * - A function returning a `Promise` resolving to an `Inventory` or `undefined`
- * - A `Promise` resolving to an `Inventory` or `undefined`
- * - An `Inventory` object
- * - An inventory file to load
+ * - A function returning an inventory, `undefined`, or a promise thereof
+ * - A promise resolving to an inventory module, inventory object,
+ *   or `undefined`
+ * - An inventory module
+ * - An inventory object
+ * - The path of an inventory file to load
  * - `true` to load the default inventory file
  * - `false` or `undefined` to not resolve an inventory
+ * - `undefined`
  */
 type InventorySource =
   | (() => Promise<Inventory | undefined> | Inventory | undefined)
-  | Promise<Inventory | undefined>
+  | Promise<InventoryModule | Inventory | undefined>
+  | InventoryModule
   | Inventory
   | string
   | boolean
   | undefined;
 
 /**
- * Converts an `InventorySource` into an `Inventory` by resolving promises
- * or invoking functions as necessary.
+ * Converts an `InventorySource` into a loaded `Inventory` by resolving
+ * promises, traversing default exports, and invoking functions as necessary.
  *
  * @param inventory - The inventory source to resolve.
  * @returns The resolved inventory.
@@ -188,17 +205,53 @@ const resolveInventory = async (
   if (typeof inventory === "string") {
     return parseInventory(await readFile(inventory, "utf-8"));
   }
-  if (typeof inventory === "function") {
-    inventory = inventory();
+  inventory = await inventory;
+  if (inventory !== undefined && "default" in inventory) {
+    inventory = inventory.default;
   }
-  return await inventory;
+  if (typeof inventory === "function") {
+    inventory = await inventory();
+  }
+  return inventory as Inventory | undefined;
 };
 
-export type { IdiomInventory, Inventory, InventorySource };
+/**
+ * Converts an array of `InventorySource`s into an array of loaded `Inventory`
+ * objects by resolving promises, traversing default exports, and invoking
+ * functions as necessary.
+ *
+ * @param inventories - The inventory sources to resolve.
+ * @returns The resolved inventories.
+ */
+const resolveInventories: {
+  (inventories: readonly InventorySource[]): Promise<Inventory[]>;
+  (
+    inventories: readonly InventorySource[] | null | undefined,
+  ): Promise<Inventory[] | undefined>;
+} = (async (
+  inventories: readonly InventorySource[] | null | undefined,
+): Promise<Inventory[] | undefined> => {
+  if (inventories === undefined || inventories === null) {
+    return undefined;
+  }
+  return (
+    await Promise.allSettled(
+      inventories.map((inventory) => resolveInventory(inventory)),
+    )
+  ).reduce<Inventory[]>((inventories, result) => {
+    if (result.status === "fulfilled" && result.value !== undefined) {
+      inventories.push(result.value);
+    }
+    return inventories;
+  }, []);
+}) as typeof resolveInventories;
+
+export type { IdiomInventory, Inventory, InventoryModule, InventorySource };
 export {
   inventoryFileName,
   parseInventory,
   formatInventory,
   createInventory,
   resolveInventory,
+  resolveInventories,
 };

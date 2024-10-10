@@ -37,11 +37,11 @@ interface InstallPackagesOptions extends LoadModulesOptions {
   confirm?: string | boolean | undefined;
 }
 
-const loadModules = async (
+const loadModules = async <T>(
   modules: readonly string[],
   options?: LoadModulesOptions,
 ): Promise<{
-  loadedModules: Record<string, unknown>;
+  loadedModules: Record<string, T | null>;
   missingModules: string[];
 }> => {
   const containingFiles = (options?.searchDirs ?? [process.cwd()]).map(
@@ -54,7 +54,7 @@ const loadModules = async (
     target: ts.ScriptTarget.ESNext,
   };
 
-  const loadedModules = Object.create(null) as Record<string, unknown>;
+  const loadedModules = Object.create(null) as Record<string, T | null>;
   const missingModules: string[] = [];
 
   for (const moduleName of modules) {
@@ -70,7 +70,7 @@ const loadModules = async (
       ).resolvedModule;
       if (resolvedModule !== undefined) {
         const modulePath = resolvedModule.resolvedFileName;
-        const module = (await import(modulePath)) as unknown;
+        const module = (await import(modulePath)) as T;
         loadedModules[moduleName] = module;
         break;
       } else {
@@ -138,14 +138,17 @@ const installPackages = async (
   return installDir;
 };
 
-const loadOrInstallModules = async (
+const loadOrInstallModules = async <T>(
   modules: readonly string[],
   options?: InstallPackagesOptions,
 ): Promise<{
-  loadedModules: Record<string, unknown>;
+  loadedModules: Record<string, T | null>;
   installDir: string | undefined;
 }> => {
-  const { loadedModules, missingModules } = await loadModules(modules, options);
+  const { loadedModules, missingModules } = await loadModules<T>(
+    modules,
+    options,
+  );
 
   let installDir: string | undefined;
   if (missingModules.length !== 0) {
@@ -176,7 +179,7 @@ const loadOrInstallModules = async (
       ).resolvedModule;
       if (resolvedModule !== undefined) {
         const modulePath = resolvedModule.resolvedFileName;
-        const module = (await import(modulePath)) as unknown;
+        const module = (await import(modulePath)) as T;
         loadedModules[moduleName] = module;
       } else {
         loadedModules[moduleName] = null;
