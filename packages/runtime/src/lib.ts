@@ -32,6 +32,7 @@ export {
 export type {
   IdiomInventory,
   Inventory,
+  InventoryModule,
   InventorySource,
 } from "./inventory.ts";
 export {
@@ -40,6 +41,7 @@ export {
   formatInventory,
   createInventory,
   resolveInventory,
+  resolveInventories,
 } from "./inventory.ts";
 
 export type { Plugin, PluginModule, PluginSource } from "./plugin.ts";

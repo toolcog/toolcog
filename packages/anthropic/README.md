@@ -19,9 +19,9 @@ e.g. "anthropic:my-fine-tuned-model".
 
 ### Toolcog CLI
 
-The Anthropic plugin is loaded automatically by the `toolcog` CLI, though it
-can also be explicitly enabled with the `--plugin @toolcog/anthropic` option.
-To use Anthropic models with the Toolcog CLI, you must have a valid
+The Anthropic plugin is loaded automatically by the [Toolcog CLI][toolcog-cli],
+though it can also be explicitly enabled with the `--plugin @toolcog/anthropic`
+option. To use Anthropic models with the Toolcog CLI, you must have a valid
 `ANTHROPIC_API_KEY` variable defined in your environment.
 
 Specify the `--generative-model` option to use a particular language model.
@@ -41,6 +41,7 @@ model, since Anthropic does not provide its own embedding models at this time.
 import { Runtime } from "@toolcog/runtime";
 
 const runtime = await Runtime.create({
+  plugins: [import("@toolcog/anthropic"), import("@toolcog/openai")],
   embedder: {
     model: "text-embedding-3-small",
   },
@@ -48,7 +49,6 @@ const runtime = await Runtime.create({
     model: "claude-3-5-sonnet-20240620",
     system: Runtime.systemPrompt(),
   },
-  plugins: [import("@toolcog/anthropic"), import("@toolcog/openai")],
 });
 
 await Runtime.run(runtime, () => {
@@ -112,5 +112,6 @@ const tellJoke = definePrompt<(subject: string) => string>({
 ```
 
 [toolcog]: https://github.com/toolcog/toolcog#readme
-[anthropic-sdk]: https://github.com/anthropics/anthropic-sdk-typescript#readme
 [toolcog-runtime]: https://github.com/toolcog/toolcog/tree/main/packages/runtime#readme
+[toolcog-cli]: https://github.com/toolcog/toolcog/tree/main/packages/toolcog#readme
+[anthropic-sdk]: https://github.com/anthropics/anthropic-sdk-typescript#readme

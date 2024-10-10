@@ -5,10 +5,14 @@ import glob from "fast-glob";
 import type {
   AgentContextOptions,
   Plugin,
+  PluginModule,
   PluginSource,
   Toolkit,
+  ToolkitModule,
   ToolkitSource,
   Inventory,
+  InventoryModule,
+  InventorySource,
   RuntimeConfigSource,
 } from "@toolcog/runtime";
 import {
@@ -17,6 +21,7 @@ import {
   resolvePlugins,
   resolveToolkits,
   inventoryFileName,
+  resolveInventories,
   parseInventory,
 } from "@toolcog/runtime";
 import { Repl } from "@toolcog/repl";
@@ -212,24 +217,25 @@ const loadPlugins = async (
     return [];
   }
 
-  const { loadedModules: pluginModules } = await loadOrInstallModules(
-    moduleNames,
-    {
+  const { loadedModules: pluginModules } =
+    await loadOrInstallModules<PluginModule>(moduleNames, {
       message: "Need to install the following plugin packages:",
-    },
-  );
+    });
 
   const pluginSources: PluginSource[] = [];
   for (const [moduleName, moduleImport] of Object.entries(pluginModules)) {
-    const module = moduleImport as { readonly default?: () => PluginSource };
-    if (module.default === undefined) {
+    if (moduleImport === null) {
+      throw new Error(
+        "Unable to resolve plugin module " + JSON.stringify(moduleName),
+        { cause: moduleImport },
+      );
+    } else if (moduleImport.default === undefined) {
       throw new Error(
         "Plugin " + JSON.stringify(moduleName) + " has no default export",
-        { cause: module },
+        { cause: moduleImport },
       );
     }
-    const pluginSource = module.default();
-    pluginSources.push(pluginSource);
+    pluginSources.push(moduleImport);
   }
   return await resolvePlugins(pluginSources);
 };
@@ -242,52 +248,56 @@ const loadToolkits = async (
   }
 
   const { loadedModules: toolkitModules, installDir } =
-    await loadOrInstallModules(moduleNames, {
+    await loadOrInstallModules<ToolkitModule>(moduleNames, {
       message: "Need to install the following toolkit packages:",
     });
 
   const toolkitSources: ToolkitSource[] = [];
   for (const [moduleName, moduleImport] of Object.entries(toolkitModules)) {
-    const toolkitModule = moduleImport as { readonly default?: () => Toolkit };
-    if (toolkitModule.default === undefined) {
+    if (moduleImport === null) {
+      throw new Error(
+        "Unable to resolve toolkit module " + JSON.stringify(moduleName),
+        { cause: moduleImport },
+      );
+    } else if (moduleImport.default === undefined) {
       throw new Error(
         "Toolkit " + JSON.stringify(moduleName) + " has no default export",
-        { cause: toolkitModule },
+        { cause: moduleImport },
       );
     }
-    toolkitSources.push(toolkitModule);
+    toolkitSources.push(moduleImport);
   }
   const toolkits = await resolveToolkits(toolkitSources);
 
-  const { loadedModules: inventoryModules } = await loadModules(
-    moduleNames
-      .filter(isPackageImport)
-      .map((moduleName) => moduleName + "/toolcog-inventory"),
-    {
-      searchDirs: [
-        process.cwd(),
-        ...(installDir !== undefined ? [installDir] : []),
-      ],
-    },
-  );
+  const { loadedModules: inventoryModules } =
+    await loadModules<InventoryModule>(
+      moduleNames
+        .filter(isPackageImport)
+        .map((moduleName) => moduleName + "/toolcog-inventory"),
+      {
+        searchDirs: [
+          process.cwd(),
+          ...(installDir !== undefined ? [installDir] : []),
+        ],
+      },
+    );
 
-  const inventories: Inventory[] = [];
+  const inventorySources: InventorySource[] = [];
   for (const [moduleName, moduleImport] of Object.entries(inventoryModules)) {
-    const module = moduleImport as { readonly default?: Inventory } | null;
-    if (module === null) {
-      // Toolkit has no inventory module.
+    if (moduleImport === null) {
+      // Toolkit does not export a `./toolcog-inventory` entry point.
       continue;
-    } else if (module.default === undefined) {
+    } else if (moduleImport.default === undefined) {
       throw new Error(
         "Inventory module " +
           JSON.stringify(moduleName) +
           " has no default export",
-        { cause: module },
+        { cause: moduleImport },
       );
     }
-    const inventory = module.default;
-    inventories.push(inventory);
+    inventorySources.push(moduleImport);
   }
+  const inventories = await resolveInventories(inventorySources);
 
   return [toolkits, inventories];
 };
